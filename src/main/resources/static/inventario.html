@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario - MRKdito</title>
+    <style>
+        :root {
+            --primary: #19A337;
+            --danger: #dc3545;
+            --dark: #343a40;
+            --light: #f4f7f6;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 20px; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h2 { margin: 0; color: var(--dark); }
+
+        .filtros { display: flex; gap: 15px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; align-items: flex-end; border: 1px solid #eee; }
+        .filtros div { display: flex; flex-direction: column; gap: 5px; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #f8f9fa; color: #666; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #fcfcfc; cursor: pointer; }
+        
+        .stock-bajo { color: var(--danger); font-weight: bold; background-color: #fff5f5; }
+        .badge-stock { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-nuevo { background: var(--primary); color: white; }
+        .btn-nuevo:hover { background: #158a2e; }
+        .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 3% auto; padding: 30px; width: 500px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .full { grid-column: span 2; }
+        label { font-size: 13px; font-weight: 600; color: #555; }
+        .modal-footer { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h2>📦 Gestión de Inventario</h2>
+        <div>
+            <button class="btn btn-volver" onclick="window.location.href='/menu.html'">Volver</button>
+            <button class="btn btn-nuevo" onclick="abrirModal()">+ Nuevo Producto</button>
+        </div>
+    </div>
+
+    <div class="filtros">
+        <div>
+            <label>Buscar Producto</label>
+            <input type="text" id="txtBusqueda" oninput="filtrar()" placeholder="Nombre o código...">
+        </div>
+        <div>
+            <label>Estado de Stock</label>
+            <select id="selStock" onchange="filtrar()">
+                <option value="todos">Todos los productos</option>
+                <option value="bajo">Bajo el mínimo</option>
+            </select>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Proveedor</th>
+                <th>Existencia</th>
+                <th>Precio Venta</th>
+            </tr>
+        </thead>
+        <tbody id="listaProductos">
+            </tbody>
+    </table>
+</div>
+
+<div id="modalProducto" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitulo" style="margin-top:0">Producto</h3>
+        <input type="hidden" id="p_id">
+        
+        <div class="form-grid">
+            <div class="full">
+                <label>Código de Barras</label>
+                <input type="text" id="p_codigo" placeholder="Escanear o escribir...">
+            </div>
+            <div class="full">
+                <label>Nombre del Producto</label>
+                <input type="text" id="p_nombre">
+            </div>
+            <div>
+                <label>Categoría</label>
+                <input type="text" id="p_cat" placeholder="Ej. Refrescos">
+            </div>
+            <div>
+                <label>Proveedor</label>
+                <select id="p_prov">
+                    </select>
+            </div>
+            <div>
+                <label>Precio Compra ($)</label>
+                <input type="number" step="0.01" id="p_compra">
+            </div>
+            <div>
+                <label>Precio Venta ($)</label>
+                <input type="number" step="0.01" id="p_venta">
+            </div>
+            <div>
+                <label>Existencia Actual</label>
+                <input type="number" id="p_stock">
+            </div>
+            <div>
+                <label>Stock Mínimo</label>
+                <input type="number" id="p_min">
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" style="background:#eee" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-nuevo" onclick="guardar()">Guardar Producto</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let todosLosProductos = [];
+
+    // Cargar todos los productos al iniciar
+    async function cargarProductos() {
+        try {
+            const resp = await fetch('/api/inventario/todos');
+            todosLosProductos = await resp.json();
+            dibujarTabla(todosLosProductos);
+        } catch (e) { console.error("Error cargando productos", e); }
+    }
+
+    // Cargar proveedores para el select del modal
+    async function cargarProveedores() {
+        try {
+            const resp = await fetch('/api/inventario/proveedores'); // URL UNIFICADA
+            const lista = await resp.json();
+            const select = document.getElementById('p_prov');
+            select.innerHTML = '<option value="">Sin Proveedor</option>';
+            lista.forEach(prov => {
+                select.innerHTML += `<option value="${prov.id}">${prov.nombre}</option>`;
+            });
+        } catch (e) { console.error("Error cargando proveedores", e); }
+    }
+
+    function dibujarTabla(datos) {
+        const tbody = document.getElementById('listaProductos');
+        tbody.innerHTML = "";
+
+        datos.forEach(p => {
+            const tr = document.createElement('tr');
+            const esBajo = p.existencias_act <= p.existencias_min;
+            if(esBajo) tr.className = "stock-bajo";
+
+            tr.ondblclick = () => abrirModal(p);
+
+            tr.innerHTML = `
+                <td>${p.codigo_barras}</td>
+                <td>${p.nombre}</td>
+                <td>${p.nombre_proveedor || '---'}</td>
+                <td><span class="badge-stock">${p.existencias_act}</span></td>
+                <td>$${p.precio_venta.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filtrar() {
+        const busqueda = document.getElementById('txtBusqueda').value.toLowerCase();
+        const filtroStock = document.getElementById('selStock').value;
+
+        const filtrados = todosLosProductos.filter(p => {
+            const matchNombre = p.nombre.toLowerCase().includes(busqueda) || p.codigo_barras.includes(busqueda);
+            const matchStock = filtroStock === 'todos' || (p.existencias_act <= p.existencias_min);
+            return matchNombre && matchStock;
+        });
+        dibujarTabla(filtrados);
+    }
+
+    async function abrirModal(p = null) {
+        await cargarProveedores();
+        
+        document.getElementById('modalTitulo').textContent = p ? "Editar Producto" : "Nuevo Producto";
+        document.getElementById('p_id').value = p ? p.id_producto : "";
+        document.getElementById('p_codigo').value = p ? p.codigo_barras : "";
+        document.getElementById('p_nombre').value = p ? p.nombre : "";
+        document.getElementById('p_cat').value = p ? (p.categoria || "General") : "General";
+        document.getElementById('p_prov').value = p ? (p.id_proveedor || "") : "";
+        document.getElementById('p_compra').value = p ? p.precio_compra : "";
+        document.getElementById('p_venta').value = p ? p.precio_venta : "";
+        document.getElementById('p_stock').value = p ? p.existencias_act : "0";
+        document.getElementById('p_min').value = p ? p.existencias_min : "0";
+
+        document.getElementById('modalProducto').style.display = 'block';
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalProducto').style.display = 'none';
+    }
+
+    async function guardar() {
+        const data = {
+            id_producto: document.getElementById('p_id').value,
+            codigo_barras: document.getElementById('p_codigo').value,
+            nombre: document.getElementById('p_nombre').value,
+            categoria: document.getElementById('p_cat').value,
+            id_proveedor: document.getElementById('p_prov').value,
+            precio_compra: document.getElementById('p_compra').value,
+            precio_venta: document.getElementById('p_venta').value,
+            existencias_act: document.getElementById('p_stock').value,
+            existencias_min: document.getElementById('p_min').value
+        };
+
+        if(!data.nombre || !data.precio_venta) {
+            alert("El nombre y el precio de venta son obligatorios");
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/inventario/guardar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const res = await resp.json();
+            if(res.success) {
+                cerrarModal();
+                cargarProductos();
+            } else {
+                alert("Error al guardar: " + res.message);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    // Inicialización
+    window.onload = cargarProductos;
+</script>
+
+</body>
+</html>

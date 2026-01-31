@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - MRKdito POS</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 20px; }
+        .logo-placeholder {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #19A337;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #158A2E;
+        }
+        #mensaje {
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <img src="/logo MRKdito.png" alt="Logo MRKdito" width="300">
+        
+        <input type="text" id="alias" placeholder="Usuario / Alias" autofocus>
+        <input type="password" id="pass" placeholder="Contraseña">
+        
+        <button id="btnLogin" onclick="doLogin()">Entrar al Sistema</button>
+        
+        <p id="mensaje"></p>
+    </div>
+
+    <script>
+        async function doLogin() {
+            const aliasInput = document.getElementById('alias');
+            const passInput = document.getElementById('pass');
+            const btnLogin = document.getElementById('btnLogin');
+            const mensaje = document.getElementById('mensaje');
+
+            const alias = aliasInput.value.trim();
+            const pass = passInput.value.trim();
+
+            if (!alias || !pass) {
+                mensaje.textContent = "Por favor, llene todos los campos.";
+                mensaje.style.color = "#dc3545";
+                return;
+            }
+
+            btnLogin.disabled = true;
+            mensaje.textContent = "Validando credenciales...";
+            mensaje.style.color = "#19A337";
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alias: alias, pass: pass }) 
+                });
+
+                if (!response.ok) throw new Error("Error en el servidor");
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Se guardan los datos recibidos del backend
+                    localStorage.setItem('userId', result.userId);
+                    localStorage.setItem('nombreUsuario', result.nombre); 
+                    localStorage.setItem('rolUsuario', result.rol);
+                    
+                    mensaje.textContent = `¡Hola ${result.nombre}! Accediendo...`;
+                    mensaje.style.color = "#28a745";
+
+                    setTimeout(() => {
+                        window.location.href = '/menu.html';
+                    }, 800);
+                } else {
+                    mensaje.textContent = result.message;
+                    mensaje.style.color = "#dc3545";
+                    passInput.value = ""; 
+                    btnLogin.disabled = false;
+                }
+            } catch (error) {
+                mensaje.textContent = "No se pudo conectar con el servidor.";
+                mensaje.style.color = "#dc3545";
+                btnLogin.disabled = false;
+                console.error("Error en login:", error);
+            }
+        }
+
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                doLogin();
+            }
+        });
+
+        window.onload = () => {
+            localStorage.clear(); // Limpieza preventiva al iniciar
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+package com.uriel.pos.sistema_punto_venta;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+public class Venta {
+
+    public ProductoData obtenerDatosProducto(String codigo) {
+        ProductoData data = null;
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+
+            String sql = """
+                SELECT id_producto, nombre, precio_venta, existencias_act 
+                FROM productos 
+                WHERE codigo_barras = ? OR codigo_barras_secundario = ?
+            """;
+
+            PreparedStatement stmt = c.prepareStatement(sql);
+            stmt.setString(1, codigo);
+            stmt.setString(2, codigo);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                data = new ProductoData(
+                    rs.getInt("id_producto"),
+                    rs.getString("nombre"),
+                    rs.getDouble("precio_venta"),
+                    rs.getInt("existencias_act")
+                );
+            }
+
+            rs.close();
+            stmt.close();
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+
+    public int crearVenta(int idUsuario) {
+        int idVenta = -1;
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = "INSERT INTO ventas(id_usuario, total) VALUES(?, 0)";
+            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            stmt.setInt(1, idUsuario);
+            stmt.executeUpdate();
+
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                idVenta = rs.getInt(1);
+            }
+
+            rs.close();
+            stmt.close();
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return idVenta;
+    }
+
+    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal) throws SQLException {
+        Connection c = null;
+        try {
+            Conexion con = new Conexion();
+            c = con.conectar();
+            c.setAutoCommit(false); 
+
+            // 1. Actualizar total
+            String sqlTotal = "UPDATE ventas SET total = ? WHERE id_venta = ?";
+            PreparedStatement stmtTotal = c.prepareStatement(sqlTotal);
+            stmtTotal.setDouble(1, totalFinal);
+            stmtTotal.setInt(2, idVenta);
+            stmtTotal.executeUpdate();
+            stmtTotal.close();
+
+            // 2. Detalles y Stock
+            for (DetalleVentaRequest detalle : detalles) {
+                // Insertar Detalle
+                String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
+                PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
+                stmtInsert.setInt(1, idVenta);
+                stmtInsert.setInt(2, detalle.idProducto);
+                stmtInsert.setInt(3, detalle.cantidad);
+                stmtInsert.setDouble(4, detalle.precioUnitario);
+                stmtInsert.executeUpdate();
+                stmtInsert.close();
+
+                // Actualizar Stock
+                String sqlStock = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
+                PreparedStatement stmtStock = c.prepareStatement(sqlStock);
+                stmtStock.setInt(1, detalle.cantidad);
+                stmtStock.setInt(2, detalle.idProducto);
+                stmtStock.executeUpdate();
+                stmtStock.close();
+            }
+
+            c.commit(); 
+        } catch (SQLException e) {
+            if (c != null) c.rollback();
+            throw e;
+        } finally {
+            if (c != null) {
+                c.setAutoCommit(true);
+                c.close();
+            }
+        }
+    }
+}
+
+class ProductoData {
+    public int idProducto;
+    public String nombre;
+    public double precioVenta;
+    public int stockActual;
+
+    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual) {
+        this.idProducto = idProducto;
+        this.nombre = nombre;
+        this.precioVenta = precioVenta;
+        this.stockActual = stockActual;
+    }
+}
+
+class DetalleVentaRequest {
+    public int idProducto;
+    public int cantidad;
+    public double precioUnitario;
+}
