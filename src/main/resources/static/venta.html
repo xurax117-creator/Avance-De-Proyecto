@@ -14,6 +14,26 @@
         th { background-color: #f1f1f1; }
         .total-box { margin-top: 20px; padding: 20px; background: #defae7; border-left: 5px solid #19A337; text-align: right; }
         .badge-cantidad { background: #19A337; color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-block; }
+        
+        /* Product Foto */
+        .product-foto { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .no-foto { width: 50px; height: 50px; border-radius: 8px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #ddd; }
+        
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin-top: 0; color: #19A337; text-align: center; }
+        .modal-row { margin: 15px 0; }
+        .modal-row label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .modal-row .amount { font-size: 24px; color: #19A337; font-weight: bold; text-align: center; }
+        .modal-row input { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #19A337; border-radius: 8px; box-sizing: border-box; }
+        .modal-result { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; margin: 15px 0; }
+        .modal-result .change { font-size: 28px; color: #dc3545; font-weight: bold; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-buttons button { flex: 1; padding: 12px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-pagar { background: #19A337; color: white; }
+        .btn-cancelar { background: #6c757d; color: white; }
     </style>
 </head>
 <body>
@@ -32,7 +52,13 @@
     <table>
         <thead>
             <tr>
-                <th>Código</th><th>Nombre</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th><th>Acción</th>
+                <th>Foto</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Cantidad</th>
+                <th>Precio Unit.</th>
+                <th>Subtotal</th>
+                <th>Acción</th>
             </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -44,8 +70,31 @@
     </div>
 
     <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-        <button onclick="finalizarVenta()" style="background: #28a745; font-weight: bold; padding: 15px 30px;">✅ COBRAR</button>
+        <button onclick="abrirModalPago()" style="background: #28a745; font-weight: bold; padding: 15px 30px;">✅ COBRAR</button>
         <button onclick="confirmarCancelacion()" style="background: #dc3545; padding: 15px;">❌ Cancelar</button>
+    </div>
+
+    <!-- Modal de Pago -->
+    <div id="modalPago" class="modal-overlay">
+        <div class="modal-content">
+            <h3>💰 Cobrar Venta</h3>
+            <div class="modal-row">
+                <label>Total a Cobrar:</label>
+                <div id="modalTotal" class="amount">$0.00</div>
+            </div>
+            <div class="modal-row">
+                <label>Con cuanto te pagan:</label>
+                <input type="number" id="txtPago" placeholder="$0.00" step="0.01" min="0">
+            </div>
+            <div class="modal-result">
+                <div>Cambio a devolver:</div>
+                <div id="modalCambio" class="change">$0.00</div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancelar" onclick="cerrarModalPago()">Cancelar</button>
+                <button class="btn-pagar" onclick="confirmarPago()">✅ Confirmar Pago</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -53,6 +102,7 @@
         let currentUserId = localStorage.getItem('userId') || 1;
         let currentVentaId = -1; 
         let carrito = []; 
+        let totalVenta = 0;
 
         const txtClave = document.getElementById('txtClave');
         const cuerpoTabla = document.getElementById('cuerpoTabla');
@@ -78,8 +128,18 @@
                     document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
                     
                     const item = carrito.find(x => x.idProducto === p.idProducto);
-                    if (item) item.cantidad++;
-                    else carrito.push({ idProducto: p.idProducto, codigo: codigo, nombre: p.nombre, precio: p.precio, cantidad: 1 });
+                    if (item) {
+                        item.cantidad++;
+                    } else {
+                        carrito.push({ 
+                            idProducto: p.idProducto, 
+                            codigo: codigo, 
+                            nombre: p.nombre, 
+                            precio: p.precio, 
+                            cantidad: 1,
+                            fotoProducto: p.fotoProducto || null
+                        });
+                    }
                     
                     dibujarCarrito();
                     txtClave.value = '';
@@ -93,15 +153,63 @@
             carrito.forEach((prod, index) => {
                 const subtotal = prod.precio * prod.cantidad;
                 sumaTotal += subtotal;
+                
+                // Generar foto HTML
+                let fotoHtml;
+                if (prod.fotoProducto) {
+                    fotoHtml = `<img src="data:image/jpeg;base64,${prod.fotoProducto}" class="product-foto" alt="Foto">`;
+                } else {
+                    fotoHtml = `<div class="no-foto">📦</div>`;
+                }
+                
                 cuerpoTabla.innerHTML += `
                     <tr>
-                        <td>${prod.codigo}</td><td>${prod.nombre}</td>
+                        <td>${fotoHtml}</td>
+                        <td>${prod.codigo}</td>
+                        <td>${prod.nombre}</td>
                         <td><span class="badge-cantidad" ondblclick="editarCantidad(${index})">${prod.cantidad}</span></td>
-                        <td>$${prod.precio.toFixed(2)}</td><td>$${subtotal.toFixed(2)}</td>
+                        <td>$${prod.precio.toFixed(2)}</td>
+                        <td>$${subtotal.toFixed(2)}</td>
                         <td><button onclick="eliminarItem(${index})" style="background:red;">Eliminar</button></td>
                     </tr>`;
             });
+            totalVenta = sumaTotal;
             document.getElementById('lblTotal').textContent = `Total: $${sumaTotal.toFixed(2)}`;
+        }
+
+        // Modal de Pago Functions
+        function abrirModalPago() {
+            if (carrito.length === 0) return alert("Carrito vacío");
+            
+            document.getElementById('modalTotal').textContent = `$${totalVenta.toFixed(2)}`;
+            document.getElementById('modalCambio').textContent = "$0.00";
+            document.getElementById('txtPago').value = "";
+            document.getElementById('modalPago').classList.add('active');
+            document.getElementById('txtPago').focus();
+        }
+        
+        function cerrarModalPago() {
+            document.getElementById('modalPago').classList.remove('active');
+        }
+        
+        document.getElementById('txtPago').addEventListener('input', function() {
+            const pago = parseFloat(this.value) || 0;
+            const cambio = Math.max(0, pago - totalVenta);
+            document.getElementById('modalCambio').textContent = `$${cambio.toFixed(2)}`;
+        });
+        
+        document.getElementById('txtPago').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') confirmarPago();
+        });
+        
+        function confirmarPago() {
+            const pago = parseFloat(document.getElementById('txtPago').value) || 0;
+            if (pago < totalVenta) {
+                alert("El pago es insuficiente. Por favor ingresa una cantidad mayor o igual al total.");
+                return;
+            }
+            cerrarModalPago();
+            finalizarVenta();
         }
 
         async function finalizarVenta() {

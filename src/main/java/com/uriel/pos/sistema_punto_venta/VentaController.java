@@ -46,6 +46,7 @@ public class VentaController {
             productoMap.put("precio", data.precioVenta);
             productoMap.put("stock", data.stockActual);
             productoMap.put("idVenta", ventaId);
+            productoMap.put("fotoProducto", data.fotoProducto);
 
             response.put("success", true);
             response.put("data", productoMap);

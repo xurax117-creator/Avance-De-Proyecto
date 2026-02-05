@@ -34,13 +34,24 @@
         .btn-nuevo:hover { background: #158a2e; }
         .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
 
+        /* Product Foto */
+        .product-foto { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .no-foto { width: 50px; height: 50px; border-radius: 8px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #ddd; }
+
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
-        .modal-content { background: white; margin: 3% auto; padding: 30px; width: 500px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-content { background: white; margin: 3% auto; padding: 30px; width: 550px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         .full { grid-column: span 2; }
         label { font-size: 13px; font-weight: 600; color: #555; }
         .modal-footer { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Foto Upload */
+        .foto-upload-container { text-align: center; margin-bottom: 15px; }
+        .foto-preview { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 2px solid #ddd; margin: 10px auto; display: block; }
+        .foto-upload-label { display: inline-block; cursor: pointer; padding: 8px 16px; background: #f1f1f1; border-radius: 6px; border: 2px dashed var(--primary); font-size: 13px; }
+        .foto-upload-label:hover { background: #e9ecef; }
+        #fileFoto { display: none; }
     </style>
 </head>
 <body>
@@ -71,6 +82,7 @@
     <table>
         <thead>
             <tr>
+                <th>Foto</th>
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Proveedor</th>
@@ -87,6 +99,15 @@
     <div class="modal-content">
         <h3 id="modalTitulo" style="margin-top:0">Producto</h3>
         <input type="hidden" id="p_id">
+        
+        <!-- Foto Upload -->
+        <div class="foto-upload-container">
+            <img id="imgFotoPreview" class="foto-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E">
+            <label class="foto-upload-label" for="fileFoto">
+                📷 Seleccionar Foto
+            </label>
+            <input type="file" id="fileFoto" accept="image/*" onchange="previsualizarFoto(event)">
+        </div>
         
         <div class="form-grid">
             <div class="full">
@@ -133,6 +154,8 @@
 
 <script>
     let todosLosProductos = [];
+    let fotoBase64 = null;
+    let fotoProductoActual = null; // Para guardar la foto actual del producto al editar
 
     // Cargar todos los productos al iniciar
     async function cargarProductos() {
@@ -146,7 +169,7 @@
     // Cargar proveedores para el select del modal
     async function cargarProveedores() {
         try {
-            const resp = await fetch('/api/inventario/proveedores'); // URL UNIFICADA
+            const resp = await fetch('/api/inventario/proveedores');
             const lista = await resp.json();
             const select = document.getElementById('p_prov');
             select.innerHTML = '<option value="">Sin Proveedor</option>';
@@ -154,6 +177,19 @@
                 select.innerHTML += `<option value="${prov.id}">${prov.nombre}</option>`;
             });
         } catch (e) { console.error("Error cargando proveedores", e); }
+    }
+
+    // Foto Functions
+    function previsualizarFoto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            fotoBase64 = e.target.result.split(',')[1]; // Remove data:image/jpeg;base64,
+            document.getElementById('imgFotoPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function dibujarTabla(datos) {
@@ -167,7 +203,16 @@
 
             tr.ondblclick = () => abrirModal(p);
 
+            // Generar foto HTML
+            let fotoHtml;
+            if (p.foto_producto) {
+                fotoHtml = `<img src="data:image/jpeg;base64,${p.foto_producto}" class="product-foto" alt="Foto">`;
+            } else {
+                fotoHtml = `<div class="no-foto">📦</div>`;
+            }
+
             tr.innerHTML = `
+                <td>${fotoHtml}</td>
                 <td>${p.codigo_barras}</td>
                 <td>${p.nombre}</td>
                 <td>${p.nombre_proveedor || '---'}</td>
@@ -192,6 +237,8 @@
 
     async function abrirModal(p = null) {
         await cargarProveedores();
+        fotoBase64 = null;
+        fotoProductoActual = null;
         
         document.getElementById('modalTitulo').textContent = p ? "Editar Producto" : "Nuevo Producto";
         document.getElementById('p_id').value = p ? p.id_producto : "";
@@ -203,6 +250,15 @@
         document.getElementById('p_venta').value = p ? p.precio_venta : "";
         document.getElementById('p_stock').value = p ? p.existencias_act : "0";
         document.getElementById('p_min').value = p ? p.existencias_min : "0";
+        
+        // Resetear foto
+        document.getElementById('fileFoto').value = '';
+        if (p && p.foto_producto) {
+            fotoProductoActual = p.foto_producto; // Guardar foto actual
+            document.getElementById('imgFotoPreview').src = `data:image/jpeg;base64,${p.foto_producto}`;
+        } else {
+            document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E`;
+        }
 
         document.getElementById('modalProducto').style.display = 'block';
     }
@@ -212,6 +268,9 @@
     }
 
     async function guardar() {
+        // Si no se seleccionó nueva foto y hay foto actual, usarla
+        const fotoParaGuardar = fotoBase64 || fotoProductoActual;
+        
         const data = {
             id_producto: document.getElementById('p_id').value,
             codigo_barras: document.getElementById('p_codigo').value,
@@ -221,7 +280,8 @@
             precio_compra: document.getElementById('p_compra').value,
             precio_venta: document.getElementById('p_venta').value,
             existencias_act: document.getElementById('p_stock').value,
-            existencias_min: document.getElementById('p_min').value
+            existencias_min: document.getElementById('p_min').value,
+            foto_producto: fotoParaGuardar
         };
 
         if(!data.nombre || !data.precio_venta) {
@@ -244,6 +304,11 @@
             }
         } catch (e) { alert("Error de conexión"); }
     }
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('modalProducto').addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) cerrarModal();
+    });
 
     // Inicialización
     window.onload = cargarProductos;

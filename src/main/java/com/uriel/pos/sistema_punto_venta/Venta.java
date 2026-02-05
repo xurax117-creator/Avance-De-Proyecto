@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.List;
 
 public class Venta {
@@ -15,9 +16,9 @@ public class Venta {
             Connection c = con.conectar();
 
             String sql = """
-                SELECT id_producto, nombre, precio_venta, existencias_act 
+                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob
                 FROM productos 
-                WHERE codigo_barras = ? OR codigo_barras_secundario = ?
+                WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE
             """;
 
             PreparedStatement stmt = c.prepareStatement(sql);
@@ -26,11 +27,15 @@ public class Venta {
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
+                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                String fotoBase64 = fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null;
+                
                 data = new ProductoData(
                     rs.getInt("id_producto"),
                     rs.getString("nombre"),
                     rs.getDouble("precio_venta"),
-                    rs.getInt("existencias_act")
+                    rs.getInt("existencias_act"),
+                    fotoBase64
                 );
             }
 
@@ -122,12 +127,14 @@ class ProductoData {
     public String nombre;
     public double precioVenta;
     public int stockActual;
+    public String fotoProducto; // Base64 encoded image
 
-    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual) {
+    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto) {
         this.idProducto = idProducto;
         this.nombre = nombre;
         this.precioVenta = precioVenta;
         this.stockActual = stockActual;
+        this.fotoProducto = fotoProducto;
     }
 }
 

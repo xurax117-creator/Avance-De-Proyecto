@@ -3,6 +3,7 @@ package com.uriel.pos.sistema_punto_venta;
 import org.springframework.web.bind.annotation.*;
 import java.sql.*;
 import java.util.*;
+import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/inventario")
@@ -33,6 +34,15 @@ public class InventarioController {
                 p.put("precio_venta", rs.getDouble("precio_venta"));
                 p.put("existencias_act", rs.getInt("existencias_act"));
                 p.put("existencias_min", rs.getInt("existencias_min"));
+                
+                // Convertir foto a Base64
+                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                if (fotoBytes != null) {
+                    p.put("foto_producto", Base64.getEncoder().encodeToString(fotoBytes));
+                } else {
+                    p.put("foto_producto", null);
+                }
+                
                 lista.add(p);
             }
             c.close();
@@ -49,10 +59,28 @@ public class InventarioController {
             String sql;
             boolean esUpdate = p.get("id_producto") != null && !p.get("id_producto").toString().isEmpty();
 
+            // Procesar foto
+            byte[] fotoBytes = null;
+            if (p.get("foto_producto") != null && !p.get("foto_producto").toString().isEmpty()) {
+                try {
+                    fotoBytes = Base64.getDecoder().decode(p.get("foto_producto").toString());
+                } catch (IllegalArgumentException e) {
+                    fotoBytes = null;
+                }
+            }
+
             if (esUpdate) {
-                sql = "UPDATE productos SET codigo_barras=?, nombre=?, categoria=?, id_proveedor=?, precio_compra=?, precio_venta=?, existencias_act=?, existencias_min=? WHERE id_producto=?";
+                if (fotoBytes != null) {
+                    sql = "UPDATE productos SET codigo_barras=?, nombre=?, categoria=?, id_proveedor=?, precio_compra=?, precio_venta=?, existencias_act=?, existencias_min=?, foto_producto_blob=? WHERE id_producto=?";
+                } else {
+                    sql = "UPDATE productos SET codigo_barras=?, nombre=?, categoria=?, id_proveedor=?, precio_compra=?, precio_venta=?, existencias_act=?, existencias_min=? WHERE id_producto=?";
+                }
             } else {
-                sql = "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min) VALUES (?,?,?,?,?,?,?,?)";
+                if (fotoBytes != null) {
+                    sql = "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min, foto_producto_blob) VALUES (?,?,?,?,?,?,?,?,?)";
+                } else {
+                    sql = "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min) VALUES (?,?,?,?,?,?,?,?)";
+                }
             }
 
             PreparedStatement ps = c.prepareStatement(sql);
@@ -70,12 +98,25 @@ public class InventarioController {
             ps.setDouble(6, Double.parseDouble(p.get("precio_venta").toString()));
             ps.setInt(7, Integer.parseInt(p.get("existencias_act").toString()));
             ps.setInt(8, Integer.parseInt(p.get("existencias_min").toString()));
-            if (esUpdate) ps.setInt(9, Integer.parseInt(p.get("id_producto").toString()));
+            
+            if (esUpdate) {
+                if (fotoBytes != null) {
+                    ps.setBytes(9, fotoBytes);
+                    ps.setInt(10, Integer.parseInt(p.get("id_producto").toString()));
+                } else {
+                    ps.setInt(9, Integer.parseInt(p.get("id_producto").toString()));
+                }
+            } else {
+                if (fotoBytes != null) {
+                    ps.setBytes(9, fotoBytes);
+                }
+            }
 
             ps.executeUpdate();
             res.put("success", true);
             c.close();
         } catch (Exception e) {
+            e.printStackTrace();
             res.put("success", false);
             res.put("message", e.getMessage());
         }
