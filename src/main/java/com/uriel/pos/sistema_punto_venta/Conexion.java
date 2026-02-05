@@ -4,19 +4,22 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 public class Conexion {
-
     public Connection conectar() {
         Connection con = null;
         try {
-            String url = "jdbc:mysql://localhost:3306/DB_Punto_De_Venta";
-            String user = "root";
-            String pass = "1234";
+            // Railway inyecta estos valores automáticamente
+            String host = System.getenv("MYSQLHOST");
+            String port = System.getenv("MYSQLPORT");
+            String db   = System.getenv("MYSQL_DATABASE");
+            String user = System.getenv("MYSQLUSER");
+            String pass = System.getenv("MYSQLPASSWORD");
+
+            String url = "jdbc:mysql://" + host + ":" + port + "/" + db;
 
             Class.forName("com.mysql.cj.jdbc.Driver");
             con = DriverManager.getConnection(url, user, pass);
-
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error de conexión: " + e.getMessage());
         }
         return con;
     }
