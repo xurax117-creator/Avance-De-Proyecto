@@ -80,7 +80,6 @@ public class Venta {
             c = con.conectar();
             c.setAutoCommit(false); 
 
-            // 1. Actualizar total
             String sqlTotal = "UPDATE ventas SET total = ? WHERE id_venta = ?";
             PreparedStatement stmtTotal = c.prepareStatement(sqlTotal);
             stmtTotal.setDouble(1, totalFinal);
@@ -88,9 +87,7 @@ public class Venta {
             stmtTotal.executeUpdate();
             stmtTotal.close();
 
-            // 2. Detalles y Stock
             for (DetalleVentaRequest detalle : detalles) {
-                // Insertar Detalle
                 String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
                 PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
                 stmtInsert.setInt(1, idVenta);
@@ -100,7 +97,6 @@ public class Venta {
                 stmtInsert.executeUpdate();
                 stmtInsert.close();
 
-                // Actualizar Stock
                 String sqlStock = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
                 PreparedStatement stmtStock = c.prepareStatement(sqlStock);
                 stmtStock.setInt(1, detalle.cantidad);
@@ -127,7 +123,7 @@ class ProductoData {
     public String nombre;
     public double precioVenta;
     public int stockActual;
-    public String fotoProducto; // Base64 encoded image
+    public String fotoProducto;
 
     public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto) {
         this.idProducto = idProducto;

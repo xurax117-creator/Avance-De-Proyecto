@@ -9,7 +9,6 @@ import java.util.Base64;
 @RequestMapping("/api/inventario")
 public class InventarioController {
 
-    // --- ENDPOINT PARA PRODUCTOS ---
     @GetMapping("/todos")
     public List<Map<String, Object>> listarTodos() {
         List<Map<String, Object>> lista = new ArrayList<>();
@@ -35,7 +34,6 @@ public class InventarioController {
                 p.put("existencias_act", rs.getInt("existencias_act"));
                 p.put("existencias_min", rs.getInt("existencias_min"));
                 
-                // Convertir foto a Base64
                 byte[] fotoBytes = rs.getBytes("foto_producto_blob");
                 if (fotoBytes != null) {
                     p.put("foto_producto", Base64.getEncoder().encodeToString(fotoBytes));
@@ -59,7 +57,6 @@ public class InventarioController {
             String sql;
             boolean esUpdate = p.get("id_producto") != null && !p.get("id_producto").toString().isEmpty();
 
-            // Procesar foto
             byte[] fotoBytes = null;
             if (p.get("foto_producto") != null && !p.get("foto_producto").toString().isEmpty()) {
                 try {
@@ -123,7 +120,6 @@ public class InventarioController {
         return res;
     }
 
-    // --- ENDPOINT PARA PROVEEDORES (UNIFICADO) ---
     @GetMapping("/proveedores")
     public List<Map<String, Object>> listarProveedores() {
         List<Map<String, Object>> lista = new ArrayList<>();

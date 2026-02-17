@@ -17,7 +17,7 @@ public class UsuarioController {
         public String contraseña;
         public String rol;
         public Boolean activo;
-        public String fotoPerfil; // Base64 encoded image
+        public String fotoPerfil;
     }
 
     @GetMapping("/listar")
@@ -60,7 +60,6 @@ public class UsuarioController {
         Usuario oper = new Usuario();
         Map<String, Object> response = new HashMap<>();
         try {
-            // Validar campos requeridos
             if (request.nombreCompleto == null || request.nombreCompleto.trim().isEmpty() ||
                 request.alias == null || request.alias.trim().isEmpty() ||
                 request.contraseña == null || request.contraseña.trim().isEmpty() ||
@@ -70,7 +69,6 @@ public class UsuarioController {
                 return response;
             }
 
-            // Validar rol
             String rol = request.rol.trim();
             if (!rol.equals("Administrador") && !rol.equals("Gerente") && !rol.equals("Cajero")) {
                 response.put("success", false);
@@ -78,7 +76,6 @@ public class UsuarioController {
                 return response;
             }
 
-            // Convertir foto de Base64 a bytes
             byte[] fotoBytes = null;
             if (request.fotoPerfil != null && !request.fotoPerfil.isEmpty()) {
                 try {
@@ -118,7 +115,6 @@ public class UsuarioController {
         Usuario oper = new Usuario();
         Map<String, Object> response = new HashMap<>();
         try {
-            // Validar campos requeridos
             if (request.id <= 0 ||
                 request.nombreCompleto == null || request.nombreCompleto.trim().isEmpty() ||
                 request.alias == null || request.alias.trim().isEmpty() ||
@@ -130,7 +126,6 @@ public class UsuarioController {
                 return response;
             }
 
-            // Validar rol
             String rol = request.rol.trim();
             if (!rol.equals("Administrador") && !rol.equals("Gerente") && !rol.equals("Cajero")) {
                 response.put("success", false);
@@ -138,7 +133,6 @@ public class UsuarioController {
                 return response;
             }
 
-            // Convertir foto de Base64 a bytes (null means keep existing)
             byte[] fotoBytes = null;
             if (request.fotoPerfil != null && !request.fotoPerfil.isEmpty()) {
                 try {

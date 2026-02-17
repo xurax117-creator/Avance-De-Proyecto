@@ -11,7 +11,6 @@
         .tab-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background: #e9ecef; transition: 0.3s; }
         .tab-btn.active { background: #19A337; color: white; }
         
-        /* Estilo para el resumen de total */
         .resumen-total { 
             background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; 
             border-left: 5px solid #19A337; font-size: 1.2em; font-weight: bold;
@@ -130,7 +129,7 @@
         const sumaSpan = document.getElementById('sumaTotalPeriodo');
         thead.innerHTML = ""; tbody.innerHTML = "";
 
-        let acumulado = 0; // Para sumar los totales
+        let acumulado = 0;
 
         if (data.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
@@ -165,8 +164,7 @@
             });
         }
         
-        // Actualizar el resumen visual
-        sumaSpan.textContent = `$${acumulado.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        sumaSpan.textContent = `${acumulado.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
     }
 
     async function abrirDetalles(id, fecha, total) {

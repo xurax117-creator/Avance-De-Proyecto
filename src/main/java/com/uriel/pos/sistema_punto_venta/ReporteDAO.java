@@ -37,7 +37,6 @@ public class ReporteDAO {
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
-            // Consulta para el desglose del ticket
             String sql = "SELECT p.nombre, dv.cantidad, dv.precio_unitario, dv.subtotal " +
                          "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
                          "WHERE dv.id_venta = ?";

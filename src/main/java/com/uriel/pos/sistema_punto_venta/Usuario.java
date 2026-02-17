@@ -4,6 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class Usuario {
 
@@ -83,25 +84,29 @@ public class Usuario {
             Conexion con = new Conexion();
             Connection c = con.conectar();
             
-            String sql = "SELECT id_usuario, nombre_completo, alias, contraseña, rol, activo, foto_perfil_blob FROM usuarios WHERE alias = ? AND contraseña = ? AND activo = TRUE";
+            String sql = "SELECT id_usuario, nombre_completo, alias, contraseña, rol, activo, foto_perfil_blob FROM usuarios WHERE alias = ? AND activo = TRUE";
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setString(1, alias);
-            stmt.setString(2, contraseña);
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                byte[] fotoBytes = rs.getBytes("foto_perfil_blob");
-                String fotoBase64 = fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null;
+                String hashAlmacenado = rs.getString("contraseña");
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
                 
-                u = new UsuarioData(
-                    rs.getInt("id_usuario"),
-                    rs.getString("nombre_completo"),
-                    rs.getString("alias"),
-                    rs.getString("contraseña"),
-                    rs.getString("rol"),
-                    rs.getBoolean("activo"),
-                    fotoBase64
-                );
+                if (encoder.matches(contraseña, hashAlmacenado)) {
+                    byte[] fotoBytes = rs.getBytes("foto_perfil_blob");
+                    String fotoBase64 = fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null;
+                    
+                    u = new UsuarioData(
+                        rs.getInt("id_usuario"),
+                        rs.getString("nombre_completo"),
+                        rs.getString("alias"),
+                        rs.getString("contraseña"),
+                        rs.getString("rol"),
+                        rs.getBoolean("activo"),
+                        fotoBase64
+                    );
+                }
             }
             
             rs.close();
@@ -119,11 +124,14 @@ public class Usuario {
             Conexion con = new Conexion();
             Connection c = con.conectar();
             
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            String contraseñaCifrada = encoder.encode(contraseña);
+            
             String sql = "INSERT INTO usuarios (nombre_completo, alias, contraseña, rol, activo, foto_perfil_blob) VALUES (?, ?, ?, ?, TRUE, ?)";
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setString(1, nombreCompleto);
             stmt.setString(2, alias);
-            stmt.setString(3, contraseña);
+            stmt.setString(3, contraseñaCifrada);
             stmt.setString(4, rol);
             if (fotoPerfil != null && fotoPerfil.length > 0) {
                 stmt.setBytes(5, fotoPerfil);
@@ -147,6 +155,9 @@ public class Usuario {
             Conexion con = new Conexion();
             Connection c = con.conectar();
             
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            String contraseñaCifrada = encoder.encode(contraseña);
+            
             String sql;
             PreparedStatement stmt;
             
@@ -155,7 +166,7 @@ public class Usuario {
                 stmt = c.prepareStatement(sql);
                 stmt.setString(1, nombreCompleto);
                 stmt.setString(2, alias);
-                stmt.setString(3, contraseña);
+                stmt.setString(3, contraseñaCifrada);
                 stmt.setString(4, rol);
                 stmt.setBoolean(5, activo);
                 stmt.setBytes(6, fotoPerfil);
@@ -165,7 +176,7 @@ public class Usuario {
                 stmt = c.prepareStatement(sql);
                 stmt.setString(1, nombreCompleto);
                 stmt.setString(2, alias);
-                stmt.setString(3, contraseña);
+                stmt.setString(3, contraseñaCifrada);
                 stmt.setString(4, rol);
                 stmt.setBoolean(5, activo);
                 stmt.setInt(6, id);
@@ -230,7 +241,7 @@ class UsuarioData {
     public String contraseña;
     public String rol;
     public boolean activo;
-    public String fotoPerfil; // Base64 encoded image
+    public String fotoPerfil;
 
     public UsuarioData(int idUsuario, String nombreCompleto, String alias, String contraseña, String rol, boolean activo, String fotoPerfil) {
         this.idUsuario = idUsuario;

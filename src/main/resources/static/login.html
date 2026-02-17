@@ -103,7 +103,6 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Se guardan los datos recibidos del backend
                     localStorage.setItem('userId', result.userId);
                     localStorage.setItem('nombreUsuario', result.nombre); 
                     localStorage.setItem('rolUsuario', result.rol);
@@ -135,7 +134,7 @@
         });
 
         window.onload = () => {
-            localStorage.clear(); // Limpieza preventiva al iniciar
+            localStorage.clear(); 
         };
     </script>
 </body>

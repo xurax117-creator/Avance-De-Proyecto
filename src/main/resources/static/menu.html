@@ -13,7 +13,6 @@
         }
         h1 { color: #333; margin-bottom: 5px; }
         
-        /* Tarjeta de usuario mejorada */
         .user-card {
             background-color: #fff;
             display: inline-block;
@@ -140,7 +139,6 @@
     </div>
 
     <script>
-        // 1. Obtener y verificar datos de sesión
         const userId = localStorage.getItem('userId');
         const nombre = localStorage.getItem('nombreUsuario');
         const rol = localStorage.getItem('rolUsuario');
@@ -152,7 +150,6 @@
             document.getElementById('txtRol').textContent = rol;
         }
         
-        // 2. Función de Logout
         function logout() {
             if(confirm("¿Estás seguro que deseas cerrar sesión?")) {
                 localStorage.clear();
@@ -160,7 +157,6 @@
             }
         }
 
-        // 3. Protección de navegación
         window.history.pushState(null, null, window.location.href);
         window.onpopstate = function () {
             window.history.go(1);

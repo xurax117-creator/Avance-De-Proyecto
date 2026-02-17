@@ -7,7 +7,6 @@ public class Conexion {
     public Connection conectar() {
         Connection con = null;
         try {
-            // Railway inyecta estos valores automáticamente
             String host = System.getenv("MYSQLHOST");
             String port = System.getenv("MYSQLPORT");
             String db   = System.getenv("MYSQL_DATABASE");
