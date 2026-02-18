@@ -34,15 +34,18 @@ sistema-punto-venta-WEB/
 │   │   ├── VentaController.java               # API REST de ventas
 │   │   ├── InventarioController.java          # API REST de inventario
 │   │   ├── ReporteController.java             # API REST de reportes
-│   │   └── ReporteDAO.java                    # Consultas SQL para reportes
+│   │   ├── ReporteDAO.java                    # Consultas SQL para reportes
+│   │   ├── Usuario.java                       # Modelo y lógica de usuarios
+│   │   └── UsuarioController.java             # API REST de gestión de usuarios
 │   └── resources/
 │       ├── application.properties             # Configuración de BD
 │       └── static/
 │           ├── login.html                     # Pantalla de inicio de sesión
 │           ├── menu.html                      # Menú principal
-│           ├── inventario.html                # Gestión de productos
+│           ├── inventario.html               # Gestión de productos
 │           ├── venta.html                     # Terminal de punto de venta
-│           └── reportes.html                  # Panel de reportes
+│           ├── reportes.html                  # Panel de reportes
+│           └── usuarios.html                  # Gestión de usuarios
 ```
 
 ---
@@ -424,7 +427,79 @@ Pantalla de navegación que permite acceder a los diferentes módulos del sistem
 
 > ![Menú Principal MRKdito POS](/src\Images\MenuPrincipalMRKdito.png)
 > 
-> *Descripción: Pantalla de bienvenida con tarjetas de navegación a Ventas, Inventario, Reportes y botón de cierre de sesión.*
+> *Descripción: Pantalla de bienvenida con tarjetas de navegación a Ventas, Inventario, Reportes, Usuarios y botón de cierre de sesión.*
+
+---
+
+## 👥 Módulo de Gestión de Usuarios
+
+### Descripción
+Permite administrar los usuarios del sistema incluyendo: creación, edición, eliminación, cambio de estado y gestión de fotos de perfil. Solo accesible para usuarios con rol Administrador.
+
+### Funcionalidades
+- ✅ Listar todos los usuarios con foto de perfil
+- ✅ Crear nuevos usuarios (nombre, alias, contraseña, rol, foto)
+- ✅ Editar usuarios existentes
+- ✅ Eliminar usuarios
+- ✅ Activar/Desactivar usuarios (cambio de estado rápido)
+- ✅ Subir foto de perfil
+- ✅ Roles: Administrador, Gerente, Cajero
+
+### 📍 Endpoints API
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/usuario/listar` | Listar todos los usuarios |
+| `GET` | `/api/usuario/{id}` | Obtener usuario por ID |
+| `POST` | `/api/usuario/crear` | Crear usuario |
+| `PUT` | `/api/usuario/actualizar` | Actualizar usuario |
+| `DELETE` | `/api/usuario/eliminar/{id}` | Eliminar usuario |
+| `PUT` | `/api/usuario/estado/{id}` | Cambiar estado activo |
+
+#### GET /api/usuario/listar
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "idUsuario": 1,
+      "nombreCompleto": "Juan Pérez",
+      "alias": "juanp",
+      "rol": "Administrador",
+      "activo": true,
+      "fotoPerfil": "base64..."
+    }
+  ]
+}
+```
+
+#### POST /api/usuario/crear
+**Request:**
+```json
+{
+  "nombreCompleto": "Nuevo Usuario",
+  "alias": "nuevouser",
+  "contraseña": "password123",
+  "rol": "Cajero",
+  "activo": true,
+  "fotoPerfil": "base64..."
+}
+```
+
+### 📷 Pantallas
+
+> ![Gestión de Usuarios MRKdito POS](/src/Images/GestiondeUsuariosMRKdito.png)
+> 
+> *Descripción: Tabla con lista de usuarios, mostrando foto, ID, nombre, alias, rol, estado y botones de acción.*
+
+> ![Crear Nuevo Usuario MRKdito POS](/src/Images/CrearNuevoUsuarioMRKdito.png)
+> 
+> *Descripción: Formulario modal para crear nuevo usuario con campos de nombre, alias, contraseña, rol y selección de foto de perfil.*
+
+> ![Editar Usuario MRKdito POS](/src/Images/EditarUsuarioMRKdito.png)
+> 
+> *Descripción: Formulario modal para editar usuario existente, permitiendo modificar datos y foto de perfil.*
 
 ---
 
@@ -488,7 +563,7 @@ Pantalla de navegación que permite acceder a los diferentes módulos del sistem
 ### Mejoras Sugeridas
 
 1. **Seguridad**
-   - Implementar encriptación de contraseñas (BCrypt)
+   - ✅ Implementado: Encriptación de contraseñas (BCrypt)
    - Agregar JWT para autenticación
    - Implementar registro de auditoría
 
@@ -530,5 +605,6 @@ Este proyecto fue desarrollado para uso educativo y comercial. Todos los derecho
 
 ---
 
-#   M R K d i t o - P O S  
+#   M R K d i t o - P O S 
+ 
  
