@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrada de Inventario - MRKdito</title>
+    <style>
+        :root {
+            --primary: #19A337;
+            --primary-dark: #158a2e;
+            --danger: #dc3545;
+            --dark: #343a40;
+            --light: #f4f7f6;
+            --warning: #ffc107;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 20px; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h2 { margin: 0; color: var(--dark); }
+
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
+        .btn-volver:hover { background: #5a6268; }
+        
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        
+        .filtros { display: flex; gap: 15px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; align-items: flex-end; border: 1px solid #eee; }
+        .filtros div { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #f8f9fa; color: #666; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #fcfcfc; cursor: pointer; }
+        tr.seleccionado { background-color: #e8f5e9; border-left: 4px solid var(--primary); }
+
+        .product-foto { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd; }
+        .no-foto { width: 40px; height: 40px; border-radius: 6px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+        .entrada-panel { padding: 20px; background: #f8f9fa; border-radius: 10px; border: 2px solid #e9ecef; }
+        .entrada-panel h3 { margin-top: 0; color: var(--primary); }
+        
+        .producto-seleccionado { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px;
+            border: 2px solid var(--primary);
+        }
+        .producto-seleccionado img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+        .producto-info h4 { margin: 0 0 5px 0; color: var(--dark); }
+        .producto-info p { margin: 0; font-size: 14px; color: #666; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; color: #555; margin-bottom: 5px; font-size: 13px; }
+        .form-group input, .form-group textarea { width: 100%; box-sizing: border-box; }
+        
+        .info-stock { 
+            display: flex; 
+            gap: 20px; 
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .stock-item { text-align: center; }
+        .stock-item .label { font-size: 12px; color: #666; }
+        .stock-item .value { font-size: 24px; font-weight: bold; color: var(--dark); }
+        .stock-item .value.actual { color: var(--primary); }
+
+        .btn-registrar { 
+            width: 100%; 
+            background: var(--primary); 
+            color: white; 
+            padding: 15px; 
+            font-size: 16px;
+        }
+        .btn-registrar:hover { background: var(--primary-dark); }
+        .btn-registrar:disabled { background: #ccc; cursor: not-allowed; }
+
+        .historial { margin-top: 25px; }
+        .historial h3 { margin-bottom: 15px; color: var(--dark); }
+        
+        .badge { 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            font-weight: 600; 
+        }
+        .badge-entrada { background: #d4edda; color: #155724; }
+        .badge-fecha { background: #e2e3e5; color: #383d41; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+
+        .nota-entrada {
+            font-size: 12px;
+            color: #666;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h2>📥 Entrada de Inventario</h2>
+        <button class="btn btn-volver" onclick="window.location.href='/menu.html'">← Volver al Menú</button>
+    </div>
+
+    <div class="layout">
+        <!-- Panel izquierdo: Lista de productos -->
+        <div>
+            <div class="filtros">
+                <div>
+                    <label>Buscar Producto</label>
+                    <input type="text" id="txtBusqueda" oninput="filtrarProductos()" placeholder="Nombre o código...">
+                </div>
+                <div>
+                    <label>Proveedor</label>
+                    <select id="selProveedor" onchange="filtrarProductos()">
+                        <option value="todos">Todos</option>
+                    </select>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Foto</th>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Existencia</th>
+                    </tr>
+                </thead>
+                <tbody id="listaProductos">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Panel derecho: Formulario de entrada -->
+        <div class="entrada-panel">
+            <h3>Registrar Entrada</h3>
+            
+            <div id="sinSeleccionar" class="empty-state">
+                <div class="icon">📦</div>
+                <p>Selecciona un producto de la lista<br>para registrar una entrada</p>
+            </div>
+
+            <div id="panelEntrada" style="display: none;">
+                <div class="producto-seleccionado" id="productoSeleccionado">
+                    <!-- Info del producto -->
+                </div>
+
+                <div class="info-stock">
+                    <div class="stock-item">
+                        <div class="label">Stock Actual</div>
+                        <div class="value actual" id="stockActual">0</div>
+                    </div>
+                    <div class="stock-item">
+                        <div class="label">Entrada</div>
+                        <div class="value" style="color: var(--primary);" id="stockEntrada">0</div>
+                    </div>
+                    <div class="stock-item">
+                        <div class="label">Stock Nuevo</div>
+                        <div class="value" id="stockNuevo">0</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cantidad Recibida *</label>
+                    <input type="number" id="txtCantidad" min="1" value="1" oninput="calcularStock()">
+                </div>
+
+                <div class="form-group">
+                    <label>Precio de Compra (opcional)</label>
+                    <input type="number" step="0.01" id="txtPrecioCompra" placeholder="Precio unitario...">
+                </div>
+
+                <div class="form-group">
+                    <label>Nota / Observación</label>
+                    <textarea id="txtNota" rows="2" placeholder="Ej. Pedido #123, Proveedor XYZ..."></textarea>
+                </div>
+
+                <button class="btn btn-registrar" onclick="registrarEntrada()" id="btnRegistrar">
+                    ✅ Registrar Entrada
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de entradas recientes -->
+    <div class="historial">
+        <h3>📋 Entradas Recientes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Nota</th>
+                    <th>Usuario</th>
+                </tr>
+            </thead>
+            <tbody id="historialEntradas">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let todosLosProductos = [];
+    let productoSeleccionado = null;
+
+    async function inicializar() {
+        await cargarProductos();
+        await cargarProveedores();
+        await cargarHistorial();
+    }
+
+    async function cargarProductos() {
+        try {
+            const resp = await fetch('/api/inventario/todos');
+            todosLosProductos = await resp.json();
+            dibujarTabla(todosLosProductos);
+        } catch (e) { 
+            console.error("Error cargando productos", e); 
+            alert("Error al cargar productos");
+        }
+    }
+
+    async function cargarProveedores() {
+        try {
+            const resp = await fetch('/api/inventario/proveedores');
+            const lista = await resp.json();
+            const select = document.getElementById('selProveedor');
+            lista.forEach(prov => {
+                select.innerHTML += `<option value="${prov.id}">${prov.nombre}</option>`;
+            });
+        } catch (e) { console.error("Error cargando proveedores", e); }
+    }
+
+    async function cargarHistorial() {
+        try {
+            const resp = await fetch('/api/inventario/historial-entradas');
+            const lista = await resp.json();
+            dibujarHistorial(lista);
+        } catch (e) { console.error("Error cargando historial", e); }
+    }
+
+    function dibujarTabla(datos) {
+        const tbody = document.getElementById('listaProductos');
+        tbody.innerHTML = "";
+
+        datos.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.onclick = () => seleccionarProducto(p);
+            
+            let fotoHtml;
+            if (p.foto_producto) {
+                fotoHtml = `<img src="data:image/jpeg;base64,${p.foto_producto}" class="product-foto" alt="Foto">`;
+            } else {
+                fotoHtml = `<div class="no-foto">📦</div>`;
+            }
+
+            tr.innerHTML = `
+                <td>${fotoHtml}</td>
+                <td>${p.codigo_barras}</td>
+                <td>${p.nombre}</td>
+                <td><strong>${p.existencias_act}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function dibujarHistorial(lista) {
+        const tbody = document.getElementById('historialEntradas');
+        tbody.innerHTML = "";
+
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No hay entradas registradas</td></tr>';
+            return;
+        }
+
+        lista.forEach(e => {
+            const fecha = new Date(e.fecha_entrada).toLocaleString('es-MX');
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="badge badge-fecha">${fecha}</span></td>
+                    <td>${e.nombre_producto}</td>
+                    <td><span class="badge badge-entrada">+${e.cantidad}</span></td>
+                    <td>${e.nota || '---'}</td>
+                    <td>${e.nombre_usuario || 'Sistema'}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function filtrarProductos() {
+        const busqueda = document.getElementById('txtBusqueda').value.toLowerCase();
+        const idProveedor = document.getElementById('selProveedor').value;
+
+        const filtrados = todosLosProductos.filter(p => {
+            const matchNombre = p.nombre.toLowerCase().includes(busqueda) || p.codigo_barras.includes(busqueda);
+            const matchProv = idProveedor === 'todos' || p.id_proveedor == idProveedor;
+            return matchNombre && matchProv;
+        });
+        dibujarTabla(filtrados);
+    }
+
+    function seleccionarProducto(p) {
+        productoSeleccionado = p;
+        
+        // Resaltar fila seleccionada
+        document.querySelectorAll('#listaProductos tr').forEach(tr => tr.classList.remove('seleccionado'));
+        event.currentTarget.classList.add('seleccionado');
+
+        // Mostrar panel de entrada
+        document.getElementById('sinSeleccionar').style.display = 'none';
+        document.getElementById('panelEntrada').style.display = 'block';
+
+        // Mostrar info del producto
+        let fotoHtml = p.foto_producto 
+            ? `data:image/jpeg;base64,${p.foto_producto}` 
+            : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="%23ccc"%3E%3Cpath d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/%3E%3C/svg%3E';
+
+        document.getElementById('productoSeleccionado').innerHTML = `
+            <img src="${fotoHtml}" alt="Foto">
+            <div class="producto-info">
+                <h4>${p.nombre}</h4>
+                <p>Código: ${p.codigo_barras} | Proveedor: ${p.nombre_proveedor || 'Sin asignar'}</p>
+            </div>
+        `;
+
+        // Resetear formulario
+        document.getElementById('stockActual').textContent = p.existencias_act;
+        document.getElementById('txtCantidad').value = 1;
+        document.getElementById('txtPrecioCompra').value = p.precio_compra || '';
+        document.getElementById('txtNota').value = '';
+        calcularStock();
+    }
+
+    function calcularStock() {
+        if (!productoSeleccionado) return;
+        
+        const cantidad = parseInt(document.getElementById('txtCantidad').value) || 0;
+        const stockActual = productoSeleccionado.existencias_act;
+        
+        document.getElementById('stockEntrada').textContent = cantidad;
+        document.getElementById('stockNuevo').textContent = stockActual + cantidad;
+    }
+
+    async function registrarEntrada() {
+        if (!productoSeleccionado) {
+            alert("Selecciona un producto primero");
+            return;
+        }
+
+        const cantidad = parseInt(document.getElementById('txtCantidad').value);
+        if (!cantidad || cantidad <= 0) {
+            alert("Ingresa una cantidad válida");
+            return;
+        }
+
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+            alert("Sesión no válida. Inicia sesión nuevamente.");
+            window.location.href = '/login.html';
+            return;
+        }
+
+        const data = {
+            id_producto: productoSeleccionado.id_producto,
+            cantidad: cantidad,
+            nota: document.getElementById('txtNota').value,
+            id_usuario: userId,
+            precio_compra: document.getElementById('txtPrecioCompra').value
+        };
+
+        try {
+            document.getElementById('btnRegistrar').disabled = true;
+            document.getElementById('btnRegistrar').textContent = 'Registrando...';
+
+            const resp = await fetch('/api/inventario/registrar-entrada', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            const res = await resp.json();
+            
+            if (res.success) {
+                alert("✅ Entrada registrada correctamente");
+                
+                // Recargar datos
+                await cargarProductos();
+                await cargarHistorial();
+                
+                // Resetear selección
+                productoSeleccionado = null;
+                document.getElementById('panelEntrada').style.display = 'none';
+                document.getElementById('sinSeleccionar').style.display = 'block';
+                document.querySelectorAll('#listaProductos tr').forEach(tr => tr.classList.remove('seleccionado'));
+            } else {
+                alert("Error: " + res.message);
+            }
+        } catch (e) { 
+            console.error(e);
+            alert("Error de conexión");
+        } finally {
+            document.getElementById('btnRegistrar').disabled = false;
+            document.getElementById('btnRegistrar').textContent = '✅ Registrar Entrada';
+        }
+    }
+
+    window.onload = inicializar;
+</script>
+
+</body>
+</html>

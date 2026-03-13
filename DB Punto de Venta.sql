@@ -56,6 +56,21 @@ ALTER TABLE productos ADD COLUMN id_proveedor INT AFTER categoria;
 ALTER TABLE productos ADD CONSTRAINT fk_proveedor 
 FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor);
 
+-- Tabla para entradas de inventario (registrar pedidos que van chegando)
+CREATE TABLE entradas_inventario (
+    id_entrada INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto INT NOT NULL,
+    cantidad INT NOT NULL,
+    nota VARCHAR(255),
+    id_usuario INT,
+    fecha_entrada DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
+
+-- Agregar columna de foto a productos
+ALTER TABLE productos ADD COLUMN foto_producto_blob LONGBLOB;
+
 INSERT INTO usuarios (nombre_completo, alias, contraseña, rol, activo)
 VALUES ('Axel Uriel Moreno Cervantes', 'Axel', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQsV3H', 'Administrador', True);
 

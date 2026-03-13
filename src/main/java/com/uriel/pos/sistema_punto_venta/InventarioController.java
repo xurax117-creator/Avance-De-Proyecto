@@ -138,4 +138,99 @@ public class InventarioController {
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
     }
+
+    @PostMapping("/registrar-entrada")
+    public Map<String, Object> registrarEntrada(@RequestBody Map<String, Object> datos) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            int idProducto = Integer.parseInt(datos.get("id_producto").toString());
+            int cantidad = Integer.parseInt(datos.get("cantidad").toString());
+            String nota = datos.get("nota") != null ? datos.get("nota").toString() : "";
+            int idUsuario = Integer.parseInt(datos.get("id_usuario").toString());
+            Double precioCompra = datos.get("precio_compra") != null && !datos.get("precio_compra").toString().isEmpty() 
+                ? Double.parseDouble(datos.get("precio_compra").toString()) : null;
+            
+            // Primero obtener la existencia actual
+            int existActual = 0;
+            String sqlGet = "SELECT existencias_act FROM productos WHERE id_producto = ?";
+            PreparedStatement psGet = c.prepareStatement(sqlGet);
+            psGet.setInt(1, idProducto);
+            ResultSet rs = psGet.executeQuery();
+            if (rs.next()) {
+                existActual = rs.getInt("existencias_act");
+            }
+            rs.close();
+            psGet.close();
+            
+            // Actualizar el stock del producto
+            String sqlUpdate = "UPDATE productos SET existencias_act = existencias_act + ?";
+            if (precioCompra != null) {
+                sqlUpdate += ", precio_compra = ?";
+            }
+            sqlUpdate += " WHERE id_producto = ?";
+            
+            PreparedStatement psUpdate = c.prepareStatement(sqlUpdate);
+            psUpdate.setInt(1, cantidad);
+            if (precioCompra != null) {
+                psUpdate.setDouble(2, precioCompra);
+                psUpdate.setInt(3, idProducto);
+            } else {
+                psUpdate.setInt(2, idProducto);
+            }
+            psUpdate.executeUpdate();
+            psUpdate.close();
+            
+            // Registrar en el historial de entradas
+            String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada) VALUES (?, ?, ?, ?, NOW())";
+            PreparedStatement psInsert = c.prepareStatement(sqlInsert);
+            psInsert.setInt(1, idProducto);
+            psInsert.setInt(2, cantidad);
+            psInsert.setString(3, nota);
+            psInsert.setInt(4, idUsuario);
+            psInsert.executeUpdate();
+            psInsert.close();
+            
+            res.put("success", true);
+            res.put("nueva_existencia", existActual + cantidad);
+            
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+        return res;
+    }
+
+    @GetMapping("/historial-entradas")
+    public List<Map<String, Object>> historialEntradas() {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "SELECT e.*, p.nombre as nombre_producto, u.nombre as nombre_usuario " +
+                        "FROM entradas_inventario e " +
+                        "LEFT JOIN productos p ON e.id_producto = p.id_producto " +
+                        "LEFT JOIN usuarios u ON e.id_usuario = u.id_usuario " +
+                        "ORDER BY e.fecha_entrada DESC LIMIT 20";
+            PreparedStatement stmt = c.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> e = new HashMap<>();
+                e.put("id_entrada", rs.getInt("id_entrada"));
+                e.put("id_producto", rs.getInt("id_producto"));
+                e.put("nombre_producto", rs.getString("nombre_producto"));
+                e.put("cantidad", rs.getInt("cantidad"));
+                e.put("nota", rs.getString("nota"));
+                e.put("nombre_usuario", rs.getString("nombre_usuario"));
+                e.put("fecha_entrada", rs.getTimestamp("fecha_entrada").toString());
+                lista.add(e);
+            }
+            c.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return lista;
+    }
 }
