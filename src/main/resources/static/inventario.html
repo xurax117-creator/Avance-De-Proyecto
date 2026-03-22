@@ -28,11 +28,20 @@
         
         .stock-bajo { color: var(--danger); font-weight: bold; background-color: #fff5f5; }
         .badge-stock { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        
+        .producto-desactivado { opacity: 0.6; background-color: #f5f5f5; }
+        .producto-desactivado td { text-decoration: line-through; color: #999; }
 
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-nuevo { background: var(--primary); color: white; }
         .btn-nuevo:hover { background: #158a2e; }
         .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
+        .btn-eliminar { background: var(--danger); color: white; padding: 6px 12px; font-size: 12px; }
+        .btn-eliminar:hover { background: #c82333; }
+        .btn-desactivar { background: #ffc107; color: #333; padding: 6px 12px; font-size: 12px; }
+        .btn-desactivar:hover { background: #e0a800; }
+        .btn-activar { background: var(--primary); color: white; padding: 6px 12px; font-size: 12px; }
+        .btn-activar:hover { background: #158a2e; }
 
         .product-foto { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
         .no-foto { width: 50px; height: 50px; border-radius: 8px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #ddd; }
@@ -49,6 +58,16 @@
         .foto-upload-label { display: inline-block; cursor: pointer; padding: 8px 16px; background: #f1f1f1; border-radius: 6px; border: 2px dashed var(--primary); font-size: 13px; }
         .foto-upload-label:hover { background: #e9ecef; }
         #fileFoto { display: none; }
+
+        /* Paginación */
+        .paginacion { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px; }
+        .paginacion button { padding: 8px 12px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; }
+        .paginacion button:hover:not(:disabled) { background: #f1f1f1; }
+        .paginacion button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .paginacion .pagina-actual { background: var(--primary); color: white; border-color: var(--primary); }
+        .info-pagina { color: #666; font-size: 14px; }
+        
+        .mostrar-desactivados { margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -74,22 +93,39 @@
                 <option value="bajo">Bajo el mínimo</option>
             </select>
         </div>
+        <div>
+            <label>
+                <input type="checkbox" id="chkMostrarDesactivados" onchange="cargarProductos()"> 
+                Mostrar productos desactivados
+            </label>
+        </div>
+    </div>
+
+    <div class="info-pagina" id="infoPagina">
+        Total de productos: 0
     </div>
 
     <table>
         <thead>
             <tr>
+                <th>#</th>
                 <th>Foto</th>
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Proveedor</th>
                 <th>Existencia</th>
                 <th>Precio Venta</th>
+                <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody id="listaProductos">
             </tbody>
     </table>
+
+    <div class="paginacion" id="paginacion">
+        <!-- Los botones de paginación se generan aquí -->
+    </div>
 </div>
 
 <div id="modalProducto" class="modal">
@@ -149,16 +185,88 @@
 </div>
 
 <script>
-    let todosLosProductos = [];
+    let productosPaginados = [];
+    let paginaActual = 1;
+    const limitePorPagina = 20;
     let fotoBase64 = null;
     let fotoProductoActual = null;
+    let todosLosProductos = [];
 
     async function cargarProductos() {
         try {
-            const resp = await fetch('/api/inventario/todos');
-            todosLosProductos = await resp.json();
-            dibujarTabla(todosLosProductos);
+            const mostrarDesactivados = document.getElementById('chkMostrarDesactivados').checked;
+            const filtro = document.getElementById('txtBusqueda').value;
+            
+            const resp = await fetch(`/api/inventario/paginado?pagina=1&limite=1000&filtro=${encodeURIComponent(filtro)}`);
+            const data = await resp.json();
+            
+            if (mostrarDesactivados) {
+                // Si está marcado, mostrar todos incluyendo desactivados
+                todosLosProductos = data.productos || [];
+            } else {
+                // Si no está marcado, filtrar solo activos
+                todosLosProductos = (data.productos || []).filter(p => p.activo);
+            }
+            
+            // Ordenar alfabéticamente
+            todosLosProductos.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            
+            // Asignar números secuenciales
+            todosLosProductos.forEach((p, index) => {
+                p.numero_secuencial = index + 1;
+            });
+            
+            dibujarPaginacion();
         } catch (e) { console.error("Error cargando productos", e); }
+    }
+
+    function dibujarPaginacion() {
+        const totalProductos = todosLosProductos.length;
+        const totalPaginas = Math.ceil(totalProductos / limitePorPagina);
+        
+        // Actualizar info
+        document.getElementById('infoPagina').textContent = `Total de productos: ${totalProductos} | Página ${paginaActual} de ${totalPaginas}`;
+        
+        // Calcular productos de la página actual
+        const inicio = (paginaActual - 1) * limitePorPagina;
+        const fin = inicio + limitePorPagina;
+        productosPaginados = todosLosProductos.slice(inicio, fin);
+        
+        dibujarTabla(productosPaginados);
+        
+        // Generar botones de paginación
+        const paginacionDiv = document.getElementById('paginacion');
+        paginacionDiv.innerHTML = '';
+        
+        // Botón anterior
+        const btnAnterior = document.createElement('button');
+        btnAnterior.textContent = '« Anterior';
+        btnAnterior.onclick = () => { paginaActual--; dibujarPaginacion(); };
+        btnAnterior.disabled = paginaActual === 1;
+        paginacionDiv.appendChild(btnAnterior);
+        
+        // Números de página
+        for (let i = 1; i <= totalPaginas; i++) {
+            if (i === 1 || i === totalPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = i === paginaActual ? 'pagina-actual' : '';
+                btn.onclick = () => { paginaActual = i; dibujarPaginacion(); };
+                paginacionDiv.appendChild(btn);
+            } else if (i === paginaActual - 2 || i === paginaActual + 2) {
+                const span = document.createElement('span');
+                span.textContent = '...';
+                span.style.padding = '0 5px';
+                paginacionDiv.appendChild(span);
+            }
+        }
+        
+        // Botón siguiente
+        const btnSiguiente = document.createElement('button');
+        btnSiguiente.textContent = 'Siguiente »';
+        btnSiguiente.onclick = () => { paginaActual++; dibujarPaginacion(); };
+        btnSiguiente.disabled = paginaActual === totalPaginas;
+        paginacionDiv.appendChild(btnSiguiente);
     }
 
     async function cargarProveedores() {
@@ -193,6 +301,7 @@
             const tr = document.createElement('tr');
             const esBajo = p.existencias_act <= p.existencias_min;
             if(esBajo) tr.className = "stock-bajo";
+            if (!p.activo) tr.className = (tr.className ? tr.className + ' ' : '') + 'producto-desactivado';
 
             tr.ondblclick = () => abrirModal(p);
 
@@ -203,28 +312,34 @@
                 fotoHtml = `<div class="no-foto">📦</div>`;
             }
 
+            const estado = p.activo ? 
+                '<span style="color: #28a745; font-weight: bold;">Activo</span>' : 
+                '<span style="color: #dc3545; font-weight: bold;">Desactivado</span>';
+            
+            const btnAccion = p.activo ? 
+                `<button class="btn-desactivar" onclick="desactivarProducto(${p.id_producto})" title="Desactivar">⛔</button>
+                 <button class="btn-eliminar" onclick="eliminarProducto(${p.id_producto})" title="Eliminar">🗑️</button>` :
+                `<button class="btn-activar" onclick="activarProducto(${p.id_producto})" title="Activar">✅</button>
+                 <button class="btn-eliminar" onclick="eliminarProducto(${p.id_producto})" title="Eliminar">🗑️</button>`;
+
             tr.innerHTML = `
+                <td>${p.numero_secuencial}</td>
                 <td>${fotoHtml}</td>
                 <td>${p.codigo_barras}</td>
                 <td>${p.nombre}</td>
                 <td>${p.nombre_proveedor || '---'}</td>
                 <td><span class="badge-stock">${p.existencias_act}</span></td>
                 <td>$${p.precio_venta.toFixed(2)}</td>
+                <td>${estado}</td>
+                <td>${btnAccion}</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
     function filtrar() {
-        const busqueda = document.getElementById('txtBusqueda').value.toLowerCase();
-        const filtroStock = document.getElementById('selStock').value;
-
-        const filtrados = todosLosProductos.filter(p => {
-            const matchNombre = p.nombre.toLowerCase().includes(busqueda) || p.codigo_barras.includes(busqueda);
-            const matchStock = filtroStock === 'todos' || (p.existencias_act <= p.existencias_min);
-            return matchNombre && matchStock;
-        });
-        dibujarTabla(filtrados);
+        paginaActual = 1;
+        cargarProductos();
     }
 
     async function abrirModal(p = null) {
@@ -291,6 +406,63 @@
                 cargarProductos();
             } else {
                 alert("Error al guardar: " + res.message);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    async function eliminarProducto(id) {
+        if (!confirm('¿Estás seguro de eliminar este producto? Si tiene ventas asociadas, solo se desactivará.')) {
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`/api/inventario/eliminar/${id}`, {
+                method: 'DELETE'
+            });
+            const res = await resp.json();
+            if (res.success) {
+                alert(res.message);
+                cargarProductos();
+            } else {
+                alert("Error: " + res.message);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    async function desactivarProducto(id) {
+        if (!confirm('¿Desactivar este producto? Ya no aparecerá en las ventas.')) {
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`/api/inventario/desactivar/${id}`, {
+                method: 'POST'
+            });
+            const res = await resp.json();
+            if (res.success) {
+                alert(res.message);
+                cargarProductos();
+            } else {
+                alert("Error: " + res.message);
+            }
+        } catch (e) { alert("Error de conexión"); }
+    }
+
+    async function activarProducto(id) {
+        if (!confirm('¿Activar este producto?')) {
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`/api/inventario/activar/${id}`, {
+                method: 'POST'
+            });
+            const res = await resp.json();
+            if (res.success) {
+                alert(res.message);
+                cargarProductos();
+            } else {
+                alert("Error: " + res.message);
             }
         } catch (e) { alert("Error de conexión"); }
     }

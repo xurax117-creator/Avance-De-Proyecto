@@ -20,7 +20,7 @@ public class VentaController {
         public int userId;
         public int idVenta;
         public double totalFinal;
-        public List<DetalleVentaRequest> carrito;
+        public List<DetalleVentaRequest> listaCarrito;
     }
 
     @PostMapping("/producto")
@@ -62,12 +62,54 @@ public class VentaController {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
-            oper.finalizarTransaccion(request.idVenta, request.carrito, request.totalFinal);
+            oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal);
             response.put("success", true);
         } catch (Exception e) {
             e.printStackTrace();
             response.put("success", false);
             response.put("message", "Error al procesar la venta.");
+        }
+        return response;
+    }
+
+    // Endpoint para búsqueda parcial de productos (cuando no encuentra exacto)
+    @PostMapping("/buscar")
+    public Map<String, Object> buscarProductos(@RequestBody Map<String, String> request) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String busqueda = request.get("busqueda");
+            if (busqueda == null || busqueda.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Búsqueda vacía");
+                return response;
+            }
+            
+            // Primero verificar si existe coincidencia exacta
+            ProductoData productoExacto = oper.obtenerDatosProducto(busqueda.trim());
+            
+            if (productoExacto != null) {
+                // Encontró producto exacto
+                response.put("success", true);
+                response.put("tipo", "exacto");
+                response.put("producto", productoExacto);
+            } else {
+                // No encontró exacto, buscar coincidencias parciales
+                List<ProductoData> sugerencias = oper.buscarProductosParcial(busqueda.trim());
+                
+                if (sugerencias.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "No se encontraron productos");
+                } else {
+                    response.put("success", true);
+                    response.put("tipo", "sugerencias");
+                    response.put("sugerencias", sugerencias);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
         }
         return response;
     }

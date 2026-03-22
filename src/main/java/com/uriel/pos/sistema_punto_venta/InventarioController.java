@@ -233,4 +233,227 @@ public class InventarioController {
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
     }
+
+    // Endpoint para productos paginados
+    @GetMapping("/paginado")
+    public Map<String, Object> listarPaginado(@RequestParam(defaultValue = "1") int pagina,
+                                               @RequestParam(defaultValue = "20") int limite,
+                                               @RequestParam(defaultValue = "") String filtro) {
+        Map<String, Object> res = new HashMap<>();
+        List<Map<String, Object>> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            // Contar total de productos (incluyendo desactivados para inventario)
+            String sqlCount = "SELECT COUNT(*) as total FROM productos";
+            if (!filtro.isEmpty()) {
+                sqlCount += " WHERE nombre LIKE ? OR codigo_barras LIKE ?";
+            }
+            PreparedStatement psCount = c.prepareStatement(sqlCount);
+            if (!filtro.isEmpty()) {
+                psCount.setString(1, "%" + filtro + "%");
+                psCount.setString(2, "%" + filtro + "%");
+            }
+            ResultSet rsCount = psCount.executeQuery();
+            int totalRegistros = 0;
+            if (rsCount.next()) {
+                totalRegistros = rsCount.getInt("total");
+            }
+            rsCount.close();
+            psCount.close();
+            
+            // Calcular offset
+            int offset = (pagina - 1) * limite;
+            
+            // Obtener productos paginados (en inventario muestra todos incluyendo desactivados)
+            String sql = "SELECT p.*, prov.nombre as nombre_proveedor, " +
+                         "(SELECT COUNT(*) FROM productos p2 WHERE p2.nombre < p.nombre OR (p2.nombre = p.nombre AND p2.id_producto < p.id_producto)) + 1 as numero_producto " +
+                         "FROM productos p " +
+                         "LEFT JOIN proveedores prov ON p.id_proveedor = prov.id_proveedor ";
+            
+            if (!filtro.isEmpty()) {
+                sql += " WHERE (p.nombre LIKE ? OR p.codigo_barras LIKE ?) ";
+            }
+            sql += " ORDER BY p.nombre ASC LIMIT ? OFFSET ?";
+            
+            PreparedStatement stmt = c.prepareStatement(sql);
+            int paramIndex = 1;
+            if (!filtro.isEmpty()) {
+                stmt.setString(paramIndex++, "%" + filtro + "%");
+                stmt.setString(paramIndex++, "%" + filtro + "%");
+            }
+            stmt.setInt(paramIndex++, limite);
+            stmt.setInt(paramIndex++, offset);
+            
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> p = new HashMap<>();
+                p.put("numero_producto", rs.getInt("numero_producto"));
+                p.put("id_producto", rs.getInt("id_producto"));
+                p.put("codigo_barras", rs.getString("codigo_barras"));
+                p.put("nombre", rs.getString("nombre"));
+                p.put("categoria", rs.getString("categoria"));
+                p.put("nombre_proveedor", rs.getString("nombre_proveedor"));
+                p.put("id_proveedor", rs.getInt("id_proveedor"));
+                p.put("precio_compra", rs.getDouble("precio_compra"));
+                p.put("precio_venta", rs.getDouble("precio_venta"));
+                p.put("existencias_act", rs.getInt("existencias_act"));
+                p.put("existencias_min", rs.getInt("existencias_min"));
+                p.put("activo", rs.getBoolean("activo"));
+                
+                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                if (fotoBytes != null) {
+                    p.put("foto_producto", Base64.getEncoder().encodeToString(fotoBytes));
+                } else {
+                    p.put("foto_producto", null);
+                }
+                
+                lista.add(p);
+            }
+            c.close();
+            
+            res.put("productos", lista);
+            res.put("total_registros", totalRegistros);
+            res.put("pagina_actual", pagina);
+            res.put("limite", limite);
+            res.put("total_paginas", (int) Math.ceil((double) totalRegistros / limite));
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("error", e.getMessage());
+        }
+        return res;
+    }
+
+    // Endpoint para buscar productos (búsqueda parcial) - solo productos activos
+    @GetMapping("/buscar")
+    public List<Map<String, Object>> buscarProductos(@RequestParam String q) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "SELECT p.id_producto, p.codigo_barras, p.nombre, p.precio_venta, p.existencias_act, p.foto_producto_blob " +
+                         "FROM productos p " +
+                         "WHERE p.activo = TRUE AND (p.nombre LIKE ? OR p.codigo_barras LIKE ?) " +
+                         "ORDER BY p.nombre ASC LIMIT 20";
+            PreparedStatement stmt = c.prepareStatement(sql);
+            stmt.setString(1, "%" + q + "%");
+            stmt.setString(2, "%" + q + "%");
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> p = new HashMap<>();
+                p.put("id_producto", rs.getInt("id_producto"));
+                p.put("codigo_barras", rs.getString("codigo_barras"));
+                p.put("nombre", rs.getString("nombre"));
+                p.put("precio_venta", rs.getDouble("precio_venta"));
+                p.put("existencias_act", rs.getInt("existencias_act"));
+                
+                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                if (fotoBytes != null) {
+                    p.put("foto_producto", Base64.getEncoder().encodeToString(fotoBytes));
+                } else {
+                    p.put("foto_producto", null);
+                }
+                lista.add(p);
+            }
+            c.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return lista;
+    }
+
+    // Endpoint para eliminar producto (borrado físico)
+    @DeleteMapping("/eliminar/{id}")
+    public Map<String, Object> eliminarProducto(@PathVariable int id) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            // Verificar si el producto tiene ventas asociadas
+            String sqlCheck = "SELECT COUNT(*) FROM detalle_venta WHERE id_producto = ?";
+            PreparedStatement psCheck = c.prepareStatement(sqlCheck);
+            psCheck.setInt(1, id);
+            ResultSet rs = psCheck.executeQuery();
+            int count = 0;
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+            rs.close();
+            psCheck.close();
+            
+            if (count > 0) {
+                // Si tiene ventas, solo desactivar
+                String sqlUpdate = "UPDATE productos SET activo = FALSE WHERE id_producto = ?";
+                PreparedStatement psUpdate = c.prepareStatement(sqlUpdate);
+                psUpdate.setInt(1, id);
+                psUpdate.executeUpdate();
+                psUpdate.close();
+                res.put("success", true);
+                res.put("message", "Producto desactivado (ya tenía ventas asociadas)");
+            } else {
+                // Si no tiene ventas, borrar físicamente
+                String sqlDelete = "DELETE FROM productos WHERE id_producto = ?";
+                PreparedStatement psDelete = c.prepareStatement(sqlDelete);
+                psDelete.setInt(1, id);
+                psDelete.executeUpdate();
+                psDelete.close();
+                res.put("success", true);
+                res.put("message", "Producto eliminado correctamente");
+            }
+            
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+        return res;
+    }
+
+    // Endpoint para desactivar producto
+    @PostMapping("/desactivar/{id}")
+    public Map<String, Object> desactivarProducto(@PathVariable int id) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "UPDATE productos SET activo = FALSE WHERE id_producto = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setInt(1, id);
+            ps.executeUpdate();
+            ps.close();
+            c.close();
+            res.put("success", true);
+            res.put("message", "Producto desactivado");
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+        return res;
+    }
+
+    // Endpoint para activar producto
+    @PostMapping("/activar/{id}")
+    public Map<String, Object> activarProducto(@PathVariable int id) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "UPDATE productos SET activo = TRUE WHERE id_producto = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setInt(1, id);
+            ps.executeUpdate();
+            ps.close();
+            c.close();
+            res.put("success", true);
+            res.put("message", "Producto activado");
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+        return res;
+    }
 }

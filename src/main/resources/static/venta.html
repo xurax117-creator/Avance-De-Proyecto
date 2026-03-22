@@ -43,7 +43,7 @@
     </div>
     
     <div id="panel-arriba">
-        <input type="text" id="txtClave" placeholder="Escanear Código de Barras..." autofocus>
+        <input type="text" id="txtClave" placeholder="Escanear Código de Barras o escribir nombre..." autofocus>
         <button onclick="agregarProducto()">➕ Agregar Producto</button>
     </div>
 
@@ -72,6 +72,7 @@
         <button onclick="confirmarCancelacion()" style="background: #dc3545; padding: 15px;">❌ Cancelar</button>
     </div>
 
+    <!-- Modal de Pago -->
     <div id="modalPago" class="modal-overlay">
         <div class="modal-content">
             <h3>💰 Cobrar Venta</h3>
@@ -94,17 +95,145 @@
         </div>
     </div>
 
+    <!-- Modal de búsqueda de productos -->
+    <div id="modalBusqueda" class="modal-overlay">
+        <div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto;">
+            <h3>🔍 Buscar Producto</h3>
+            <p style="color: #666; font-size: 14px;">No se encontró el producto. ¿Quizás quisiste decir?</p>
+            <div id="listaSugerencias" style="margin-top: 15px;">
+                <!-- Las sugerencias se cargarán aquí -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancelar" onclick="cerrarModalBusqueda()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let procesando = false;
         let currentUserId = localStorage.getItem('userId') || 1;
         let currentVentaId = -1; 
-        let carrito = []; 
+        let listaCarrito = []; 
         let totalVenta = 0;
 
         const txtClave = document.getElementById('txtClave');
         const cuerpoTabla = document.getElementById('cuerpoTabla');
+        let searchTimeout = null;
 
         txtClave.addEventListener('keypress', (e) => { if (e.key === 'Enter') agregarProducto(); });
+        
+        // Búsqueda inteligente mientras escribe
+        txtClave.addEventListener('input', (e) => {
+            const valor = e.target.value.trim();
+            if (valor.length >= 2) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => buscarProductosInteligente(valor), 300);
+            }
+        });
+
+        async function buscarProductosInteligente(busqueda) {
+            try {
+                const response = await fetch('/api/venta/buscar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ busqueda: busqueda })
+                });
+                const result = await response.json();
+                
+                if (result.success && result.tipo === 'sugerencias') {
+                    mostrarSugerencias(result.sugerencias);
+                }
+            } catch (e) { console.error('Error en búsqueda:', e); }
+        }
+
+        function mostrarSugerencias(productos) {
+            const container = document.getElementById('listaSugerencias');
+            container.innerHTML = '';
+            
+            if (productos.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">No se encontraron productos</p>';
+                document.getElementById('modalBusqueda').classList.add('active');
+                return;
+            }
+            
+            productos.forEach(p => {
+                let fotoHtml;
+                if (p.fotoProducto) {
+                    fotoHtml = `<img src="data:image/jpeg;base64,${p.fotoProducto}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">`;
+                } else {
+                    fotoHtml = `<div style="width: 40px; height: 40px; border-radius: 6px; background: #f1f1f1; display: flex; align-items: center; justify-content: center;">📦</div>`;
+                }
+                
+                const div = document.createElement('div');
+                div.style.cssText = 'display: flex; align-items: center; gap: 15px; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s;';
+                div.onmouseover = () => div.style.backgroundColor = '#f8f9fa';
+                div.onmouseout = () => div.style.backgroundColor = 'white';
+                div.onclick = () => seleccionarProductoBusqueda(p);
+                
+                div.innerHTML = `
+                    ${fotoHtml}
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #333;">${p.nombre}</div>
+                        <div style="font-size: 12px; color: #666;">Código: ${p.codigo_barras || 'N/A'}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold; color: #19A337;">$${p.precioVenta.toFixed(2)}</div>
+                        <div style="font-size: 12px; color: ${p.existencias_act <= 5 ? '#dc3545' : '#666'};">Stock: ${p.existencias_act}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            document.getElementById('modalBusqueda').classList.add('active');
+        }
+
+        function cerrarModalBusqueda() {
+            document.getElementById('modalBusqueda').classList.remove('active');
+            txtClave.focus();
+        }
+
+        function seleccionarProductoBusqueda(producto) {
+            cerrarModalBusqueda();
+            agregarProductoDirecto(producto);
+        }
+
+        async function agregarProductoDirecto(producto) {
+            if (procesando) return;
+            procesando = true;
+
+            try {
+                // Crear venta si no existe
+                if (currentVentaId === -1) {
+                    const resVenta = await fetch('/api/venta/producto', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ codigo: producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId) })
+                    });
+                    const resultVenta = await resVenta.json();
+                    if (resultVenta.success) {
+                        currentVentaId = resultVenta.data.idVenta;
+                        document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
+                    }
+                }
+
+                const item = listaCarrito.find(x => x.idProducto === producto.id_producto);
+                if (item) {
+                    item.cantidad++;
+                } else {
+                    listaCarrito.push({ 
+                        idProducto: producto.id_producto, 
+                        codigo: producto.codigo_barras, 
+                        nombre: producto.nombre, 
+                        precio: producto.precio_venta, 
+                        cantidad: 1,
+                        fotoProducto: producto.fotoProducto || null
+                    });
+                }
+                
+                dibujarCarrito();
+                txtClave.value = '';
+            } finally { procesando = false; txtClave.focus(); }
+        }
 
         async function agregarProducto() {
             if (procesando) return;
@@ -113,22 +242,24 @@
             procesando = true;
 
             try {
+                // Primero intentar búsqueda exacta
                 const response = await fetch('/api/venta/producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ codigo, idVentaActual: currentVentaId, userId: parseInt(currentUserId) })
                 });
                 const result = await response.json();
+                
                 if (result.success) {
                     const p = result.data;
                     currentVentaId = p.idVenta;
                     document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
                     
-                    const item = carrito.find(x => x.idProducto === p.idProducto);
+                    const item = listaCarrito.find(x => x.idProducto === p.idProducto);
                     if (item) {
                         item.cantidad++;
                     } else {
-                        carrito.push({ 
+                        listaCarrito.push({ 
                             idProducto: p.idProducto, 
                             codigo: codigo, 
                             nombre: p.nombre, 
@@ -140,14 +271,28 @@
                     
                     dibujarCarrito();
                     txtClave.value = '';
-                } else alert(result.message);
+                } else {
+                    // Producto no encontrado, buscar sugerencias
+                    const searchResponse = await fetch('/api/venta/buscar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ busqueda: codigo })
+                    });
+                    const searchResult = await searchResponse.json();
+                    
+                    if (searchResult.success && searchResult.tipo === 'sugerencias') {
+                        mostrarSugerencias(searchResult.sugerencias);
+                    } else {
+                        alert(result.message);
+                    }
+                }
             } finally { procesando = false; txtClave.focus(); }
         }
 
         function dibujarCarrito() {
             cuerpoTabla.innerHTML = "";
             let sumaTotal = 0;
-            carrito.forEach((prod, index) => {
+            listaCarrito.forEach((prod, index) => {
                 const subtotal = prod.precio * prod.cantidad;
                 sumaTotal += subtotal;
                 
@@ -174,7 +319,7 @@
         }
 
         function abrirModalPago() {
-            if (carrito.length === 0) return alert("Carrito vacío");
+            if (listaCarrito.length === 0) return alert("Carrito vacío");
             
             document.getElementById('modalTotal').textContent = `$${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
@@ -208,14 +353,14 @@
         }
 
         async function finalizarVenta() {
-            if (carrito.length === 0) return alert("Carrito vacío");
+            if (listaCarrito.length === 0) return alert("Carrito vacío");
             
-            const totalFinal = carrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
+            const totalFinal = listaCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
             const requestBody = {
                 userId: parseInt(currentUserId),
                 idVenta: currentVentaId,
                 totalFinal: totalFinal,
-                carrito: carrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio }))
+                listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio }))
             };
 
             try {
@@ -233,7 +378,7 @@
         }
 
         function limpiarPantallaVenta() {
-            carrito = [];
+            listaCarrito = [];
             currentVentaId = -1;
             cuerpoTabla.innerHTML = "";
             document.getElementById('lblTotal').textContent = "Total: $0.00";
@@ -243,11 +388,11 @@
         }
 
         function editarCantidad(index) {
-            const n = prompt("Nueva cantidad:", carrito[index].cantidad);
-            if (n && !isNaN(n) && n > 0) { carrito[index].cantidad = parseFloat(n); dibujarCarrito(); }
+            const n = prompt("Nueva cantidad:", listaCarrito[index].cantidad);
+            if (n && !isNaN(n) && n > 0) { listaCarrito[index].cantidad = parseFloat(n); dibujarCarrito(); }
         }
 
-        function eliminarItem(index) { carrito.splice(index, 1); dibujarCarrito(); }
+        function eliminarItem(index) { listaCarrito.splice(index, 1); dibujarCarrito(); }
         function confirmarCancelacion() { if (confirm("¿Limpiar venta?")) limpiarPantallaVenta(); }
         document.getElementById('user-info').textContent = `Atiende: ${localStorage.getItem('nombreUsuario') || 'Cajero'}`;
     </script>
