@@ -97,14 +97,15 @@
 
     <!-- Modal de búsqueda de productos -->
     <div id="modalBusqueda" class="modal-overlay">
-        <div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">
+            <button onclick="cerrarModalBusqueda()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">✕</button>
             <h3>🔍 Buscar Producto</h3>
-            <p style="color: #666; font-size: 14px;">No se encontró el producto. ¿Quizás quisiste decir?</p>
+            <p style="color: #666; font-size: 14px;">No se encontró el producto exacto. Selecciona uno de la lista o cierra esta ventana:</p>
             <div id="listaSugerencias" style="margin-top: 15px;">
                 <!-- Las sugerencias se cargarán aquí -->
             </div>
             <div class="modal-buttons">
-                <button class="btn-cancelar" onclick="cerrarModalBusqueda()">Cancelar</button>
+                <button class="btn-cancelar" onclick="cerrarModalBusqueda()">Cerrar</button>
             </div>
         </div>
     </div>
