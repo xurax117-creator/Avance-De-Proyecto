@@ -123,26 +123,38 @@
 
         txtClave.addEventListener('keypress', (e) => { if (e.key === 'Enter') agregarProducto(); });
         
-        // Búsqueda inteligente mientras escribe
-        txtClave.addEventListener('input', (e) => {
-            const valor = e.target.value.trim();
-            if (valor.length >= 2) {
+        // Búsqueda inteligente solo con Enter
+        txtClave.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => buscarProductosInteligente(valor), 300);
+                buscarProductosInteligente(txtClave.value.trim());
             }
         });
 
         async function buscarProductosInteligente(busqueda) {
+            if (!busqueda || busqueda.length < 2) return;
+            
             try {
-                const response = await fetch('/api/venta/buscar', {
+                // Primero verificar si existe coincidencia exacta
+                const responseExacta = await fetch('/api/venta/buscar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ busqueda: busqueda })
                 });
-                const result = await response.json();
+                const resultExacta = await responseExacta.json();
                 
-                if (result.success && result.tipo === 'sugerencias') {
-                    mostrarSugerencias(result.sugerencias);
+                if (resultExacta.success && resultExacta.tipo === 'exacto') {
+                    // Existe producto exacto, no mostrar sugerencias
+                    return;
+                }
+                
+                // No hay coincidencia exacta, mostrar sugerencias
+                if (resultExacta.success && resultExacta.tipo === 'sugerencias') {
+                    mostrarSugerencias(resultExacta.sugerencias);
+                } else {
+                    // No hay sugerencias, abrir modal vacío
+                    document.getElementById('modalBusqueda').classList.add('active');
+                    document.getElementById('listaSugerencias').innerHTML = '<p style="text-align: center; color: #666;">No se encontraron productos</p>';
                 }
             } catch (e) { console.error('Error en búsqueda:', e); }
         }
@@ -175,10 +187,10 @@
                     ${fotoHtml}
                     <div style="flex: 1;">
                         <div style="font-weight: 600; color: #333;">${p.nombre}</div>
-                        <div style="font-size: 12px; color: #666;">Código: ${p.codigo_barras || 'N/A'}</div>
+                        <div style="font-size: 12px; color: #666;">Código: ${p.codigoBarras || p.codigo_barras || 'N/A'}</div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold; color: #19A337;">$${p.precioVenta.toFixed(2)}</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #19A337;">${p.precioVenta.toFixed(2)}</div>
                         <div style="font-size: 12px; color: ${p.existencias_act <= 5 ? '#dc3545' : '#666'};">Stock: ${p.existencias_act}</div>
                     </div>
                 `;
@@ -194,11 +206,15 @@
         }
 
         function seleccionarProductoBusqueda(producto) {
-            cerrarModalBusqueda();
-            agregarProductoDirecto(producto);
+            console.log('Producto seleccionado:', producto);
+            // Cerrar modal primero
+            document.getElementById('modalBusqueda').classList.remove('active');
+            // Agregar producto directo
+            agregarProductoDesdeBusqueda(producto);
         }
 
-        async function agregarProductoDirecto(producto) {
+        async function agregarProductoDesdeBusqueda(producto) {
+            console.log('Agregando producto desde búsqueda:', producto);
             if (procesando) return;
             procesando = true;
 
@@ -208,31 +224,38 @@
                     const resVenta = await fetch('/api/venta/producto', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ codigo: producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId) })
+                        body: JSON.stringify({ codigo: producto.codigoBarras || producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId) })
                     });
                     const resultVenta = await resVenta.json();
+                    console.log('Resultado crear venta:', resultVenta);
                     if (resultVenta.success) {
                         currentVentaId = resultVenta.data.idVenta;
                         document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
                     }
                 }
 
-                const item = listaCarrito.find(x => x.idProducto === producto.id_producto);
+                // Agregar al carrito
+                const item = listaCarrito.find(x => x.idProducto === producto.id_producto || x.idProducto === producto.idProducto);
                 if (item) {
                     item.cantidad++;
+                    console.log('Producto ya existe, cantidad:', item.cantidad);
                 } else {
                     listaCarrito.push({ 
-                        idProducto: producto.id_producto, 
-                        codigo: producto.codigo_barras, 
+                        idProducto: producto.id_producto || producto.idProducto, 
+                        codigo: producto.codigoBarras || producto.codigo_barras || '', 
                         nombre: producto.nombre, 
-                        precio: producto.precio_venta, 
+                        precio: producto.precio_venta || producto.precioVenta, 
                         cantidad: 1,
                         fotoProducto: producto.fotoProducto || null
                     });
+                    console.log('Producto agregado al carrito:', listaCarrito);
                 }
                 
                 dibujarCarrito();
                 txtClave.value = '';
+            } catch (e) {
+                console.error('Error:', e);
+                alert('Error al agregar producto');
             } finally { procesando = false; txtClave.focus(); }
         }
 
@@ -345,7 +368,9 @@
         
         function confirmarPago() {
             const pago = parseFloat(document.getElementById('txtPago').value) || 0;
-            if (pago < totalVenta) {
+            // Usar comparación con tolerancia para números decimales
+            const tolerancia = 0.001;
+            if (pago < totalVenta - tolerancia) {
                 alert("El pago es insuficiente. Por favor ingresa una cantidad mayor o igual al total.");
                 return;
             }

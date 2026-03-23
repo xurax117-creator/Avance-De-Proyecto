@@ -17,7 +17,7 @@ public class Venta {
             Connection c = con.conectar();
 
             String sql = """
-                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob
+                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
                 FROM productos 
                 WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE
             """;
@@ -36,7 +36,8 @@ public class Venta {
                     rs.getString("nombre"),
                     rs.getDouble("precio_venta"),
                     rs.getInt("existencias_act"),
-                    fotoBase64
+                    fotoBase64,
+                    rs.getString("codigo_barras")
                 );
             }
 
@@ -82,7 +83,7 @@ public class Venta {
             Connection c = con.conectar();
 
             String sql = """
-                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob
+                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
                 FROM productos 
                 WHERE activo = TRUE AND (nombre LIKE ? OR codigo_barras LIKE ?)
                 ORDER BY nombre ASC
@@ -103,7 +104,8 @@ public class Venta {
                     rs.getString("nombre"),
                     rs.getDouble("precio_venta"),
                     rs.getInt("existencias_act"),
-                    fotoBase64
+                    fotoBase64,
+                    rs.getString("codigo_barras")
                 ));
             }
 
@@ -167,13 +169,15 @@ class ProductoData {
     public double precioVenta;
     public int stockActual;
     public String fotoProducto;
+    public String codigoBarras;
 
-    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto) {
+    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto, String codigoBarras) {
         this.idProducto = idProducto;
         this.nombre = nombre;
         this.precioVenta = precioVenta;
         this.stockActual = stockActual;
         this.fotoProducto = fotoProducto;
+        this.codigoBarras = codigoBarras;
     }
 }
 
