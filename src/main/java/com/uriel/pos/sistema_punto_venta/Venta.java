@@ -133,18 +133,19 @@ public class Venta {
             stmtTotal.close();
 
             for (DetalleVentaRequest detalle : detalles) {
-                String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
+                String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
                 stmtInsert.setInt(1, idVenta);
                 stmtInsert.setInt(2, detalle.idProducto);
-                stmtInsert.setInt(3, detalle.cantidad);
+                stmtInsert.setDouble(3, detalle.cantidad);
                 stmtInsert.setDouble(4, detalle.precioUnitario);
+                stmtInsert.setDouble(5, detalle.cantidad * detalle.precioUnitario);
                 stmtInsert.executeUpdate();
                 stmtInsert.close();
 
                 String sqlStock = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
                 PreparedStatement stmtStock = c.prepareStatement(sqlStock);
-                stmtStock.setInt(1, detalle.cantidad);
+                stmtStock.setDouble(1, detalle.cantidad);
                 stmtStock.setInt(2, detalle.idProducto);
                 stmtStock.executeUpdate();
                 stmtStock.close();
@@ -183,7 +184,7 @@ class ProductoData {
 
 class DetalleVentaRequest {
     public int idProducto;
-    public int cantidad;
+    public double cantidad;
     public double precioUnitario;
 }
 

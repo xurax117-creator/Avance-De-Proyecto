@@ -316,7 +316,9 @@
         function dibujarCarrito() {
             cuerpoTabla.innerHTML = "";
             let sumaTotal = 0;
-            listaCarrito.forEach((prod, index) => {
+            // Invertir el orden para que los nuevos productos aparezcan arriba
+            const listaInvertida = [...listaCarrito].reverse();
+            listaInvertida.forEach((prod, index) => {
                 const subtotal = prod.precio * prod.cantidad;
                 sumaTotal += subtotal;
                 
@@ -332,24 +334,26 @@
                         <td>${fotoHtml}</td>
                         <td>${prod.codigo}</td>
                         <td>${prod.nombre}</td>
-                        <td><span class="badge-cantidad" ondblclick="editarCantidad(${index})">${prod.cantidad}</span></td>
-                        <td>$${prod.precio.toFixed(2)}</td>
-                        <td>$${subtotal.toFixed(2)}</td>
-                        <td><button onclick="eliminarItem(${index})" style="background:red;">Eliminar</button></td>
+                        <td><span class="badge-cantidad" ondblclick="editarCantidad(${listaCarrito.length - 1 - index})">${prod.cantidad}</span></td>
+                        <td>${prod.precio.toFixed(2)}</td>
+                        <td>${subtotal.toFixed(2)}</td>
+                        <td><button onclick="eliminarItem(${listaCarrito.length - 1 - index})" style="background:red;">Eliminar</button></td>
                     </tr>`;
             });
             totalVenta = sumaTotal;
-            document.getElementById('lblTotal').textContent = `Total: $${sumaTotal.toFixed(2)}`;
+            document.getElementById('lblTotal').textContent = `Total: ${sumaTotal.toFixed(2)}`;
         }
 
         function abrirModalPago() {
             if (listaCarrito.length === 0) return alert("Carrito vacío");
             
-            document.getElementById('modalTotal').textContent = `$${totalVenta.toFixed(2)}`;
+            document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
-            document.getElementById('txtPago').value = "";
+            // Auto-fill con la cantidad exacta a pagar
+            document.getElementById('txtPago').value = totalVenta.toFixed(2);
             document.getElementById('modalPago').classList.add('active');
             document.getElementById('txtPago').focus();
+            document.getElementById('txtPago').select();
         }
         
         function cerrarModalPago() {

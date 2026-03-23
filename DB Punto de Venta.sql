@@ -36,7 +36,7 @@ CREATE TABLE detalle_venta (
     id_detalle INT AUTO_INCREMENT PRIMARY KEY,
     id_venta INT,
     id_producto INT,
-    cantidad INT NOT NULL,
+    cantidad DECIMAL(10,3) NOT NULL,
     precio_unitario DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) AS (cantidad * precio_unitario) STORED,
     FOREIGN KEY (id_venta) REFERENCES ventas(id_venta),
@@ -55,6 +55,9 @@ ALTER TABLE productos ADD COLUMN id_proveedor INT AFTER categoria;
 
 ALTER TABLE productos ADD CONSTRAINT fk_proveedor 
 FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor);
+
+-- Importante: Si ya tienes la tabla creada, ejecuta esta alteración:
+-- ALTER TABLE detalle_venta MODIFY COLUMN cantidad DECIMAL(10,3) NOT NULL;
 
 -- Tabla para entradas de inventario (registrar pedidos que van chegando)
 CREATE TABLE entradas_inventario (
