@@ -1,3 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reportes - MRKdito</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background-color: #f8f9fa; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .filtros { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background: #e9ecef; transition: 0.3s; }
+        .tab-btn.active { background: #19A337; color: white; }
+        
+        .resumen-total { 
+            background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; 
+            border-left: 5px solid #19A337; font-size: 1.2em; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        th { background: #f1f1f1; }
+        .btn-consultar { background: #19A337; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .btn-detalles { background: #007bff; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-detalles:hover { background: #0056b3; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .modal-content { 
+            background: white; margin: 50px auto; padding: 20px; width: 320px; border-radius: 4px; 
+            font-family: 'Courier New', Courier, monospace; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .ticket-header { text-align: center; border-bottom: 1px dashed #000; margin-bottom: 10px; padding-bottom: 10px; }
+        .ticket-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+        .ticket-table th, .ticket-table td { border: none; padding: 4px 0; }
+        .ticket-total { text-align: right; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 16px; }
+        .btn-cerrar { width: 100%; background: #dc3545; color: white; border: none; padding: 10px; margin-top: 20px; border-radius: 4px; cursor: pointer; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button onclick="window.location.href='/menu.html'" style="background:#6c757d; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Volver</button>
+    <h2>Panel de Reportes</h2>
+    <div id="user-info"></div>
+</div>
+
+<div class="filtros">
+    <div>
+        <label>Desde:</label><br>
+        <input type="date" id="fechaInicio">
+    </div>
+    <div>
+        <label>Hasta:</label><br>
+        <input type="date" id="fechaFin">
+    </div>
+    <button class="btn-consultar" onclick="cargarReporte()">🔍 Consultar</button>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="cambiarTab(this, 'ventas')">Ventas Diarias</button>
+    <button class="tab-btn" onclick="cambiarTab(this, 'productos')">Top Productos</button>
+    <button class="tab-btn" onclick="cambiarTab(this, 'cajeros')">Ventas por Cajero</button>
+</div>
+
+<div id="resumenVentas" class="resumen-total">
+    Total en el periodo: <span id="sumaTotalPeriodo">$0.00</span>
+</div>
+
+<div id="contenedorTabla">
+    <table>
+        <thead id="theadReporte"></thead>
+        <tbody id="tbodyReporte"></tbody>
+    </table>
+</div>
+
+<div id="modalTicket" class="modal">
+    <div class="modal-content">
+        <div class="ticket-header">
+            <h2 style="margin:0">MRKdito</h2>
+            <p style="margin:5px 0">Folio: <span id="t-folio"></span></p>
+            <p style="font-size: 11px" id="t-fecha"></p>
+        </div>
+        <table class="ticket-table">
+            <thead>
+                <tr>
+                    <th style="text-align:left">Cant</th>
+                    <th style="text-align:left">Producto</th>
+                    <th style="text-align:right">Sub</th>
+                </tr>
+            </thead>
+            <tbody id="t-cuerpo"></tbody>
+        </table>
+        <div class="ticket-total">
+            TOTAL: $<span id="t-total"></span>
+        </div>
+        <button class="btn-cerrar" onclick="cerrarModal()">CERRAR</button>
+    </div>
+</div>
+
 <script>
     let tabActual = 'ventas';
 
@@ -94,3 +194,5 @@
     cargarReporte();
     document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
 </script>
+</body>
+</html>
