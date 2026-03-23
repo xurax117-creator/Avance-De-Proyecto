@@ -36,7 +36,7 @@ CREATE TABLE detalle_venta (
     id_detalle INT AUTO_INCREMENT PRIMARY KEY,
     id_venta INT,
     id_producto INT,
-    cantidad DECIMAL(10,3) NOT NULL,
+    cantidad INT NOT NULL,
     precio_unitario DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) AS (cantidad * precio_unitario) STORED,
     FOREIGN KEY (id_venta) REFERENCES ventas(id_venta),
