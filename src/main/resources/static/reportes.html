@@ -147,6 +147,8 @@
 
     function dibujarTabla(data) {
         console.log("DEBUG - dibujarTabla llamado con data length:", data.length);
+        console.log("DEBUG - sumaTotalPeriodo elemento:", document.getElementById('sumaTotalPeriodo'));
+        console.log("DEBUG - sumaTotalPeriodo.innerHTML antes:", document.getElementById('sumaTotalPeriodo') ? document.getElementById('sumaTotalPeriodo').innerHTML : "null");
         const thead = document.getElementById('theadReporte');
         const tbody = document.getElementById('tbodyReporte');
         const sumaSpan = document.getElementById('sumaTotalPeriodo');
@@ -229,7 +231,7 @@
             paginacionDiv.innerHTML = "";
         }
         
-        sumaSpan.textContent = `${acumulado.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        // El total ya se estableció correctamente en la línea anterior
     }
 
     function dibujarPaginacion() {
