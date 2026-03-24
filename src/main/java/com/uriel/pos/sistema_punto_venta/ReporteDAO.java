@@ -71,15 +71,13 @@ public class ReporteDAO {
             }
             
             // Agregar información de paginación al último elemento
-            if (!lista.isEmpty()) {
-                Map<String, Object> pagInfo = new HashMap<>();
-                pagInfo.put("totalRegistros", totalRegistros);
-                pagInfo.put("totalGeneral", totalGeneral);
-                pagInfo.put("paginaActual", pagina);
-                pagInfo.put("tamanoPagina", tamanoPagina);
-                pagInfo.put("totalPaginas", (int) Math.ceil((double) totalRegistros / tamanoPagina));
-                lista.add(pagInfo);
-            }
+            Map<String, Object> pagInfo = new HashMap<>();
+            pagInfo.put("totalRegistros", totalRegistros);
+            pagInfo.put("totalGeneral", totalGeneral);
+            pagInfo.put("paginaActual", pagina);
+            pagInfo.put("tamanoPagina", tamanoPagina);
+            pagInfo.put("totalPaginas", Math.max(1, (int) Math.ceil((double) totalRegistros / tamanoPagina)));
+            lista.add(pagInfo);
             
             c.close();
         } catch(Exception e) { e.printStackTrace(); }

@@ -170,20 +170,19 @@
         }
         
         let totalGeneral = 0;
-        if (infoPaginacion && infoPaginacion.totalGeneral !== undefined) {
+        if (infoPaginacion && infoPaginacion.totalGeneral !== undefined && infoPaginacion.totalGeneral !== null) {
             totalGeneral = infoPaginacion.totalGeneral;
             sumaSpan.textContent = "$" + totalGeneral.toFixed(2);
-        } else {
-            // Para otros tabs, calcular el acumulado normalmente
+        } else if (datosMostrar.length > 0) {
+            // Para otros tabs o si no hay info de paginación, calcular el acumulado normalmente
             datosMostrar.forEach(v => acumulado += v.total);
             sumaSpan.textContent = "$" + acumulado.toFixed(2);
+        } else {
+            sumaSpan.textContent = "$0.00";
         }
         
         if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
-            if (tabActual !== 'ventas') {
-                sumaSpan.textContent = "$0.00";
-            }
             paginacionDiv.innerHTML = "";
             return;
         }
