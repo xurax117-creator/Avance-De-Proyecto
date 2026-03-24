@@ -162,15 +162,28 @@
                 infoPaginacion = {
                     totalPaginas: ultimo.totalPaginas,
                     totalRegistros: ultimo.totalRegistros,
-                    paginaActual: ultimo.paginaActual
+                    paginaActual: ultimo.paginaActual,
+                    totalGeneral: ultimo.totalGeneral
                 };
                 datosMostrar = data.slice(0, -1); // Quitar el elemento de paginación
             }
         }
-
+        
+        let totalGeneral = 0;
+        if (infoPaginacion && infoPaginacion.totalGeneral !== undefined) {
+            totalGeneral = infoPaginacion.totalGeneral;
+            sumaSpan.textContent = "$" + totalGeneral.toFixed(2);
+        } else {
+            // Para otros tabs, calcular el acumulado normalmente
+            datosMostrar.forEach(v => acumulado += v.total);
+            sumaSpan.textContent = "$" + acumulado.toFixed(2);
+        }
+        
         if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
-            sumaSpan.textContent = "$0.00";
+            if (tabActual !== 'ventas') {
+                sumaSpan.textContent = "$0.00";
+            }
             paginacionDiv.innerHTML = "";
             return;
         }
@@ -178,7 +191,6 @@
         if (tabActual === 'ventas') {
             thead.innerHTML = "<tr><th>No. Venta</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
             datosMostrar.forEach(v => {
-                acumulado += v.total;
                 tbody.innerHTML += `
                     <tr>
                         <td>${v.numeroVenta}</td>

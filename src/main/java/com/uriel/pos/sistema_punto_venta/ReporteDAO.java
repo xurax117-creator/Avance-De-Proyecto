@@ -22,6 +22,17 @@ public class ReporteDAO {
                 totalRegistros = rsCount.getInt("total");
             }
             
+            // Obtener el total general de ventas en el período
+            double totalGeneral = 0;
+            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE DATE(fecha) BETWEEN ? AND ?";
+            PreparedStatement psSum = c.prepareStatement(sqlSum);
+            psSum.setString(1, inicio);
+            psSum.setString(2, fin);
+            ResultSet rsSum = psSum.executeQuery();
+            if (rsSum.next()) {
+                totalGeneral = rsSum.getDouble("total_general");
+            }
+            
             // Calcular el offset
             int offset = (pagina - 1) * tamanoPagina;
             
@@ -63,6 +74,7 @@ public class ReporteDAO {
             if (!lista.isEmpty()) {
                 Map<String, Object> pagInfo = new HashMap<>();
                 pagInfo.put("totalRegistros", totalRegistros);
+                pagInfo.put("totalGeneral", totalGeneral);
                 pagInfo.put("paginaActual", pagina);
                 pagInfo.put("tamanoPagina", tamanoPagina);
                 pagInfo.put("totalPaginas", (int) Math.ceil((double) totalRegistros / tamanoPagina));
