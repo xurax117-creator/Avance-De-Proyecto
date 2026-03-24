@@ -225,8 +225,26 @@
         const nuevaPagina = paginaActual + direccion;
         if (nuevaPagina >= 1 && nuevaPagina <= infoPaginacion.totalPaginas) {
             paginaActual = nuevaPagina;
-            cargarReporte();
+            cambiarPaginaReporte();
         }
+    }
+
+    async function cambiarPaginaReporte() {
+        const fInicio = document.getElementById('fechaInicio').value;
+        const fFin = document.getElementById('fechaFin').value;
+        
+        try {
+            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
+            
+            // Agregar parámetros de paginación solo para ventas
+            if (tabActual === 'ventas') {
+                url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+            }
+            
+            const resp = await fetch(url);
+            const data = await resp.json();
+            dibujarTabla(data);
+        } catch (e) { console.error("Error:", e); }
     }
 
     let ultimoNumeroVenta = 0;
