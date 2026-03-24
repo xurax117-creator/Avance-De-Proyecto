@@ -282,15 +282,20 @@
             const resp = await fetch(`/api/reportes/detalle/${id}`);
             const productos = await resp.json();
             let filas = "";
+            console.log("DEBUG - productos:", productos);
             productos.forEach(p => {
+                console.log("DEBUG - p.cantidad:", p.cantidad, "type:", typeof p.cantidad);
+                console.log("DEBUG - p.subtotal:", p.subtotal, "type:", typeof p.subtotal);
                 let cant = parseFloat(p.cantidad);
                 let sub = parseFloat(p.subtotal);
+                console.log("DEBUG - cant:", cant, "sub:", sub);
                 filas += `<tr>
                     <td>${cant.toFixed(3)}</td>
                     <td>${p.producto}</td>
                     <td style="text-align:right">${sub.toFixed(2)}</td>
                 </tr>`;
             });
+            console.log("DEBUG - filas generadas:", filas);
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
             document.getElementById('t-fecha').textContent = fecha;
             document.getElementById('t-total').textContent = total.toFixed(2);
