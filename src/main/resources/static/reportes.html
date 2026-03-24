@@ -281,27 +281,117 @@
         try {
             const resp = await fetch(`/api/reportes/detalle/${id}`);
             const productos = await resp.json();
-            let filas = "";
-            console.log("DEBUG - productos:", productos);
-            productos.forEach(p => {
-                // Ignorar productos vacíos o sin nombre
-                if (!p.producto) return;
+            const tbody = document.getElementById('t-cuerpo');
+            tbody.innerHTML = ''; // Limpiar tbody
+            
+            for (let i = 0; i < productos.length; i++) {
+                const p = productos[i];
+                if (!p.producto) continue;
                 
-                console.log("DEBUG - p.cantidad:", p.cantidad, "type:", typeof p.cantidad);
-                console.log("DEBUG - p.subtotal:", p.subtotal, "type:", typeof p.subtotal);
-                let cant = parseFloat(p.cantidad);
-                let sub = parseFloat(p.subtotal);
-                console.log("DEBUG - cant:", cant, "sub:", sub);
-                let filasProd = `<tr><td>${String(cant.toFixed(3))}</td><td>${String(p.producto)}</td><td style="text-align:right">${String(sub.toFixed(2))}</td></tr>`;
-                console.log("DEBUG - fila:", filasProd);
-                filas += filasProd;
-            });
-            console.log("DEBUG - filas generadas:", filas);
+                const tr = document.createElement('tr');
+                const tdCant = document.createElement('td');
+                tdCant.textContent = Number(p.cantidad).toFixed(3);
+                const tdProd = document.createElement('td');
+                tdProd.textContent = p.producto;
+                const tdSub = document.createElement('td');
+                tdSub.textContent = '
+                tbody.appendChild(tr);
+            }
+            
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
             document.getElementById('t-fecha').textContent = fecha;
             document.getElementById('t-total').textContent = total.toFixed(2);
-            document.getElementById('t-cuerpo').innerHTML = filas;
-            console.log("DEBUG - t-cuerpo.innerHTML después de asignar:", document.getElementById('t-cuerpo').innerHTML);
+            document.getElementById('modalTicket').style.display = 'block';
+        } catch (e) { alert("Error al cargar el detalle"); }
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalTicket').style.display = 'none';
+    }
+
+    cargarReporte();
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
+</script>
+</body>
+</html>
+ + Number(p.subtotal).toFixed(2);
+                tdSub.style.textAlign = 'right';
+                tr.appendChild(tdCant);
+                tr.appendChild(tdProd);
+                tr.appendChild(tdSub);
+                tbody.appendChild(tr);
+            }
+            
+            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
+            document.getElementById('t-fecha').textContent = fecha;
+            document.getElementById('t-total').textContent = total.toFixed(2);
+            document.getElementById('modalTicket').style.display = 'block';
+        } catch (e) { alert("Error al cargar el detalle"); }
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalTicket').style.display = 'none';
+    }
+
+    cargarReporte();
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
+</script>
+</body>
+</html>
+ + Number(p.subtotal).toFixed(2);
+                tdSub.style.textAlign = 'right';
+                tr.appendChild(tdCant);
+                tr.appendChild(tdProd);
+                tr.appendChild(tdSub);
+                tbody.appendChild(tr);
+            }
+            
+            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
+            document.getElementById('t-fecha').textContent = fecha;
+            document.getElementById('t-total').textContent = total.toFixed(2);
+            document.getElementById('modalTicket').style.display = 'block';
+        } catch (e) { alert("Error al cargar el detalle"); }
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalTicket').style.display = 'none';
+    }
+
+    cargarReporte();
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
+</script>
+</body>
+</html>
+                tbody.appendChild(tr);
+            }
+            
+            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
+            document.getElementById('t-fecha').textContent = fecha;
+            document.getElementById('t-total').textContent = total.toFixed(2);
+            document.getElementById('modalTicket').style.display = 'block';
+        } catch (e) { alert("Error al cargar el detalle"); }
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalTicket').style.display = 'none';
+    }
+
+    cargarReporte();
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
+</script>
+</body>
+</html>
+ + Number(p.subtotal).toFixed(2);
+                tdSub.style.textAlign = 'right';
+                tr.appendChild(tdCant);
+                tr.appendChild(tdProd);
+                tr.appendChild(tdSub);
+                tbody.appendChild(tr);
+            }
+            
+            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
+            document.getElementById('t-fecha').textContent = fecha;
+            document.getElementById('t-total').textContent = total.toFixed(2);
             document.getElementById('modalTicket').style.display = 'block';
         } catch (e) { alert("Error al cargar el detalle"); }
     }

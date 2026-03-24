@@ -240,7 +240,7 @@
                     item.cantidad++;
                     console.log('Producto ya existe, cantidad:', item.cantidad);
                 } else {
-                    listaCarrito.push({ 
+                    listaCarrito.unshift({ 
                         idProducto: producto.id_producto || producto.idProducto, 
                         codigo: producto.codigoBarras || producto.codigo_barras || '', 
                         nombre: producto.nombre, 
@@ -283,7 +283,7 @@
                     if (item) {
                         item.cantidad++;
                     } else {
-                        listaCarrito.push({ 
+                        listaCarrito.unshift({ 
                             idProducto: p.idProducto, 
                             codigo: codigo, 
                             nombre: p.nombre, 
