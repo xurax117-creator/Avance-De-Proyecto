@@ -283,10 +283,12 @@
             const productos = await resp.json();
             let filas = "";
             productos.forEach(p => {
+                let cant = parseFloat(p.cantidad);
+                let sub = parseFloat(p.subtotal);
                 filas += `<tr>
-                    <td>${Number(p.cantidad).toFixed(3)}</td>
+                    <td>${cant.toFixed(3)}</td>
                     <td>${p.producto}</td>
-                    <td style="text-align:right">${Number(p.subtotal).toFixed(2)}</td>
+                    <td style="text-align:right">${sub.toFixed(2)}</td>
                 </tr>`;
             });
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
