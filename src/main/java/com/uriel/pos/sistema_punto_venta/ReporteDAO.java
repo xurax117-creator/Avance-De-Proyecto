@@ -21,6 +21,8 @@ public class ReporteDAO {
             if (rsCount.next()) {
                 totalRegistros = rsCount.getInt("total");
             }
+            rsCount.close();
+            psCount.close();
             
             // Obtener el total general de ventas en el período
             double totalGeneral = 0;
@@ -32,6 +34,10 @@ public class ReporteDAO {
             if (rsSum.next()) {
                 totalGeneral = rsSum.getDouble("total_general");
             }
+            rsSum.close();
+            psSum.close();
+            
+            System.out.println("DEBUG - totalRegistros: " + totalRegistros + ", totalGeneral: " + totalGeneral);
             
             // Calcular el offset
             int offset = (pagina - 1) * tamanoPagina;
@@ -69,6 +75,8 @@ public class ReporteDAO {
                 map.put("total", rs.getDouble("total"));
                 lista.add(map);
             }
+            rs.close();
+            ps.close();
             
             // Agregar información de paginación al último elemento
             Map<String, Object> pagInfo = new HashMap<>();
