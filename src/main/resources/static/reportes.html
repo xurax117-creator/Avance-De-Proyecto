@@ -120,7 +120,7 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         tabActual = tipo;
-        paginaActual = 1; // Reiniciar paginación al cambiar de tab
+        paginaActual = 1;
         cargarReporte();
     }
 
@@ -128,13 +128,11 @@
         const fInicio = document.getElementById('fechaInicio').value;
         const fFin = document.getElementById('fechaFin').value;
         
-        // Reiniciar paginación al cambiar de fecha
         paginaActual = 1;
         
         try {
             let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
             
-            // Agregar parámetros de paginación para ventas y productos
             if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
@@ -146,9 +144,6 @@
     }
 
     function dibujarTabla(data) {
-        console.log("DEBUG - dibujarTabla llamado con data length:", data.length);
-        console.log("DEBUG - sumaTotalPeriodo elemento:", document.getElementById('sumaTotalPeriodo'));
-        console.log("DEBUG - sumaTotalPeriodo.innerHTML antes:", document.getElementById('sumaTotalPeriodo') ? document.getElementById('sumaTotalPeriodo').innerHTML : "null");
         const thead = document.getElementById('theadReporte');
         const tbody = document.getElementById('tbodyReporte');
         const sumaSpan = document.getElementById('sumaTotalPeriodo');
@@ -158,14 +153,11 @@
         let acumulado = 0;
         let datosMostrar = data;
         
-        // Reiniciar info de paginación al inicio
         infoPaginacion = {};
         let totalGeneralPagina = 0;
         
-        // Extraer info de paginación si existe (último elemento)
         if ((tabActual === 'ventas' || tabActual === 'productos') && data.length > 0) {
             const ultimo = data[data.length - 1];
-            console.log("DEBUG - ultimo:", ultimo);
             if (ultimo.totalRegistros !== undefined) {
                 infoPaginacion = {
                     totalPaginas: ultimo.totalPaginas,
@@ -174,27 +166,17 @@
                     totalGeneral: ultimo.totalGeneral
                 };
                 totalGeneralPagina = Number(ultimo.totalGeneral) || 0;
-                console.log("DEBUG - totalGeneralPagina extraído:", totalGeneralPagina);
-                datosMostrar = data.slice(0, -1); // Quitar el elemento de paginación
+                datosMostrar = data.slice(0, -1);
             }
         }
         
-        console.log("DEBUG - tabActual:", tabActual, "totalGeneralPagina:", totalGeneralPagina, "infoPaginacion:", infoPaginacion, "datosMostrar length:", datosMostrar.length);
-        
-        // Calcular el total: usar totalGeneral si existe, o calcular desde los datos
         let totalMostrar = totalGeneralPagina;
-        console.log("DEBUG - totalMostrar antes del fallback:", totalMostrar);
         if (totalMostrar === 0 && datosMostrar.length > 0) {
-            // Fallback: calcular el acumulado de los datos mostrados
             datosMostrar.forEach(v => acumulado += v.total);
             totalMostrar = acumulado;
         }
         
-        console.log("DEBUG - totalMostrar final:", totalMostrar, "datosMostrar.length:", datosMostrar.length);
-        
-        // Siempre mostrar el total, sin condiciones
         sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
-        console.log("DEBUG - Se estableció sumaSpan a:", sumaSpan.textContent);
         
         if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
@@ -230,8 +212,6 @@
             });
             paginacionDiv.innerHTML = "";
         }
-        
-        // El total ya se estableció correctamente en la línea anterior
     }
 
     function dibujarPaginacion() {
@@ -263,7 +243,6 @@
         try {
             let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
             
-            // Agregar parámetros de paginación para ventas y productos
             if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
@@ -282,7 +261,7 @@
             const resp = await fetch(`/api/reportes/detalle/${id}`);
             const productos = await resp.json();
             const tbody = document.getElementById('t-cuerpo');
-            tbody.innerHTML = ''; // Limpiar tbody
+            tbody.innerHTML = '';
             
             for (let i = 0; i < productos.length; i++) {
                 const p = productos[i];
@@ -294,27 +273,7 @@
                 const tdProd = document.createElement('td');
                 tdProd.textContent = p.producto;
                 const tdSub = document.createElement('td');
-                tdSub.textContent = '
-                tbody.appendChild(tr);
-            }
-            
-            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
-            document.getElementById('t-fecha').textContent = fecha;
-            document.getElementById('t-total').textContent = total.toFixed(2);
-            document.getElementById('modalTicket').style.display = 'block';
-        } catch (e) { alert("Error al cargar el detalle"); }
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalTicket').style.display = 'none';
-    }
-
-    cargarReporte();
-    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
-</script>
-</body>
-</html>
- + Number(p.subtotal).toFixed(2);
+                tdSub.textContent = '$' + Number(p.subtotal).toFixed(2);
                 tdSub.style.textAlign = 'right';
                 tr.appendChild(tdCant);
                 tr.appendChild(tdProd);
@@ -334,74 +293,8 @@
     }
 
     cargarReporte();
-    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Cajero');
 </script>
-</body>
-</html>
- + Number(p.subtotal).toFixed(2);
-                tdSub.style.textAlign = 'right';
-                tr.appendChild(tdCant);
-                tr.appendChild(tdProd);
-                tr.appendChild(tdSub);
-                tbody.appendChild(tr);
-            }
-            
-            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
-            document.getElementById('t-fecha').textContent = fecha;
-            document.getElementById('t-total').textContent = total.toFixed(2);
-            document.getElementById('modalTicket').style.display = 'block';
-        } catch (e) { alert("Error al cargar el detalle"); }
-    }
 
-    function cerrarModal() {
-        document.getElementById('modalTicket').style.display = 'none';
-    }
-
-    cargarReporte();
-    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
-</script>
-</body>
-</html>
-                tbody.appendChild(tr);
-            }
-            
-            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
-            document.getElementById('t-fecha').textContent = fecha;
-            document.getElementById('t-total').textContent = total.toFixed(2);
-            document.getElementById('modalTicket').style.display = 'block';
-        } catch (e) { alert("Error al cargar el detalle"); }
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalTicket').style.display = 'none';
-    }
-
-    cargarReporte();
-    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
-</script>
-</body>
-</html>
- + Number(p.subtotal).toFixed(2);
-                tdSub.style.textAlign = 'right';
-                tr.appendChild(tdCant);
-                tr.appendChild(tdProd);
-                tr.appendChild(tdSub);
-                tbody.appendChild(tr);
-            }
-            
-            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
-            document.getElementById('t-fecha').textContent = fecha;
-            document.getElementById('t-total').textContent = total.toFixed(2);
-            document.getElementById('modalTicket').style.display = 'block';
-        } catch (e) { alert("Error al cargar el detalle"); }
-    }
-
-    function cerrarModal() {
-        document.getElementById('modalTicket').style.display = 'none';
-    }
-
-    cargarReporte();
-    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Axel');
-</script>
 </body>
 </html>
