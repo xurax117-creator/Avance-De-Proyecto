@@ -155,9 +155,14 @@
         let acumulado = 0;
         let datosMostrar = data;
         
+        // Reiniciar info de paginación al inicio
+        infoPaginacion = {};
+        let totalGeneralPagina = 0;
+        
         // Extraer info de paginación si existe (último elemento)
         if (tabActual === 'ventas' && data.length > 0) {
             const ultimo = data[data.length - 1];
+            console.log("DEBUG - ultimo:", ultimo);
             if (ultimo.totalRegistros !== undefined) {
                 infoPaginacion = {
                     totalPaginas: ultimo.totalPaginas,
@@ -165,18 +170,26 @@
                     paginaActual: ultimo.paginaActual,
                     totalGeneral: ultimo.totalGeneral
                 };
+                totalGeneralPagina = Number(ultimo.totalGeneral) || 0;
+                console.log("DEBUG - totalGeneralPagina extraído:", totalGeneralPagina);
                 datosMostrar = data.slice(0, -1); // Quitar el elemento de paginación
             }
         }
         
-        let totalGeneral = 0;
-        if (infoPaginacion && infoPaginacion.totalGeneral !== undefined && infoPaginacion.totalGeneral !== null) {
-            totalGeneral = infoPaginacion.totalGeneral;
-            sumaSpan.textContent = "$" + totalGeneral.toFixed(2);
-        } else if (datosMostrar.length > 0) {
-            // Para otros tabs o si no hay info de paginación, calcular el acumulado normalmente
+        console.log("DEBUG - tabActual:", tabActual, "totalGeneralPagina:", totalGeneralPagina, "infoPaginacion:", infoPaginacion, "datosMostrar length:", datosMostrar.length);
+        
+        // Calcular el total: usar totalGeneral si existe, o calcular desde los datos
+        let totalMostrar = totalGeneralPagina;
+        if (totalMostrar === 0 && datosMostrar.length > 0) {
+            // Fallback: calcular el acumulado de los datos mostrados
             datosMostrar.forEach(v => acumulado += v.total);
-            sumaSpan.textContent = "$" + acumulado.toFixed(2);
+            totalMostrar = acumulado;
+        }
+        
+        if (totalMostrar > 0) {
+            sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
+        } else if (datosMostrar.length > 0) {
+            sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
         } else {
             sumaSpan.textContent = "$0.00";
         }
