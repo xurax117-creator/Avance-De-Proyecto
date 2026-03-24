@@ -8,9 +8,13 @@ import java.util.*;
 public class ReporteController {
 
     @GetMapping("/ventas")
-    public List<Map<String, Object>> getVentas(@RequestParam String inicio, @RequestParam String fin) {
+    public List<Map<String, Object>> getVentas(
+            @RequestParam String inicio, 
+            @RequestParam String fin,
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "50") int tamano) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentas(inicio, fin);
+        return dao.obtenerVentas(inicio, fin, pagina, tamano);
     }
 
     @GetMapping("/detalle/{id}")

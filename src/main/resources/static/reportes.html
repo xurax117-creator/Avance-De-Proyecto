@@ -35,6 +35,12 @@
         .ticket-table th, .ticket-table td { border: none; padding: 4px 0; }
         .ticket-total { text-align: right; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 16px; }
         .btn-cerrar { width: 100%; background: #dc3545; color: white; border: none; padding: 10px; margin-top: 20px; border-radius: 4px; cursor: pointer; font-family: sans-serif; }
+        
+        .paginacion { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 15px; background: white; border-radius: 8px; }
+        .paginacion button { padding: 8px 12px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; }
+        .paginacion button:hover { background: #19A337; color: white; border-color: #19A337; }
+        .paginacion button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .paginacion span { font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
@@ -74,6 +80,8 @@
     </table>
 </div>
 
+<div id="paginacion" class="paginacion"></div>
+
 <div id="modalTicket" class="modal">
     <div class="modal-content">
         <div class="ticket-header">
@@ -100,6 +108,9 @@
 
 <script>
     let tabActual = 'ventas';
+    let paginaActual = 1;
+    let tamanoPagina = 50;
+    let infoPaginacion = { totalPaginas: 1, totalRegistros: 0 };
 
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fechaInicio').value = hoy;
@@ -109,6 +120,7 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         tabActual = tipo;
+        paginaActual = 1; // Reiniciar paginación al cambiar de tab
         cargarReporte();
     }
 
@@ -116,8 +128,18 @@
         const fInicio = document.getElementById('fechaInicio').value;
         const fFin = document.getElementById('fechaFin').value;
         
+        // Reiniciar paginación al cambiar de fecha
+        paginaActual = 1;
+        
         try {
-            const resp = await fetch(`/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`);
+            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
+            
+            // Agregar parámetros de paginación solo para ventas
+            if (tabActual === 'ventas') {
+                url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+            }
+            
+            const resp = await fetch(url);
             const data = await resp.json();
             dibujarTabla(data);
         } catch (e) { console.error("Error:", e); }
@@ -127,47 +149,90 @@
         const thead = document.getElementById('theadReporte');
         const tbody = document.getElementById('tbodyReporte');
         const sumaSpan = document.getElementById('sumaTotalPeriodo');
+        const paginacionDiv = document.getElementById('paginacion');
         thead.innerHTML = ""; tbody.innerHTML = "";
 
         let acumulado = 0;
+        let datosMostrar = data;
+        
+        // Extraer info de paginación si existe (último elemento)
+        if (tabActual === 'ventas' && data.length > 0) {
+            const ultimo = data[data.length - 1];
+            if (ultimo.totalRegistros !== undefined) {
+                infoPaginacion = {
+                    totalPaginas: ultimo.totalPaginas,
+                    totalRegistros: ultimo.totalRegistros,
+                    paginaActual: ultimo.paginaActual
+                };
+                datosMostrar = data.slice(0, -1); // Quitar el elemento de paginación
+            }
+        }
 
-        if (data.length === 0) {
+        if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
             sumaSpan.textContent = "$0.00";
+            paginacionDiv.innerHTML = "";
             return;
         }
 
         if (tabActual === 'ventas') {
-            thead.innerHTML = "<tr><th>ID</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
-            data.forEach(v => {
+            thead.innerHTML = "<tr><th>No. Venta</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
+            datosMostrar.forEach(v => {
                 acumulado += v.total;
                 tbody.innerHTML += `
                     <tr>
-                        <td>${v.idVenta}</td>
+                        <td>${v.numeroVenta}</td>
                         <td>${v.fecha}</td>
                         <td>${v.nombre}</td>
-                        <td>$${v.total.toFixed(2)}</td>
-                        <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total})">Detalles</button></td>
+                        <td>${v.total.toFixed(2)}</td>
+                        <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta})">Detalles</button></td>
                     </tr>`;
             });
+            dibujarPaginacion();
         } else if (tabActual === 'productos') {
             thead.innerHTML = "<tr><th>Producto</th><th>Cant. Vendida</th><th>Total</th></tr>";
-            data.forEach(p => {
+            datosMostrar.forEach(p => {
                 acumulado += p.total;
-                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${p.cantidad}</td><td>$${p.total.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${p.cantidad}</td><td>${p.total.toFixed(2)}</td></tr>`;
             });
+            paginacionDiv.innerHTML = "";
         } else if (tabActual === 'cajeros') {
             thead.innerHTML = "<tr><th>Cajero</th><th>Ventas Realizadas</th><th>Total Recaudado</th></tr>";
-            data.forEach(c => {
+            datosMostrar.forEach(c => {
                 acumulado += c.total;
-                tbody.innerHTML += `<tr><td>${c.nombre}</td><td>${c.numVentas}</td><td>$${c.total.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${c.nombre}</td><td>${c.numVentas}</td><td>${c.total.toFixed(2)}</td></tr>`;
             });
+            paginacionDiv.innerHTML = "";
         }
         
         sumaSpan.textContent = `${acumulado.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
     }
 
-    async function abrirDetalles(id, fecha, total) {
+    function dibujarPaginacion() {
+        const paginacionDiv = document.getElementById('paginacion');
+        if (tabActual !== 'ventas') {
+            paginacionDiv.innerHTML = "";
+            return;
+        }
+
+        let html = `<button onclick="cambiarPagina(-1)" ${paginaActual === 1 ? 'disabled' : ''}>◀ Anterior</button>`;
+        html += `<span>Página ${paginaActual} de ${infoPaginacion.totalPaginas} (${infoPaginacion.totalRegistros} ventas)</span>`;
+        html += `<button onclick="cambiarPagina(1)" ${paginaActual >= infoPaginacion.totalPaginas ? 'disabled' : ''}>Siguiente ▶</button>`;
+        paginacionDiv.innerHTML = html;
+    }
+
+    function cambiarPagina(direccion) {
+        const nuevaPagina = paginaActual + direccion;
+        if (nuevaPagina >= 1 && nuevaPagina <= infoPaginacion.totalPaginas) {
+            paginaActual = nuevaPagina;
+            cargarReporte();
+        }
+    }
+
+    let ultimoNumeroVenta = 0;
+
+    async function abrirDetalles(id, fecha, total, numeroVenta) {
+        ultimoNumeroVenta = numeroVenta || id;
         try {
             const resp = await fetch(`/api/reportes/detalle/${id}`);
             const productos = await resp.json();
@@ -179,7 +244,7 @@
                     <td style="text-align:right">$${p.subtotal.toFixed(2)}</td>
                 </tr>`;
             });
-            document.getElementById('t-folio').textContent = id;
+            document.getElementById('t-folio').textContent = ultimoNumeroVenta;
             document.getElementById('t-fecha').textContent = fecha;
             document.getElementById('t-total').textContent = total.toFixed(2);
             document.getElementById('t-cuerpo').innerHTML = filas;
