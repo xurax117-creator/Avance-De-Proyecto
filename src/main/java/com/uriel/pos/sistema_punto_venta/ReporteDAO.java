@@ -143,11 +143,9 @@ public class ReporteDAO {
             rsCount.close();
             psCount.close();
             
-            // Obtener el total general de ventas en el período
+            // Obtener el total general de ventas en el período (usar la misma tabla ventas para consistencia)
             double totalGeneral = 0;
-            String sqlSum = "SELECT COALESCE(SUM(dv.cantidad * dv.precio_unitario), 0) as total_general " +
-                           "FROM detalle_venta dv JOIN ventas v ON dv.id_venta = v.id_venta " +
-                           "WHERE DATE(v.fecha) BETWEEN ? AND ?";
+            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE DATE(fecha) BETWEEN ? AND ?";
             PreparedStatement psSum = c.prepareStatement(sqlSum);
             psSum.setString(1, inicio);
             psSum.setString(2, fin);
