@@ -146,6 +146,7 @@
     }
 
     function dibujarTabla(data) {
+        console.log("DEBUG - dibujarTabla llamado con data length:", data.length);
         const thead = document.getElementById('theadReporte');
         const tbody = document.getElementById('tbodyReporte');
         const sumaSpan = document.getElementById('sumaTotalPeriodo');
@@ -180,19 +181,18 @@
         
         // Calcular el total: usar totalGeneral si existe, o calcular desde los datos
         let totalMostrar = totalGeneralPagina;
+        console.log("DEBUG - totalMostrar antes del fallback:", totalMostrar);
         if (totalMostrar === 0 && datosMostrar.length > 0) {
             // Fallback: calcular el acumulado de los datos mostrados
             datosMostrar.forEach(v => acumulado += v.total);
             totalMostrar = acumulado;
         }
         
-        if (totalMostrar > 0) {
-            sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
-        } else if (datosMostrar.length > 0) {
-            sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
-        } else {
-            sumaSpan.textContent = "$0.00";
-        }
+        console.log("DEBUG - totalMostrar final:", totalMostrar, "datosMostrar.length:", datosMostrar.length);
+        
+        // Siempre mostrar el total, sin condiciones
+        sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
+        console.log("DEBUG - Se estableció sumaSpan a:", sumaSpan.textContent);
         
         if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
