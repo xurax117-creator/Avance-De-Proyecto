@@ -347,9 +347,10 @@
             
             document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
-            document.getElementById('txtPago').value = "";
+            document.getElementById('txtPago').value = totalVenta.toFixed(2);
             document.getElementById('modalPago').classList.add('active');
             document.getElementById('txtPago').focus();
+            document.getElementById('txtPago').select();
         }
         
         function cerrarModalPago() {
