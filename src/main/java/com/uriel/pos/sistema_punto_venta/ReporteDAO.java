@@ -121,20 +121,56 @@ public class ReporteDAO {
         return lista;
     }
 
-    public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin) {
+    public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin, int pagina, int tamanoPagina) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
+            
+            // Obtener total de productos diferentes vendidos
+            String sqlCount = "SELECT COUNT(DISTINCT p.id_producto) as total " +
+                             "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
+                             "JOIN ventas v ON dv.id_venta = v.id_venta " +
+                             "WHERE DATE(v.fecha) BETWEEN ? AND ?";
+            PreparedStatement psCount = c.prepareStatement(sqlCount);
+            psCount.setString(1, inicio);
+            psCount.setString(2, fin);
+            ResultSet rsCount = psCount.executeQuery();
+            int totalRegistros = 0;
+            if (rsCount.next()) {
+                totalRegistros = rsCount.getInt("total");
+            }
+            rsCount.close();
+            psCount.close();
+            
+            // Obtener el total general de ventas en el período
+            double totalGeneral = 0;
+            String sqlSum = "SELECT COALESCE(SUM(dv.cantidad * dv.precio_unitario), 0) as total_general " +
+                           "FROM detalle_venta dv JOIN ventas v ON dv.id_venta = v.id_venta " +
+                           "WHERE DATE(v.fecha) BETWEEN ? AND ?";
+            PreparedStatement psSum = c.prepareStatement(sqlSum);
+            psSum.setString(1, inicio);
+            psSum.setString(2, fin);
+            ResultSet rsSum = psSum.executeQuery();
+            if (rsSum.next()) {
+                totalGeneral = rsSum.getDouble("total_general");
+            }
+            rsSum.close();
+            psSum.close();
+            
+            int offset = (pagina - 1) * tamanoPagina;
+            
             String sql = "SELECT p.nombre, SUM(dv.cantidad) as cant, SUM(dv.cantidad * dv.precio_unitario) as total " +
                          "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
                          "JOIN ventas v ON dv.id_venta = v.id_venta " +
                          "WHERE DATE(v.fecha) BETWEEN ? AND ? " +
-                         "GROUP BY p.id_producto ORDER BY cant DESC LIMIT 10";
+                         "GROUP BY p.id_producto ORDER BY cant DESC LIMIT ? OFFSET ?";
             
             PreparedStatement ps = c.prepareStatement(sql);
             ps.setString(1, inicio);
             ps.setString(2, fin);
+            ps.setInt(3, tamanoPagina);
+            ps.setInt(4, offset);
             ResultSet rs = ps.executeQuery();
             
             while(rs.next()) {
@@ -144,9 +180,26 @@ public class ReporteDAO {
                 map.put("total", rs.getDouble("total"));
                 lista.add(map);
             }
+            rs.close();
+            ps.close();
+            
+            // Agregar información de paginación
+            Map<String, Object> pagInfo = new HashMap<>();
+            pagInfo.put("totalRegistros", totalRegistros);
+            pagInfo.put("totalGeneral", totalGeneral);
+            pagInfo.put("paginaActual", pagina);
+            pagInfo.put("tamanoPagina", tamanoPagina);
+            pagInfo.put("totalPaginas", Math.max(1, (int) Math.ceil((double) totalRegistros / tamanoPagina)));
+            lista.add(pagInfo);
+            
             c.close();
         } catch(Exception e) { e.printStackTrace(); }
         return lista;
+    }
+    
+    // Método sin paginación (para compatibilidad)
+    public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin) {
+        return obtenerTopProductos(inicio, fin, 1, 1000);
     }
 
     public List<Map<String, Object>> obtenerVentasPorCajero(String inicio, String fin) {

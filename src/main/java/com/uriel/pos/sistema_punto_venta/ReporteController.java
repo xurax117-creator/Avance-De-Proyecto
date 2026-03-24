@@ -24,9 +24,13 @@ public class ReporteController {
     }
 
     @GetMapping("/productos")
-    public List<Map<String, Object>> getTopProductos(@RequestParam String inicio, @RequestParam String fin) {
+    public List<Map<String, Object>> getTopProductos(
+            @RequestParam String inicio, 
+            @RequestParam String fin,
+            @RequestParam(defaultValue = "1") int pagina,
+            @RequestParam(defaultValue = "50") int tamano) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerTopProductos(inicio, fin);
+        return dao.obtenerTopProductos(inicio, fin, pagina, tamano);
     }
 
     @GetMapping("/cajeros")

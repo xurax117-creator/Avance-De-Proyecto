@@ -134,8 +134,8 @@
         try {
             let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
             
-            // Agregar parámetros de paginación solo para ventas
-            if (tabActual === 'ventas') {
+            // Agregar parámetros de paginación para ventas y productos
+            if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
             
@@ -163,7 +163,7 @@
         let totalGeneralPagina = 0;
         
         // Extraer info de paginación si existe (último elemento)
-        if (tabActual === 'ventas' && data.length > 0) {
+        if ((tabActual === 'ventas' || tabActual === 'productos') && data.length > 0) {
             const ultimo = data[data.length - 1];
             console.log("DEBUG - ultimo:", ultimo);
             if (ultimo.totalRegistros !== undefined) {
@@ -221,7 +221,7 @@
                 acumulado += p.total;
                 tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${p.cantidad}</td><td>${p.total.toFixed(2)}</td></tr>`;
             });
-            paginacionDiv.innerHTML = "";
+            dibujarPaginacion();
         } else if (tabActual === 'cajeros') {
             thead.innerHTML = "<tr><th>Cajero</th><th>Ventas Realizadas</th><th>Total Recaudado</th></tr>";
             datosMostrar.forEach(c => {
@@ -236,13 +236,14 @@
 
     function dibujarPaginacion() {
         const paginacionDiv = document.getElementById('paginacion');
-        if (tabActual !== 'ventas') {
+        if (tabActual !== 'ventas' && tabActual !== 'productos') {
             paginacionDiv.innerHTML = "";
             return;
         }
-
+        
+        const titulo = tabActual === 'ventas' ? 'ventas' : 'productos';
         let html = `<button onclick="cambiarPagina(-1)" ${paginaActual === 1 ? 'disabled' : ''}>◀ Anterior</button>`;
-        html += `<span>Página ${paginaActual} de ${infoPaginacion.totalPaginas} (${infoPaginacion.totalRegistros} ventas)</span>`;
+        html += `<span>Página ${paginaActual} de ${infoPaginacion.totalPaginas} (${infoPaginacion.totalRegistros} ${titulo})</span>`;
         html += `<button onclick="cambiarPagina(1)" ${paginaActual >= infoPaginacion.totalPaginas ? 'disabled' : ''}>Siguiente ▶</button>`;
         paginacionDiv.innerHTML = html;
     }
@@ -262,8 +263,8 @@
         try {
             let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
             
-            // Agregar parámetros de paginación solo para ventas
-            if (tabActual === 'ventas') {
+            // Agregar parámetros de paginación para ventas y productos
+            if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
             
