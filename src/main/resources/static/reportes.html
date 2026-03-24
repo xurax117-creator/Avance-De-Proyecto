@@ -284,6 +284,9 @@
             let filas = "";
             console.log("DEBUG - productos:", productos);
             productos.forEach(p => {
+                // Ignorar productos vacíos o sin nombre
+                if (!p.producto) return;
+                
                 console.log("DEBUG - p.cantidad:", p.cantidad, "type:", typeof p.cantidad);
                 console.log("DEBUG - p.subtotal:", p.subtotal, "type:", typeof p.subtotal);
                 let cant = parseFloat(p.cantidad);
