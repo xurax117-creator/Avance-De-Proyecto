@@ -111,7 +111,7 @@ public class ReporteDAO {
             while(rs.next()) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("producto", rs.getString("nombre"));
-                map.put("cantidad", rs.getInt("cantidad"));
+                map.put("cantidad", rs.getDouble("cantidad"));
                 map.put("precio", rs.getDouble("precio_unitario"));
                 map.put("subtotal", rs.getDouble("subtotal"));
                 lista.add(map);

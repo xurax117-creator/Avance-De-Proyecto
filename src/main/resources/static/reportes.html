@@ -219,7 +219,7 @@
             thead.innerHTML = "<tr><th>Producto</th><th>Cant. Vendida</th><th>Total</th></tr>";
             datosMostrar.forEach(p => {
                 acumulado += p.total;
-                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${p.cantidad}</td><td>${p.total.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${Number(p.cantidad).toFixed(3)}</td><td>${Number(p.total).toFixed(2)}</td></tr>`;
             });
             dibujarPaginacion();
         } else if (tabActual === 'cajeros') {
@@ -284,9 +284,9 @@
             let filas = "";
             productos.forEach(p => {
                 filas += `<tr>
-                    <td>${p.cantidad}</td>
+                    <td>${Number(p.cantidad).toFixed(3)}</td>
                     <td>${p.producto}</td>
-                    <td style="text-align:right">$${p.subtotal.toFixed(2)}</td>
+                    <td style="text-align:right">${Number(p.subtotal).toFixed(2)}</td>
                 </tr>`;
             });
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
