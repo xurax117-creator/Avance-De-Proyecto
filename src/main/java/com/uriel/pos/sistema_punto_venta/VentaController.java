@@ -117,7 +117,6 @@ public class VentaController {
     // Guardar venta en espera (on hold)
     @PostMapping("/espera")
     public Map<String, Object> guardarVentaEnEspera(@RequestBody Map<String, Object> request) {
-        System.out.println(">>> Controller: Recibido request");
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
@@ -129,35 +128,34 @@ public class VentaController {
             int userId = 1;
             double total = 0.0;
             
-            if (userIdObj instanceof Integer) {
-                userId = (Integer) userIdObj;
-            } else if (userIdObj instanceof Number) {
-                userId = ((Number) userIdObj).intValue();
+            if (userIdObj != null) {
+                if (userIdObj instanceof Integer) {
+                    userId = (Integer) userIdObj;
+                } else if (userIdObj instanceof Number) {
+                    userId = ((Number) userIdObj).intValue();
+                }
             }
             
-            if (totalObj instanceof Double) {
-                total = (Double) totalObj;
-            } else if (totalObj instanceof Number) {
-                total = ((Number) totalObj).doubleValue();
+            if (totalObj != null) {
+                if (totalObj instanceof Double) {
+                    total = (Double) totalObj;
+                } else if (totalObj instanceof Number) {
+                    total = ((Number) totalObj).doubleValue();
+                }
             }
-            
-            System.out.println("Datos: nombre=" + nombreVenta + ", userId=" + userId + ", total=" + total);
             
             int id = oper.guardarVentaEnEspera(nombreVenta, userId, total, detallesJson);
-            System.out.println("ID retornado del modelo: " + id);
             
             if (id > 0) {
                 response.put("success", true);
                 response.put("idVentaEspera", id);
             } else {
                 response.put("success", false);
-                response.put("message", "Error al guardar la venta en espera (id returned: " + id + ")");
+                response.put("message", "Error al guardar. La tabla ventas_en_espera puede no existir. Por favor créala manualmente en tu base de datos.");
             }
         } catch (Exception e) {
-            System.out.println("Controller Exception: " + e.getMessage());
-            e.printStackTrace();
             response.put("success", false);
-            response.put("message", "Error en servidor: " + e.getMessage());
+            response.put("message", "Error: " + e.getMessage());
         }
         return response;
     }

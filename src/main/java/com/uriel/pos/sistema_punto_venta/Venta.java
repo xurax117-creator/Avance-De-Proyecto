@@ -164,47 +164,41 @@ public class Venta {
     
     // Guardar venta en espera
     public int guardarVentaEnEspera(String nombreVenta, int idUsuario, double total, String detallesJson) {
-        System.out.println(">>> INICIO guardarVentaEnEspera");
         int id = -1;
         Connection c = null;
+        
         try {
-            System.out.println("1. Creando conexion...");
             Conexion con = new Conexion();
             c = con.conectar();
-            System.out.println("2. Conexion: " + (c != null ? "OK" : "NULL"));
             
             if (c == null) {
-                System.out.println("Error: Conexión es null");
                 return -1;
             }
             
-            System.out.println("3. Intentando insertar...");
-            String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
-            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-            stmt.setString(1, nombreVenta);
-            stmt.setInt(2, idUsuario);
-            stmt.setDouble(3, total);
-            stmt.setString(4, detallesJson);
-            int rows = stmt.executeUpdate();
-            System.out.println("4. Filas insertadas: " + rows);
-
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                id = rs.getInt(1);
-                System.out.println("5. ID generado: " + id);
+            // Usar Statement directo para evitar problemas con PreparedStatement
+            String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) " +
+                        "VALUES ('" + nombreVenta.replace("'", "''") + "', " + 
+                        idUsuario + ", " + total + ", '" + detallesJson.replace("'", "''") + "')";
+            
+            java.sql.Statement stmt = c.createStatement();
+            int rows = stmt.executeUpdate(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
+            
+            if (rows > 0) {
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+                rs.close();
             }
-
-            rs.close();
+            
             stmt.close();
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-            System.out.println("SQL State: " + e.getSQLState());
+            
         } catch (Exception e) {
-            System.out.println("Error general: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             try { if (c != null) c.close(); } catch (Exception e) {}
         }
-        System.out.println(">>> FIN guardarVentaEnEspera, retorna: " + id);
+        
         return id;
     }
     
