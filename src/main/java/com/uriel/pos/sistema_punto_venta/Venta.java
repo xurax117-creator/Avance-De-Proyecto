@@ -170,26 +170,25 @@ public class Venta {
             Conexion con = new Conexion();
             c = con.conectar();
             
-            // Primero verificar si la tabla existe
+            if (c == null) {
+                System.out.println("Error: Conexión es null");
+                return -1;
+            }
+            
+            // Crear la tabla si no existe
             try {
-                java.sql.DatabaseMetaData meta = c.getMetaData();
-                ResultSet rs = meta.getTables(null, null, "ventas_en_espera", null);
-                if (!rs.next()) {
-                    // La tabla no existe, crearla
-                    java.sql.Statement stmt = c.createStatement();
-                    stmt.execute("CREATE TABLE ventas_en_espera (" +
-                        "id_venta_espera INT AUTO_INCREMENT PRIMARY KEY, " +
-                        "nombre_venta VARCHAR(100), " +
-                        "fecha DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                        "id_usuario INT, " +
-                        "total DECIMAL(10,2) NOT NULL, " +
-                        "detalles TEXT NOT NULL)");
-                    stmt.close();
-                    System.out.println("Tabla ventas_en_espera creada automáticamente");
-                }
-                rs.close();
-            } catch (Exception e) {
-                System.out.println("Error verificando/creando tabla: " + e.getMessage());
+                java.sql.Statement stmt = c.createStatement();
+                stmt.execute("CREATE TABLE IF NOT EXISTS ventas_en_espera (" +
+                    "id_venta_espera INT AUTO_INCREMENT PRIMARY KEY, " +
+                    "nombre_venta VARCHAR(100), " +
+                    "fecha DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "id_usuario INT, " +
+                    "total DECIMAL(10,2) NOT NULL, " +
+                    "detalles TEXT NOT NULL)");
+                stmt.close();
+                System.out.println("Tabla verificada/creada OK");
+            } catch (SQLException e) {
+                System.out.println("Error creando tabla: " + e.getMessage());
             }
             
             String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
@@ -198,7 +197,8 @@ public class Venta {
             stmt.setInt(2, idUsuario);
             stmt.setDouble(3, total);
             stmt.setString(4, detallesJson);
-            stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
+            System.out.println("Filas insertadas: " + rows);
 
             ResultSet rs = stmt.getGeneratedKeys();
             if (rs.next()) {
@@ -207,12 +207,17 @@ public class Venta {
 
             rs.close();
             stmt.close();
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL State: " + e.getSQLState());
+            e.printStackTrace();
         } catch (Exception e) {
-            System.out.println("Error en guardarVentaEnEspera: " + e.getMessage());
+            System.out.println("Error general: " + e.getMessage());
             e.printStackTrace();
         } finally {
             try { if (c != null) c.close(); } catch (Exception e) {}
         }
+        System.out.println("ID retornado: " + id);
         return id;
     }
     
