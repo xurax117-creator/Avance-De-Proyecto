@@ -170,11 +170,27 @@ public class Venta {
             Conexion con = new Conexion();
             c = con.conectar();
             
-            System.out.println("Intentando guardar venta en espera:");
-            System.out.println("nombreVenta: " + nombreVenta);
-            System.out.println("idUsuario: " + idUsuario);
-            System.out.println("total: " + total);
-            System.out.println("detallesJson length: " + (detallesJson != null ? detallesJson.length() : 0));
+            // Primero verificar si la tabla existe
+            try {
+                java.sql.DatabaseMetaData meta = c.getMetaData();
+                ResultSet rs = meta.getTables(null, null, "ventas_en_espera", null);
+                if (!rs.next()) {
+                    // La tabla no existe, crearla
+                    java.sql.Statement stmt = c.createStatement();
+                    stmt.execute("CREATE TABLE ventas_en_espera (" +
+                        "id_venta_espera INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "nombre_venta VARCHAR(100), " +
+                        "fecha DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                        "id_usuario INT, " +
+                        "total DECIMAL(10,2) NOT NULL, " +
+                        "detalles TEXT NOT NULL)");
+                    stmt.close();
+                    System.out.println("Tabla ventas_en_espera creada automáticamente");
+                }
+                rs.close();
+            } catch (Exception e) {
+                System.out.println("Error verificando/creando tabla: " + e.getMessage());
+            }
             
             String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
@@ -182,14 +198,11 @@ public class Venta {
             stmt.setInt(2, idUsuario);
             stmt.setDouble(3, total);
             stmt.setString(4, detallesJson);
-            
-            int rowsAffected = stmt.executeUpdate();
-            System.out.println("Rows affected: " + rowsAffected);
+            stmt.executeUpdate();
 
             ResultSet rs = stmt.getGeneratedKeys();
             if (rs.next()) {
                 id = rs.getInt(1);
-                System.out.println("Generated ID: " + id);
             }
 
             rs.close();
