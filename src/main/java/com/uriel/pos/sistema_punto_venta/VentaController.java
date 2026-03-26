@@ -113,4 +113,64 @@ public class VentaController {
         }
         return response;
     }
+    
+    // Guardar venta en espera (on hold)
+    @PostMapping("/espera")
+    public Map<String, Object> guardarVentaEnEspera(@RequestBody Map<String, Object> request) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String nombreVenta = (String) request.get("nombreVenta");
+            int userId = (Integer) request.get("userId");
+            double total = (Double) request.get("total");
+            String detallesJson = (String) request.get("detalles");
+            
+            int id = oper.guardarVentaEnEspera(nombreVenta, userId, total, detallesJson);
+            if (id > 0) {
+                response.put("success", true);
+                response.put("idVentaEspera", id);
+            } else {
+                response.put("success", false);
+                response.put("message", "Error al guardar la venta en espera");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+    
+    // Obtener todas las ventas en espera
+    @GetMapping("/espera")
+    public Map<String, Object> obtenerVentasEnEspera() {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<VentaEnEspera> ventas = oper.obtenerVentasEnEspera();
+            response.put("success", true);
+            response.put("ventas", ventas);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+    
+    // Eliminar venta en espera
+    @DeleteMapping("/espera/{id}")
+    public Map<String, Object> eliminarVentaEnEspera(@PathVariable int id) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            oper.eliminarVentaEnEspera(id);
+            response.put("success", true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
 }

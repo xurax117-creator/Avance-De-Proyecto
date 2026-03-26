@@ -74,6 +74,17 @@ CREATE TABLE entradas_inventario (
 -- Agregar columna de foto a productos
 ALTER TABLE productos ADD COLUMN foto_producto_blob LONGBLOB;
 
+-- Tabla para ventas en espera (on hold)
+CREATE TABLE ventas_en_espera (
+    id_venta_espera INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_venta VARCHAR(100),
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    id_usuario INT,
+    total DECIMAL(10,2) NOT NULL,
+    detalles JSON NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
+);
+
 INSERT INTO usuarios (nombre_completo, alias, contraseña, rol, activo)
 VALUES ('Axel Uriel Moreno Cervantes', 'Axel', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQsV3H', 'Administrador', True);
 

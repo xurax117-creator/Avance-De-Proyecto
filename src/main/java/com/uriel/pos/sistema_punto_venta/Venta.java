@@ -161,6 +161,148 @@ public class Venta {
             }
         }
     }
+    
+    // Guardar venta en espera
+    public int guardarVentaEnEspera(String nombreVenta, int idUsuario, double total, String detallesJson) {
+        int id = -1;
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
+            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            stmt.setString(1, nombreVenta);
+            stmt.setInt(2, idUsuario);
+            stmt.setDouble(3, total);
+            stmt.setString(4, detallesJson);
+            stmt.executeUpdate();
+
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                id = rs.getInt(1);
+            }
+
+            rs.close();
+            stmt.close();
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return id;
+    }
+    
+    // Obtener todas las ventas en espera
+    public List<VentaEnEspera> obtenerVentasEnEspera() {
+        List<VentaEnEspera> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+
+            String sql = "SELECT id_venta_espera, nombre_venta, fecha, id_usuario, total, detalles FROM ventas_en_espera ORDER BY fecha DESC";
+            PreparedStatement stmt = c.prepareStatement(sql);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String detallesJson = rs.getString("detalles");
+                List<DetalleVenta> detalles = parsearDetalles(detallesJson);
+                
+                lista.add(new VentaEnEspera(
+                    rs.getInt("id_venta_espera"),
+                    rs.getString("nombre_venta"),
+                    rs.getString("fecha"),
+                    rs.getInt("id_usuario"),
+                    rs.getDouble("total"),
+                    detalles
+                ));
+            }
+
+            rs.close();
+            stmt.close();
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+    
+    // Parsear detalles desde JSON
+    private List<DetalleVenta> parsearDetalles(String json) {
+        List<DetalleVenta> lista = new ArrayList<>();
+        try {
+            // Simple JSON parsing without library
+            json = json.trim();
+            if (json.startsWith("[")) {
+                json = json.substring(1, json.length() - 1);
+            }
+            
+            // Split by },{" to get individual objects
+            String[] objetos = json.split("\\},\\s*\\{");
+            for (String obj : objetos) {
+                obj = obj.replace("{", "").replace("}", "");
+                
+                int idProducto = 0;
+                String codigo = "";
+                String nombre = "";
+                double precio = 0;
+                int cantidad = 0;
+                
+                String[] campos = obj.split(",");
+                for (String campo : campos) {
+                    String[] kv = campo.split(":");
+                    if (kv.length >= 2) {
+                        String key = kv[0].trim().replace("\"", "");
+                        String value = kv[1].trim().replace("\"", "");
+                        
+                        switch (key) {
+                            case "idProducto":
+                            case "id_producto":
+                                idProducto = Integer.parseInt(value);
+                                break;
+                            case "codigo":
+                            case "codigo_barras":
+                                codigo = value;
+                                break;
+                            case "nombre":
+                                nombre = value;
+                                break;
+                            case "precio":
+                            case "precio_venta":
+                            case "precioUnitario":
+                                precio = Double.parseDouble(value);
+                                break;
+                            case "cantidad":
+                                cantidad = Integer.parseInt(value);
+                                break;
+                        }
+                    }
+                }
+                
+                if (idProducto > 0) {
+                    lista.add(new DetalleVenta(idProducto, codigo, nombre, precio, cantidad));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+    
+    // Eliminar venta en espera
+    public void eliminarVentaEnEspera(int id) {
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = "DELETE FROM ventas_en_espera WHERE id_venta_espera = ?";
+            PreparedStatement stmt = c.prepareStatement(sql);
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+            stmt.close();
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 class ProductoData {
@@ -193,5 +335,40 @@ class ProductoDataList {
     
     public ProductoDataList(List<ProductoData> productos) {
         this.productos = productos;
+    }
+}
+
+// Clase para ventas en espera
+class VentaEnEspera {
+    public int idVentaEspera;
+    public String nombreVenta;
+    public String fecha;
+    public int idUsuario;
+    public double total;
+    public List<DetalleVenta> detalles;
+    
+    public VentaEnEspera(int idVentaEspera, String nombreVenta, String fecha, int idUsuario, double total, List<DetalleVenta> detalles) {
+        this.idVentaEspera = idVentaEspera;
+        this.nombreVenta = nombreVenta;
+        this.fecha = fecha;
+        this.idUsuario = idUsuario;
+        this.total = total;
+        this.detalles = detalles;
+    }
+}
+
+class DetalleVenta {
+    public int idProducto;
+    public String codigo;
+    public String nombre;
+    public double precio;
+    public int cantidad;
+    
+    public DetalleVenta(int idProducto, String codigo, String nombre, double precio, int cantidad) {
+        this.idProducto = idProducto;
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.precio = precio;
+        this.cantidad = cantidad;
     }
 }
