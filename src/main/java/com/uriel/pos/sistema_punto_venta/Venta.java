@@ -175,14 +175,19 @@ public class Venta {
                 return -1;
             }
             
-            // Probar si la tabla existe
-            java.sql.DatabaseMetaData meta = c.getMetaData();
-            ResultSet rs = meta.getTables(null, null, "ventas_en_espera", new String[]{"TABLE"});
-            boolean existe = rs.next();
-            rs.close();
-            
-            if (!existe) {
-                return -2; // Tabla no existe
+            // Intentar crear la tabla si no existe
+            try {
+                java.sql.Statement stmt = c.createStatement();
+                stmt.execute("CREATE TABLE IF NOT EXISTS ventas_en_espera (" +
+                    "id_venta_espera INT AUTO_INCREMENT PRIMARY KEY, " +
+                    "nombre_venta VARCHAR(100), " +
+                    "fecha DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "id_usuario INT, " +
+                    "total DECIMAL(10,2) NOT NULL, " +
+                    "detalles TEXT NOT NULL)");
+                stmt.close();
+            } catch (SQLException e) {
+                // Ignorar error al crear, puede que ya exista
             }
             
             // Insertar datos
@@ -250,13 +255,12 @@ public class Venta {
     private List<DetalleVenta> parsearDetalles(String json) {
         List<DetalleVenta> lista = new ArrayList<>();
         try {
-            // Simple JSON parsing without library
+            if (json == null || json.trim().isEmpty()) return lista;
             json = json.trim();
             if (json.startsWith("[")) {
                 json = json.substring(1, json.length() - 1);
             }
             
-            // Split by },{" to get individual objects
             String[] objetos = json.split("\\},\\s*\\{");
             for (String obj : objetos) {
                 obj = obj.replace("{", "").replace("}", "");
@@ -276,19 +280,15 @@ public class Venta {
                         
                         switch (key) {
                             case "idProducto":
-                            case "id_producto":
                                 idProducto = Integer.parseInt(value);
                                 break;
                             case "codigo":
-                            case "codigo_barras":
                                 codigo = value;
                                 break;
                             case "nombre":
                                 nombre = value;
                                 break;
                             case "precio":
-                            case "precio_venta":
-                            case "precioUnitario":
                                 precio = Double.parseDouble(value);
                                 break;
                             case "cantidad":

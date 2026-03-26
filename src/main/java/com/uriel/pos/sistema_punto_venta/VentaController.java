@@ -114,7 +114,7 @@ public class VentaController {
         return response;
     }
     
-    // Guardar venta en espera (on hold)
+    // Guardar venta en espera
     @PostMapping("/espera")
     public Map<String, Object> guardarVentaEnEspera(@RequestBody Map<String, Object> request) {
         Venta oper = new Venta();
@@ -128,28 +128,17 @@ public class VentaController {
             int userId = 1;
             double total = 0.0;
             
-            if (userIdObj != null) {
-                if (userIdObj instanceof Integer) {
-                    userId = (Integer) userIdObj;
-                } else if (userIdObj instanceof Number) {
-                    userId = ((Number) userIdObj).intValue();
-                }
+            if (userIdObj != null && userIdObj instanceof Number) {
+                userId = ((Number) userIdObj).intValue();
             }
             
-            if (totalObj != null) {
-                if (totalObj instanceof Double) {
-                    total = (Double) totalObj;
-                } else if (totalObj instanceof Number) {
-                    total = ((Number) totalObj).doubleValue();
-                }
+            if (totalObj != null && totalObj instanceof Number) {
+                total = ((Number) totalObj).doubleValue();
             }
             
             int id = oper.guardarVentaEnEspera(nombreVenta, userId, total, detallesJson);
             
-            if (id == -2) {
-                response.put("success", false);
-                response.put("message", "La tabla ventas_en_espera no existe en la base de datos. Por favor créala.");
-            } else if (id > 0) {
+            if (id > 0) {
                 response.put("success", true);
                 response.put("idVentaEspera", id);
             } else {
@@ -163,7 +152,7 @@ public class VentaController {
         return response;
     }
     
-    // Obtener todas las ventas en espera
+    // Obtener ventas en espera
     @GetMapping("/espera")
     public Map<String, Object> obtenerVentasEnEspera() {
         Venta oper = new Venta();
@@ -173,9 +162,8 @@ public class VentaController {
             response.put("success", true);
             response.put("ventas", ventas);
         } catch (Exception e) {
-            e.printStackTrace();
             response.put("success", false);
-            response.put("message", "Error en servidor.");
+            response.put("message", "Error: " + e.getMessage());
         }
         return response;
     }
@@ -189,9 +177,8 @@ public class VentaController {
             oper.eliminarVentaEnEspera(id);
             response.put("success", true);
         } catch (Exception e) {
-            e.printStackTrace();
             response.put("success", false);
-            response.put("message", "Error en servidor.");
+            response.put("message", "Error: " + e.getMessage());
         }
         return response;
     }
