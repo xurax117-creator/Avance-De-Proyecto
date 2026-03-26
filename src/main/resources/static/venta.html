@@ -460,6 +460,8 @@
             
             const detallesJson = JSON.stringify(listaCarrito);
             
+            console.log('Enviando:', { nombreVenta: nombreAuto, userId: currentUserId, total: totalVenta, detalles: detallesJson });
+            
             fetch('/api/venta/espera', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -470,16 +472,23 @@
                     detalles: detallesJson
                 })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Status:', res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log('Respuesta:', data);
                 if (data.success) {
                     alert("Venta guardada en espera");
                     limpiarPantallaVenta();
                 } else {
-                    alert("Error: " + data.message);
+                    alert("Error: " + (data.message || data));
                 }
             })
-            .catch(e => alert("Error de conexión"));
+            .catch(e => {
+                console.error('Error:', e);
+                alert("Error de conexión: " + e.message);
+            });
         }
         
         async function abrirVentasEnEspera() {

@@ -120,24 +120,53 @@ public class VentaController {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
+            System.out.println("=== Controller: Recibido request ===");
+            System.out.println("Request: " + request);
+            
             String nombreVenta = (String) request.get("nombreVenta");
-            int userId = (Integer) request.get("userId");
-            double total = (Double) request.get("total");
+            Object userIdObj = request.get("userId");
+            Object totalObj = request.get("total");
             String detallesJson = (String) request.get("detalles");
             
+            System.out.println("nombreVenta: " + nombreVenta);
+            System.out.println("userIdObj: " + userIdObj + " (type: " + (userIdObj != null ? userIdObj.getClass().getName() : "null") + ")");
+            System.out.println("totalObj: " + totalObj + " (type: " + (totalObj != null ? totalObj.getClass().getName() : "null") + ")");
+            
+            int userId = 1;
+            double total = 0.0;
+            
+            if (userIdObj instanceof Integer) {
+                userId = (Integer) userIdObj;
+            } else if (userIdObj instanceof Number) {
+                userId = ((Number) userIdObj).intValue();
+            }
+            
+            if (totalObj instanceof Double) {
+                total = (Double) totalObj;
+            } else if (totalObj instanceof Number) {
+                total = ((Number) totalObj).doubleValue();
+            }
+            
+            System.out.println("userId parsed: " + userId);
+            System.out.println("total parsed: " + total);
+            
             int id = oper.guardarVentaEnEspera(nombreVenta, userId, total, detallesJson);
+            System.out.println("ID returned: " + id);
+            
             if (id > 0) {
                 response.put("success", true);
                 response.put("idVentaEspera", id);
             } else {
                 response.put("success", false);
-                response.put("message", "Error al guardar la venta en espera");
+                response.put("message", "Error al guardar la venta en espera (id returned: " + id + ")");
             }
         } catch (Exception e) {
+            System.out.println("=== Controller Exception ===");
             e.printStackTrace();
             response.put("success", false);
-            response.put("message", "Error en servidor.");
+            response.put("message", "Error en servidor: " + e.getMessage());
         }
+        System.out.println("Response: " + response);
         return response;
     }
     

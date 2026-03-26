@@ -165,9 +165,16 @@ public class Venta {
     // Guardar venta en espera
     public int guardarVentaEnEspera(String nombreVenta, int idUsuario, double total, String detallesJson) {
         int id = -1;
+        Connection c = null;
         try {
             Conexion con = new Conexion();
-            Connection c = con.conectar();
+            c = con.conectar();
+            
+            System.out.println("Intentando guardar venta en espera:");
+            System.out.println("nombreVenta: " + nombreVenta);
+            System.out.println("idUsuario: " + idUsuario);
+            System.out.println("total: " + total);
+            System.out.println("detallesJson length: " + (detallesJson != null ? detallesJson.length() : 0));
             
             String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
@@ -175,18 +182,23 @@ public class Venta {
             stmt.setInt(2, idUsuario);
             stmt.setDouble(3, total);
             stmt.setString(4, detallesJson);
-            stmt.executeUpdate();
+            
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);
 
             ResultSet rs = stmt.getGeneratedKeys();
             if (rs.next()) {
                 id = rs.getInt(1);
+                System.out.println("Generated ID: " + id);
             }
 
             rs.close();
             stmt.close();
-            c.close();
         } catch (Exception e) {
+            System.out.println("Error en guardarVentaEnEspera: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            try { if (c != null) c.close(); } catch (Exception e) {}
         }
         return id;
     }
