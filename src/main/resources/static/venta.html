@@ -122,25 +122,6 @@
         </div>
     </div>
     
-    <!-- Modal para guardar venta en espera -->
-    <div id="modalGuardarEspera" class="modal-overlay">
-        <div class="modal-content">
-            <h3>⏳ Guardar Venta en Espera</h3>
-            <div class="modal-row">
-                <label>Nombre para la venta:</label>
-                <input type="text" id="txtNombreVentaEspera" placeholder="Ej: Cliente Juan - Mesa 5">
-            </div>
-            <div class="modal-result">
-                <div>Total de la venta:</div>
-                <div id="totalVentaEspera" style="font-size: 24px; font-weight: bold; color: #19A337;">$0.00</div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancelar" onclick="cerrarModalGuardarEspera()">Cancelar</button>
-                <button class="btn-pagar" onclick="confirmarGuardarEspera()">✅ Guardar</button>
-            </div>
-        </div>
-    </div>
-    
     <!-- Modal para ver ventas en espera -->
     <div id="modalVerEspera" class="modal-overlay">
         <div class="modal-content" style="width: 500px; max-height: 80vh; overflow-y: auto;">
@@ -471,46 +452,34 @@
         function guardarVentaEnEspera() {
             if (listaCarrito.length === 0) return alert("Carrito vacío");
             
-            document.getElementById('totalVentaEspera').textContent = `${totalVenta.toFixed(2)}`;
-            document.getElementById('modalGuardarEspera').classList.add('active');
-            document.getElementById('txtNombreVentaEspera').focus();
-        }
-        
-        function cerrarModalGuardarEspera() {
-            document.getElementById('modalGuardarEspera').classList.remove('active');
-            document.getElementById('txtNombreVentaEspera').value = '';
-        }
-        
-        async function confirmarGuardarEspera() {
-            const nombreVenta = document.getElementById('txtNombreVentaEspera').value.trim();
-            if (!nombreVenta) return alert("Por favor ingresa un nombre para la venta en espera");
-            
-            if (listaCarrito.length === 0) return alert("Carrito vacío");
+            // Generar nombre automático con fecha y hora
+            const now = new Date();
+            const fechaStr = now.toLocaleDateString('es-MX').replace(/\//g, '-');
+            const horaStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+            const nombreAuto = `Venta ${fechaStr} ${horaStr}`;
             
             const detallesJson = JSON.stringify(listaCarrito);
             
-            try {
-                const res = await fetch('/api/venta/espera', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nombreVenta: nombreVenta,
-                        userId: parseInt(currentUserId),
-                        total: totalVenta,
-                        detalles: detallesJson
-                    })
-                });
-                const data = await res.json();
+            fetch('/api/venta/espera', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombreVenta: nombreAuto,
+                    userId: parseInt(currentUserId),
+                    total: totalVenta,
+                    detalles: detallesJson
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
                 if (data.success) {
-                    alert("Venta guardada en espera correctamente");
-                    cerrarModalGuardarEspera();
+                    alert("Venta guardada en espera");
                     limpiarPantallaVenta();
                 } else {
                     alert("Error: " + data.message);
                 }
-            } catch (e) {
-                alert("Error de conexión");
-            }
+            })
+            .catch(e => alert("Error de conexión"));
         }
         
         async function abrirVentasEnEspera() {
@@ -528,9 +497,15 @@
                         
                         const div = document.createElement('div');
                         div.className = 'venta-espera-card';
-                        div.onclick = () => reanudarVenta(venta);
+                        div.style.display = 'flex';
+                        div.style.justifyContent = 'space-between';
+                        div.style.alignItems = 'center';
                         
-                        div.innerHTML = `
+                        const infoDiv = document.createElement('div');
+                        infoDiv.style.flex = '1';
+                        infoDiv.style.cursor = 'pointer';
+                        infoDiv.onclick = () => reanudarVenta(venta);
+                        infoDiv.innerHTML = `
                             <div class="venta-espera-header">
                                 <span class="venta-espera-nombre">${venta.nombreVenta}</span>
                                 <span class="venta-espera-total">${venta.total.toFixed(2)}</span>
@@ -538,6 +513,24 @@
                             <div class="venta-espera-fecha">${fecha}</div>
                             <div class="venta-espera-items">${itemCount} producto(s)</div>
                         `;
+                        
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = '🗑️';
+                        deleteBtn.style.background = '#dc3545';
+                        deleteBtn.style.color = 'white';
+                        deleteBtn.style.border = 'none';
+                        deleteBtn.style.padding = '8px 12px';
+                        deleteBtn.style.borderRadius = '5px';
+                        deleteBtn.style.cursor = 'pointer';
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if (confirm('¿Eliminar esta venta en espera?')) {
+                                eliminarVentaEnEspera(venta.idVentaEspera);
+                            }
+                        };
+                        
+                        div.appendChild(infoDiv);
+                        div.appendChild(deleteBtn);
                         container.appendChild(div);
                     });
                 } else {
@@ -577,6 +570,23 @@
             dibujarCarrito();
             
             alert("Venta reanudada. Puede continuar agregando productos o cobrarla.");
+        }
+        
+        async function eliminarVentaEnEspera(idVentaEspera) {
+            try {
+                const res = await fetch(`/api/venta/espera/${idVentaEspera}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Venta en espera eliminada");
+                    abrirVentasEnEspera(); // Recargar la lista
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (e) {
+                alert("Error de conexión");
+            }
         }
     </script>
 </body>

@@ -81,7 +81,7 @@ CREATE TABLE ventas_en_espera (
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
     id_usuario INT,
     total DECIMAL(10,2) NOT NULL,
-    detalles JSON NOT NULL,
+    detalles TEXT NOT NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
 );
 
