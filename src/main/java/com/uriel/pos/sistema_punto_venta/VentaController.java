@@ -146,12 +146,15 @@ public class VentaController {
             
             int id = oper.guardarVentaEnEspera(nombreVenta, userId, total, detallesJson);
             
-            if (id > 0) {
+            if (id == -2) {
+                response.put("success", false);
+                response.put("message", "La tabla ventas_en_espera no existe en la base de datos. Por favor créala.");
+            } else if (id > 0) {
                 response.put("success", true);
                 response.put("idVentaEspera", id);
             } else {
                 response.put("success", false);
-                response.put("message", "Error al guardar. La tabla ventas_en_espera puede no existir. Por favor créala manualmente en tu base de datos.");
+                response.put("message", "Error al guardar la venta en espera.");
             }
         } catch (Exception e) {
             response.put("success", false);

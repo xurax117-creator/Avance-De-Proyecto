@@ -175,7 +175,17 @@ public class Venta {
                 return -1;
             }
             
-            // Usar Statement directo para evitar problemas con PreparedStatement
+            // Probar si la tabla existe
+            java.sql.DatabaseMetaData meta = c.getMetaData();
+            ResultSet rs = meta.getTables(null, null, "ventas_en_espera", new String[]{"TABLE"});
+            boolean existe = rs.next();
+            rs.close();
+            
+            if (!existe) {
+                return -2; // Tabla no existe
+            }
+            
+            // Insertar datos
             String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) " +
                         "VALUES ('" + nombreVenta.replace("'", "''") + "', " + 
                         idUsuario + ", " + total + ", '" + detallesJson.replace("'", "''") + "')";
@@ -184,11 +194,11 @@ public class Venta {
             int rows = stmt.executeUpdate(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
             
             if (rows > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    id = rs.getInt(1);
+                ResultSet genKeys = stmt.getGeneratedKeys();
+                if (genKeys.next()) {
+                    id = genKeys.getInt(1);
                 }
-                rs.close();
+                genKeys.close();
             }
             
             stmt.close();
