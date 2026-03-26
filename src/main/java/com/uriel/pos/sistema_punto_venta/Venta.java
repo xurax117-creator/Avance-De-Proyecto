@@ -164,33 +164,21 @@ public class Venta {
     
     // Guardar venta en espera
     public int guardarVentaEnEspera(String nombreVenta, int idUsuario, double total, String detallesJson) {
+        System.out.println(">>> INICIO guardarVentaEnEspera");
         int id = -1;
         Connection c = null;
         try {
+            System.out.println("1. Creando conexion...");
             Conexion con = new Conexion();
             c = con.conectar();
+            System.out.println("2. Conexion: " + (c != null ? "OK" : "NULL"));
             
             if (c == null) {
                 System.out.println("Error: Conexión es null");
                 return -1;
             }
             
-            // Crear la tabla si no existe
-            try {
-                java.sql.Statement stmt = c.createStatement();
-                stmt.execute("CREATE TABLE IF NOT EXISTS ventas_en_espera (" +
-                    "id_venta_espera INT AUTO_INCREMENT PRIMARY KEY, " +
-                    "nombre_venta VARCHAR(100), " +
-                    "fecha DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                    "id_usuario INT, " +
-                    "total DECIMAL(10,2) NOT NULL, " +
-                    "detalles TEXT NOT NULL)");
-                stmt.close();
-                System.out.println("Tabla verificada/creada OK");
-            } catch (SQLException e) {
-                System.out.println("Error creando tabla: " + e.getMessage());
-            }
-            
+            System.out.println("3. Intentando insertar...");
             String sql = "INSERT INTO ventas_en_espera (nombre_venta, id_usuario, total, detalles) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             stmt.setString(1, nombreVenta);
@@ -198,11 +186,12 @@ public class Venta {
             stmt.setDouble(3, total);
             stmt.setString(4, detallesJson);
             int rows = stmt.executeUpdate();
-            System.out.println("Filas insertadas: " + rows);
+            System.out.println("4. Filas insertadas: " + rows);
 
             ResultSet rs = stmt.getGeneratedKeys();
             if (rs.next()) {
                 id = rs.getInt(1);
+                System.out.println("5. ID generado: " + id);
             }
 
             rs.close();
@@ -210,14 +199,12 @@ public class Venta {
         } catch (SQLException e) {
             System.out.println("SQL Error: " + e.getMessage());
             System.out.println("SQL State: " + e.getSQLState());
-            e.printStackTrace();
         } catch (Exception e) {
             System.out.println("Error general: " + e.getMessage());
-            e.printStackTrace();
         } finally {
             try { if (c != null) c.close(); } catch (Exception e) {}
         }
-        System.out.println("ID retornado: " + id);
+        System.out.println(">>> FIN guardarVentaEnEspera, retorna: " + id);
         return id;
     }
     
