@@ -173,9 +173,12 @@ public class VentaController {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
+            System.out.println("Obteniendo ventas en espera...");
             List<VentaEnEspera> lista = oper.obtenerVentasEnEspera();
+            System.out.println("Ventas obtenidas: " + lista.size());
             response.put("success", true);
             response.put("ventas", lista);
+            System.out.println("Response preparado");
         } catch (Exception e) {
             e.printStackTrace();
             response.put("success", false);

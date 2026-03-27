@@ -208,8 +208,10 @@ public class Venta {
     public List<VentaEnEspera> obtenerVentasEnEspera() {
         List<VentaEnEspera> lista = new ArrayList<>();
         try {
+            System.out.println("Conectando a BD para obtener ventas en espera...");
             Conexion con = new Conexion();
             Connection c = con.conectar();
+            System.out.println("Conexión exitosa");
             
             String sql = """
                 SELECT v.id_venta_espera, v.id_usuario, v.total, v.fecha, u.nombre as nombre_usuario
@@ -219,8 +221,10 @@ public class Venta {
             """;
             PreparedStatement stmt = c.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
+            System.out.println("Query ejecutado, buscando resultados...");
             
             while (rs.next()) {
+                System.out.println("Encontrada venta: " + rs.getInt("id_venta_espera"));
                 VentaEnEspera venta = new VentaEnEspera(
                     rs.getInt("id_venta_espera"),
                     rs.getInt("id_usuario"),
@@ -230,6 +234,8 @@ public class Venta {
                 );
                 lista.add(venta);
             }
+            
+            System.out.println("Total de ventas encontradas: " + lista.size());
             
             rs.close();
             stmt.close();
@@ -257,6 +263,7 @@ public class Venta {
             }
             
             c.close();
+            System.out.println("Conexión cerrada");
         } catch (Exception e) {
             e.printStackTrace();
         }

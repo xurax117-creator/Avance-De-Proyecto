@@ -456,16 +456,21 @@
         
         // Abrir modal de ventas en espera
         async function abrirVentasEnEspera() {
+            console.log("Cargando ventas en espera...");
             try {
                 const response = await fetch('/api/venta/lista-espera');
+                console.log("Response status:", response.status);
                 const result = await response.json();
+                console.log("Result:", result);
                 
                 const container = document.getElementById('listaVentasEspera');
                 
                 if (result.success && result.ventas && result.ventas.length > 0) {
+                    console.log("Ventas encontradas:", result.ventas.length);
                     container.innerHTML = '';
                     
                     result.ventas.forEach(venta => {
+                        console.log("Venta:", venta);
                         const div = document.createElement('div');
                         div.className = 'venta-espera-item';
                         
@@ -492,6 +497,7 @@
                         container.appendChild(div);
                     });
                 } else {
+                    console.log("No hay ventas o respuesta sin éxito:", result);
                     container.innerHTML = '<p style="text-align: center; color: #666;">No hay ventas en espera</p>';
                 }
                 
@@ -499,7 +505,7 @@
                 
             } catch (e) {
                 console.error("Error:", e);
-                alert("Error al cargar las ventas en espera");
+                alert("Error al cargar las ventas en espera: " + e.message);
             }
         }
         
