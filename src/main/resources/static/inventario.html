@@ -68,6 +68,17 @@
         .info-pagina { color: #666; font-size: 14px; }
         
         .mostrar-desactivados { margin-left: 10px; }
+        
+        .margen-utilidad {
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .margen-positivo { background: #d4edda; color: #155724; }
+        .margen-negativo { background: #f8d7da; color: #721c24; }
+        .margen-cero { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
@@ -177,6 +188,10 @@
             </div>
         </div>
 
+        <div id="margenContainer" class="margen-utilidad margen-cero" style="display: none;">
+            Margen de Utilidad: <span id="margenPorcentaje">0%</span>
+        </div>
+
         <div class="modal-footer">
             <button class="btn" style="background:#eee" onclick="cerrarModal()">Cancelar</button>
             <button class="btn btn-nuevo" onclick="guardar()">Guardar Producto</button>
@@ -191,6 +206,30 @@
     let fotoBase64 = null;
     let fotoProductoActual = null;
     let todosLosProductos = [];
+
+    function calcularMargen() {
+        const compra = parseFloat(document.getElementById('p_compra').value) || 0;
+        const venta = parseFloat(document.getElementById('p_venta').value) || 0;
+        const container = document.getElementById('margenContainer');
+        const porcentaje = document.getElementById('margenPorcentaje');
+        
+        if (compra > 0 && venta > 0) {
+            const margen = ((venta - compra) / compra) * 100;
+            container.style.display = 'block';
+            porcentaje.textContent = margen.toFixed(1) + '%';
+            
+            container.className = 'margen-utilidad';
+            if (margen > 0) {
+                container.classList.add('margen-positivo');
+            } else if (margen < 0) {
+                container.classList.add('margen-negativo');
+            } else {
+                container.classList.add('margen-cero');
+            }
+        } else {
+            container.style.display = 'none';
+        }
+    }
 
     async function cargarProductos() {
         try {
@@ -357,6 +396,19 @@
         document.getElementById('p_venta').value = p ? p.precio_venta : "";
         document.getElementById('p_stock').value = p ? p.existencias_act : "0";
         document.getElementById('p_min').value = p ? p.existencias_min : "0";
+        
+        // Agregar listeners para calcular margen en tiempo real
+        document.getElementById('p_compra').oninput = calcularMargen;
+        document.getElementById('p_venta').oninput = calcularMargen;
+        
+        // Calcular margen inicial si es edición
+        if (p) {
+            calcularMargen();
+        }
+        // Ocultar margen inicialmente para nuevos productos
+        if (!p) {
+            document.getElementById('margenContainer').style.display = 'none';
+        }
         
         document.getElementById('fileFoto').value = '';
         if (p && p.foto_producto) {
