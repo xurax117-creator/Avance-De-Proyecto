@@ -80,12 +80,18 @@ public class VentaController {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
+            System.out.println("=== FINALIZAR VENTA ===");
+            System.out.println("idVenta: " + request.idVenta);
+            System.out.println("totalFinal: " + request.totalFinal);
+            System.out.println("Items en carrito: " + request.listaCarrito.size());
+            
             oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal);
             response.put("success", true);
+            System.out.println("Venta finalizada exitosamente");
         } catch (Exception e) {
             e.printStackTrace();
             response.put("success", false);
-            response.put("message", "Error al procesar la venta.");
+            response.put("message", "Error al procesar la venta: " + e.getMessage());
         }
         return response;
     }

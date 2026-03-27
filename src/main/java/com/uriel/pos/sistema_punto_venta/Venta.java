@@ -125,17 +125,38 @@ public class Venta {
             c = con.conectar();
             c.setAutoCommit(false); 
 
+            // Si idVenta es -1, significa que es una venta recuperada del espera y no existe en la tabla ventas
+            // Debemo crear una nueva venta primero
+            int ventaId = idVenta;
+            if (idVenta == -1) {
+                // Crear nueva venta
+                String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, NOW())";
+                PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS);
+                stmtVenta.setInt(1, 1); // usuario por defecto
+                stmtVenta.setDouble(2, totalFinal);
+                stmtVenta.executeUpdate();
+                
+                ResultSet rsVenta = stmtVenta.getGeneratedKeys();
+                if (rsVenta.next()) {
+                    ventaId = rsVenta.getInt(1);
+                    System.out.println("Nueva venta creada con ID: " + ventaId);
+                }
+                rsVenta.close();
+                stmtVenta.close();
+            }
+
             String sqlTotal = "UPDATE ventas SET total = ? WHERE id_venta = ?";
             PreparedStatement stmtTotal = c.prepareStatement(sqlTotal);
             stmtTotal.setDouble(1, totalFinal);
-            stmtTotal.setInt(2, idVenta);
-            stmtTotal.executeUpdate();
+            stmtTotal.setInt(2, ventaId);
+            int rowsUpdated = stmtTotal.executeUpdate();
+            System.out.println("Filas actualizadas en ventas: " + rowsUpdated);
             stmtTotal.close();
 
             for (DetalleVentaRequest detalle : detalles) {
                 String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
                 PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
-                stmtInsert.setInt(1, idVenta);
+                stmtInsert.setInt(1, ventaId);
                 stmtInsert.setInt(2, detalle.idProducto);
                 stmtInsert.setInt(3, detalle.cantidad);
                 stmtInsert.setDouble(4, detalle.precioUnitario);
@@ -151,9 +172,18 @@ public class Venta {
             }
 
             c.commit(); 
+            System.out.println("Transacción completada exitosamente");
         } catch (SQLException e) {
+            System.out.println("Error SQL: " + e.getMessage());
             if (c != null) c.rollback();
             throw e;
+        } catch (Exception e) {
+            System.out.println("Error general: " + e.getMessage());
+            e.printStackTrace();
+            if (c != null) {
+                try { c.rollback(); } catch (Exception ex) {}
+            }
+            throw new SQLException(e.getMessage());
         } finally {
             if (c != null) {
                 c.setAutoCommit(true);
