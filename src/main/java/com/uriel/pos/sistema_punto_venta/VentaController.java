@@ -2,6 +2,7 @@ package com.uriel.pos.sistema_punto_venta;
 
 import org.springframework.web.bind.annotation.*;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,23 @@ public class VentaController {
         public int idVenta;
         public double totalFinal;
         public List<DetalleVentaRequest> listaCarrito;
+    }
+    
+    // Request para guardar venta en espera
+    public static class VentaEnEsperaRequest {
+        public int userId;
+        public double total;
+        public List<DetalleVentaEnEsperaRequest> listaCarrito;
+    }
+    
+    // Request para detalles de venta en espera
+    public static class DetalleVentaEnEsperaRequest {
+        public int idProducto;
+        public String codigo;
+        public String nombre;
+        public double precio;
+        public int cantidad;
+        public String fotoProducto;
     }
 
     @PostMapping("/producto")
@@ -110,6 +128,101 @@ public class VentaController {
             e.printStackTrace();
             response.put("success", false);
             response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+    
+    // Endpoint para guardar venta en espera
+    @PostMapping("/guardar-espera")
+    public Map<String, Object> guardarVentaEnEspera(@RequestBody VentaEnEsperaRequest request) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // Convertir los detalles del request a objetos Venta
+            List<DetalleVentaEnEspera> detalles = new ArrayList<>();
+            for (DetalleVentaEnEsperaRequest det : request.listaCarrito) {
+                detalles.add(new DetalleVentaEnEspera(
+                    det.idProducto,
+                    det.codigo,
+                    det.nombre,
+                    det.precio,
+                    det.cantidad,
+                    det.fotoProducto
+                ));
+            }
+            
+            int idVentaEspera = oper.guardarVentaEnEspera(request.userId, request.total, detalles);
+            if (idVentaEspera > 0) {
+                response.put("success", true);
+                response.put("idVentaEspera", idVentaEspera);
+            } else {
+                response.put("success", false);
+                response.put("message", "Error al guardar la venta en espera");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor: " + e.getMessage());
+        }
+        return response;
+    }
+    
+    // Endpoint para listar ventas en espera
+    @GetMapping("/lista-espera")
+    public Map<String, Object> listarVentasEnEspera() {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<VentaEnEspera> lista = oper.obtenerVentasEnEspera();
+            response.put("success", true);
+            response.put("ventas", lista);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor: " + e.getMessage());
+        }
+        return response;
+    }
+    
+    // Endpoint para obtener una venta en espera por ID
+    @GetMapping("/obtener-espera/{id}")
+    public Map<String, Object> obtenerVentaEnEspera(@PathVariable int id) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            VentaEnEspera venta = oper.obtenerVentaEnEspera(id);
+            if (venta != null) {
+                response.put("success", true);
+                response.put("venta", venta);
+            } else {
+                response.put("success", false);
+                response.put("message", "Venta en espera no encontrada");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor: " + e.getMessage());
+        }
+        return response;
+    }
+    
+    // Endpoint para eliminar una venta en espera
+    @DeleteMapping("/eliminar-espera/{id}")
+    public Map<String, Object> eliminarVentaEnEspera(@PathVariable int id) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            boolean eliminado = oper.eliminarVentaEnEspera(id);
+            if (eliminado) {
+                response.put("success", true);
+            } else {
+                response.put("success", false);
+                response.put("message", "Error al eliminar la venta en espera");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor: " + e.getMessage());
         }
         return response;
     }

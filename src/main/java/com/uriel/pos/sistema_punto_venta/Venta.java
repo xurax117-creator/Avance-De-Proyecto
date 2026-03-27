@@ -161,6 +161,192 @@ public class Venta {
             }
         }
     }
+    
+    // Guardar venta en espera
+    public int guardarVentaEnEspera(int idUsuario, double total, List<DetalleVentaEnEspera> detalles) {
+        int idVentaEspera = -1;
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, NOW())";
+            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            stmt.setInt(1, idUsuario);
+            stmt.setDouble(2, total);
+            stmt.executeUpdate();
+            
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                idVentaEspera = rs.getInt(1);
+            }
+            rs.close();
+            stmt.close();
+            
+            // Guardar detalles
+            for (DetalleVentaEnEspera detalle : detalles) {
+                String sqlDetalle = "INSERT INTO detalles_venta_en_espera (id_venta_espera, id_producto, codigo, nombre, precio, cantidad, foto_producto) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement stmtDetalle = c.prepareStatement(sqlDetalle);
+                stmtDetalle.setInt(1, idVentaEspera);
+                stmtDetalle.setInt(2, detalle.idProducto);
+                stmtDetalle.setString(3, detalle.codigo);
+                stmtDetalle.setString(4, detalle.nombre);
+                stmtDetalle.setDouble(5, detalle.precio);
+                stmtDetalle.setInt(6, detalle.cantidad);
+                stmtDetalle.setString(7, detalle.fotoProducto);
+                stmtDetalle.executeUpdate();
+                stmtDetalle.close();
+            }
+            
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return idVentaEspera;
+    }
+    
+    // Obtener todas las ventas en espera
+    public List<VentaEnEspera> obtenerVentasEnEspera() {
+        List<VentaEnEspera> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = """
+                SELECT v.id_venta_espera, v.id_usuario, v.total, v.fecha, u.nombre as nombre_usuario
+                FROM ventas_en_espera v
+                LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
+                ORDER BY v.fecha DESC
+            """;
+            PreparedStatement stmt = c.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                VentaEnEspera venta = new VentaEnEspera(
+                    rs.getInt("id_venta_espera"),
+                    rs.getInt("id_usuario"),
+                    rs.getString("nombre_usuario") != null ? rs.getString("nombre_usuario") : "Usuario #" + rs.getInt("id_usuario"),
+                    rs.getString("fecha"),
+                    rs.getDouble("total")
+                );
+                lista.add(venta);
+            }
+            
+            rs.close();
+            stmt.close();
+            
+            // Obtener detalles para cada venta
+            for (VentaEnEspera venta : lista) {
+                String sqlDetalles = "SELECT * FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
+                PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
+                stmtDetalles.setInt(1, venta.id);
+                ResultSet rsDetalles = stmtDetalles.executeQuery();
+                
+                while (rsDetalles.next()) {
+                    DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
+                        rsDetalles.getInt("id_producto"),
+                        rsDetalles.getString("codigo"),
+                        rsDetalles.getString("nombre"),
+                        rsDetalles.getDouble("precio"),
+                        rsDetalles.getInt("cantidad"),
+                        rsDetalles.getString("foto_producto")
+                    );
+                    venta.detalles.add(detalle);
+                }
+                rsDetalles.close();
+                stmtDetalles.close();
+            }
+            
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+    
+    // Obtener una venta en espera por ID
+    public VentaEnEspera obtenerVentaEnEspera(int idVentaEspera) {
+        VentaEnEspera venta = null;
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            String sql = """
+                SELECT v.id_venta_espera, v.id_usuario, v.total, v.fecha, u.nombre as nombre_usuario
+                FROM ventas_en_espera v
+                LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
+                WHERE v.id_venta_espera = ?
+            """;
+            PreparedStatement stmt = c.prepareStatement(sql);
+            stmt.setInt(1, idVentaEspera);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                venta = new VentaEnEspera(
+                    rs.getInt("id_venta_espera"),
+                    rs.getInt("id_usuario"),
+                    rs.getString("nombre_usuario") != null ? rs.getString("nombre_usuario") : "Usuario #" + rs.getInt("id_usuario"),
+                    rs.getString("fecha"),
+                    rs.getDouble("total")
+                );
+            }
+            rs.close();
+            stmt.close();
+            
+            if (venta != null) {
+                String sqlDetalles = "SELECT * FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
+                PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
+                stmtDetalles.setInt(1, idVentaEspera);
+                ResultSet rsDetalles = stmtDetalles.executeQuery();
+                
+                while (rsDetalles.next()) {
+                    DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
+                        rsDetalles.getInt("id_producto"),
+                        rsDetalles.getString("codigo"),
+                        rsDetalles.getString("nombre"),
+                        rsDetalles.getDouble("precio"),
+                        rsDetalles.getInt("cantidad"),
+                        rsDetalles.getString("foto_producto")
+                    );
+                    venta.detalles.add(detalle);
+                }
+                rsDetalles.close();
+                stmtDetalles.close();
+            }
+            
+            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return venta;
+    }
+    
+    // Eliminar venta en espera
+    public boolean eliminarVentaEnEspera(int idVentaEspera) {
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            // Eliminar detalles primero
+            String sqlDetalles = "DELETE FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
+            PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
+            stmtDetalles.setInt(1, idVentaEspera);
+            stmtDetalles.executeUpdate();
+            stmtDetalles.close();
+            
+            // Eliminar venta
+            String sql = "DELETE FROM ventas_en_espera WHERE id_venta_espera = ?";
+            PreparedStatement stmt = c.prepareStatement(sql);
+            stmt.setInt(1, idVentaEspera);
+            stmt.executeUpdate();
+            stmt.close();
+            
+            c.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
 
 class ProductoData {
@@ -185,4 +371,41 @@ class DetalleVentaRequest {
     public int idProducto;
     public int cantidad;
     public double precioUnitario;
+}
+
+// Clase para venta en espera
+class VentaEnEspera {
+    public int id;
+    public int idUsuario;
+    public String nombreUsuario;
+    public String fecha;
+    public double total;
+    public List<DetalleVentaEnEspera> detalles;
+    
+    public VentaEnEspera(int id, int idUsuario, String nombreUsuario, String fecha, double total) {
+        this.id = id;
+        this.idUsuario = idUsuario;
+        this.nombreUsuario = nombreUsuario;
+        this.fecha = fecha;
+        this.total = total;
+        this.detalles = new ArrayList<>();
+    }
+}
+
+class DetalleVentaEnEspera {
+    public int idProducto;
+    public String codigo;
+    public String nombre;
+    public double precio;
+    public int cantidad;
+    public String fotoProducto;
+    
+    public DetalleVentaEnEspera(int idProducto, String codigo, String nombre, double precio, int cantidad, String fotoProducto) {
+        this.idProducto = idProducto;
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.precio = precio;
+        this.cantidad = cantidad;
+        this.fotoProducto = fotoProducto;
+    }
 }
