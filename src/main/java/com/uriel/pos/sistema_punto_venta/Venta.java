@@ -213,12 +213,18 @@ public class Venta {
             Connection c = con.conectar();
             System.out.println("Conexión exitosa");
             
-            String sql = """
-                SELECT v.id_venta_espera, v.id_usuario, v.total, v.fecha, u.nombre as nombre_usuario
-                FROM ventas_en_espera v
-                LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
-                ORDER BY v.fecha DESC
-            """;
+            // Primero verificar si hay datos en la tabla
+            String sqlCheck = "SELECT COUNT(*) as total FROM ventas_en_espera";
+            PreparedStatement stmtCheck = c.prepareStatement(sqlCheck);
+            ResultSet rsCheck = stmtCheck.executeQuery();
+            if (rsCheck.next()) {
+                System.out.println("Ventas en espera en BD: " + rsCheck.getInt("total"));
+            }
+            rsCheck.close();
+            stmtCheck.close();
+            
+            // Consulta simplificada sin JOIN
+            String sql = "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera ORDER BY fecha DESC";
             PreparedStatement stmt = c.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             System.out.println("Query ejecutado, buscando resultados...");
@@ -228,7 +234,7 @@ public class Venta {
                 VentaEnEspera venta = new VentaEnEspera(
                     rs.getInt("id_venta_espera"),
                     rs.getInt("id_usuario"),
-                    rs.getString("nombre_usuario") != null ? rs.getString("nombre_usuario") : "Usuario #" + rs.getInt("id_usuario"),
+                    "Usuario #" + rs.getInt("id_usuario"),  // Username fijo por ahora
                     rs.getString("fecha"),
                     rs.getDouble("total")
                 );
@@ -242,10 +248,12 @@ public class Venta {
             
             // Obtener detalles para cada venta
             for (VentaEnEspera venta : lista) {
-                String sqlDetalles = "SELECT * FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
+                String sqlDetalles = "SELECT id_producto, codigo, nombre, precio, cantidad, foto_producto FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
                 PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
                 stmtDetalles.setInt(1, venta.id);
                 ResultSet rsDetalles = stmtDetalles.executeQuery();
+                
+                System.out.println("Obteniendo detalles para venta " + venta.id + ", encontrados: " + rsDetalles.getFetchSize());
                 
                 while (rsDetalles.next()) {
                     DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
@@ -257,6 +265,7 @@ public class Venta {
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
+                    System.out.println("  - Detalle: " + detalle.nombre + " x" + detalle.cantidad);
                 }
                 rsDetalles.close();
                 stmtDetalles.close();
