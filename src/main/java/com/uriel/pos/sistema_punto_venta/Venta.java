@@ -281,35 +281,36 @@ public class Venta {
     
     // Obtener una venta en espera por ID
     public VentaEnEspera obtenerVentaEnEspera(int idVentaEspera) {
+        System.out.println("Obteniendo venta en espera con ID: " + idVentaEspera);
         VentaEnEspera venta = null;
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
+            System.out.println("Conexión obtenida");
             
-            String sql = """
-                SELECT v.id_venta_espera, v.id_usuario, v.total, v.fecha, u.nombre as nombre_usuario
-                FROM ventas_en_espera v
-                LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
-                WHERE v.id_venta_espera = ?
-            """;
+            // Consulta simplificada sin JOIN
+            String sql = "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera WHERE id_venta_espera = ?";
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setInt(1, idVentaEspera);
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
+                System.out.println("Venta encontrada en BD");
                 venta = new VentaEnEspera(
                     rs.getInt("id_venta_espera"),
                     rs.getInt("id_usuario"),
-                    rs.getString("nombre_usuario") != null ? rs.getString("nombre_usuario") : "Usuario #" + rs.getInt("id_usuario"),
+                    "Usuario #" + rs.getInt("id_usuario"),
                     rs.getString("fecha"),
                     rs.getDouble("total")
                 );
+            } else {
+                System.out.println("NO se encontró la venta en la BD");
             }
             rs.close();
             stmt.close();
             
             if (venta != null) {
-                String sqlDetalles = "SELECT * FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
+                String sqlDetalles = "SELECT id_producto, codigo, nombre, precio, cantidad, foto_producto FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
                 PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
                 stmtDetalles.setInt(1, idVentaEspera);
                 ResultSet rsDetalles = stmtDetalles.executeQuery();
@@ -324,12 +325,14 @@ public class Venta {
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
+                    System.out.println("Detalle agregado: " + detalle.nombre);
                 }
                 rsDetalles.close();
                 stmtDetalles.close();
             }
             
             c.close();
+            System.out.println("Venta retornada: " + (venta != null ? "SI" : "NO"));
         } catch (Exception e) {
             e.printStackTrace();
         }
