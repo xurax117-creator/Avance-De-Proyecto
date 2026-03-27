@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS detalles_venta_en_espera (
     codigo VARCHAR(50),
     nombre VARCHAR(100) NOT NULL,
     precio DECIMAL(10,2) NOT NULL,
-    cantidad INT NOT NULL,
+    cantidad DECIMAL(10,3) NOT NULL,
     foto_producto TEXT,
     FOREIGN KEY (id_venta_espera) REFERENCES ventas_en_espera(id_venta_espera) ON DELETE CASCADE,
     FOREIGN KEY (id_producto) REFERENCES productos(id_producto)

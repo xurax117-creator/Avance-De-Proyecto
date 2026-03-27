@@ -221,7 +221,7 @@ public class Venta {
                 stmtDetalle.setString(3, detalle.codigo);
                 stmtDetalle.setString(4, detalle.nombre);
                 stmtDetalle.setDouble(5, detalle.precio);
-                stmtDetalle.setInt(6, detalle.cantidad);
+                stmtDetalle.setDouble(6, detalle.cantidad);
                 stmtDetalle.setString(7, detalle.fotoProducto);
                 stmtDetalle.executeUpdate();
                 stmtDetalle.close();
@@ -291,7 +291,7 @@ public class Venta {
                         rsDetalles.getString("codigo"),
                         rsDetalles.getString("nombre"),
                         rsDetalles.getDouble("precio"),
-                        rsDetalles.getInt("cantidad"),
+                        rsDetalles.getDouble("cantidad"),
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
@@ -351,7 +351,7 @@ public class Venta {
                         rsDetalles.getString("codigo"),
                         rsDetalles.getString("nombre"),
                         rsDetalles.getDouble("precio"),
-                        rsDetalles.getInt("cantidad"),
+                        rsDetalles.getDouble("cantidad"),
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
@@ -446,10 +446,10 @@ class DetalleVentaEnEspera {
     public String codigo;
     public String nombre;
     public double precio;
-    public int cantidad;
+    public double cantidad;
     public String fotoProducto;
     
-    public DetalleVentaEnEspera(int idProducto, String codigo, String nombre, double precio, int cantidad, String fotoProducto) {
+    public DetalleVentaEnEspera(int idProducto, String codigo, String nombre, double precio, double cantidad, String fotoProducto) {
         this.idProducto = idProducto;
         this.codigo = codigo;
         this.nombre = nombre;
