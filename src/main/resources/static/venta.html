@@ -517,27 +517,33 @@
         
         // Recuperar una venta en espera
         async function recuperarVentaEnEspera(idVenta) {
+            console.log("Recuperando venta con ID:", idVenta);
             try {
                 const response = await fetch(`/api/venta/obtener-espera/${idVenta}`);
                 const result = await response.json();
+                console.log("Resultado de obtener-espera:", result);
                 
                 if (result.success && result.venta) {
                     const venta = result.venta;
+                    console.log("Venta recuperada:", venta);
+                    console.log("Detalles:", venta.detalles);
                     
                     // Confirmar antes de recuperar
                     if (!confirm(`¿Recuperar esta venta por ${venta.total.toFixed(2)}?`)) {
                         return;
                     }
                     
-                    // Convertir detalles al formato del carrito
+                    // Convertir detalles al formato del carrito - asegurar que cantidad sea número
                     listaCarrito = venta.detalles.map(d => ({
                         idProducto: d.idProducto,
                         codigo: d.codigo,
                         nombre: d.nombre,
                         precio: d.precio,
-                        cantidad: d.cantidad,
+                        cantidad: Number(d.cantidad),  // Convertir a número
                         fotoProducto: d.fotoProducto
                     }));
+                    
+                    console.log("Carrito convertido:", listaCarrito);
                     
                     // Limpiar ID de venta actual (se creará uno nuevo al agregar productos)
                     currentVentaId = -1;
