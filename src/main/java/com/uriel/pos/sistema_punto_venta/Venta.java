@@ -158,14 +158,14 @@ public class Venta {
                 PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
                 stmtInsert.setInt(1, ventaId);
                 stmtInsert.setInt(2, detalle.idProducto);
-                stmtInsert.setInt(3, detalle.cantidad);
+                stmtInsert.setDouble(3, detalle.cantidad);
                 stmtInsert.setDouble(4, detalle.precioUnitario);
                 stmtInsert.executeUpdate();
                 stmtInsert.close();
 
                 String sqlStock = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
                 PreparedStatement stmtStock = c.prepareStatement(sqlStock);
-                stmtStock.setInt(1, detalle.cantidad);
+                stmtStock.setDouble(1, detalle.cantidad);
                 stmtStock.setInt(2, detalle.idProducto);
                 stmtStock.executeUpdate();
                 stmtStock.close();
@@ -418,7 +418,7 @@ class ProductoData {
 
 class DetalleVentaRequest {
     public int idProducto;
-    public int cantidad;
+    public double cantidad;
     public double precioUnitario;
 }
 

@@ -37,7 +37,7 @@ public class VentaController {
         public String codigo;
         public String nombre;
         public double precio;
-        public int cantidad;
+        public double cantidad;
         public String fotoProducto;
     }
 

@@ -79,27 +79,4 @@ VALUES ('Axel Uriel Moreno Cervantes', 'Axel', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQ
 
 INSERT INTO proveedores (nombre) VALUES ('Coca Cola'), ('Pepsi'), ('Bimbo'), ('Centra de Abastos');
 
-INSERT INTO productos (codigo_barras, codigo_barras_secundario, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min, unidad_medida, activo)
-VALUES ('123', '1234', 'Victoria Fresa-Kiwi', 'Refrescos', 1, 15, 18, 10, 5, 'PZA', True);
-
--- Tablas para ventas en espera
-CREATE TABLE IF NOT EXISTS ventas_en_espera (
-    id_venta_espera INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
-);
-
-CREATE TABLE IF NOT EXISTS detalles_venta_en_espera (
-    id_detalle_espera INT AUTO_INCREMENT PRIMARY KEY,
-    id_venta_espera INT NOT NULL,
-    id_producto INT NOT NULL,
-    codigo VARCHAR(50),
-    nombre VARCHAR(100) NOT NULL,
-    precio DECIMAL(10,2) NOT NULL,
-    cantidad DECIMAL(10,3) NOT NULL,
-    foto_producto TEXT,
-    FOREIGN KEY (id_venta_espera) REFERENCES ventas_en_espera(id_venta_espera) ON DELETE CASCADE,
-    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
-);
+ALTER TABLE detalle_venta MODIFY COLUMN cantidad DECIMAL(10,3) NOT NULL;
