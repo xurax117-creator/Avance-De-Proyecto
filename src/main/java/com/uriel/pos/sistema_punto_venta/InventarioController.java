@@ -367,7 +367,8 @@ public class InventarioController {
     @GetMapping("/paginado")
     public Map<String, Object> listarPaginado(@RequestParam(defaultValue = "1") int pagina,
                                                @RequestParam(defaultValue = "20") int limite,
-                                               @RequestParam(defaultValue = "") String filtro) {
+                                               @RequestParam(defaultValue = "") String filtro,
+                                               @RequestParam(defaultValue = "0") int idProveedor) {
         Map<String, Object> res = new HashMap<>();
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
@@ -375,14 +376,30 @@ public class InventarioController {
             Connection c = con.conectar();
             
             // Contar total de productos (incluyendo desactivados para inventario)
-            String sqlCount = "SELECT COUNT(*) as total FROM productos";
-            if (!filtro.isEmpty()) {
-                sqlCount += " WHERE nombre LIKE ? OR codigo_barras LIKE ?";
+            String sqlCount = "SELECT COUNT(*) as total FROM productos p";
+            boolean tieneFiltro = !filtro.isEmpty();
+            boolean tieneProveedor = idProveedor > 0;
+            
+            if (tieneFiltro || tieneProveedor) {
+                sqlCount += " WHERE ";
+                if (tieneFiltro) {
+                    sqlCount += "(p.nombre LIKE ? OR p.codigo_barras LIKE ?) ";
+                }
+                if (tieneFiltro && tieneProveedor) {
+                    sqlCount += "AND ";
+                }
+                if (tieneProveedor) {
+                    sqlCount += "p.id_proveedor = ? ";
+                }
             }
             PreparedStatement psCount = c.prepareStatement(sqlCount);
-            if (!filtro.isEmpty()) {
-                psCount.setString(1, "%" + filtro + "%");
-                psCount.setString(2, "%" + filtro + "%");
+            int paramIndex = 1;
+            if (tieneFiltro) {
+                psCount.setString(paramIndex++, "%" + filtro + "%");
+                psCount.setString(paramIndex++, "%" + filtro + "%");
+            }
+            if (tieneProveedor) {
+                psCount.setInt(paramIndex++, idProveedor);
             }
             ResultSet rsCount = psCount.executeQuery();
             int totalRegistros = 0;
@@ -401,16 +418,28 @@ public class InventarioController {
                          "FROM productos p " +
                          "LEFT JOIN proveedores prov ON p.id_proveedor = prov.id_proveedor ";
             
-            if (!filtro.isEmpty()) {
-                sql += " WHERE (p.nombre LIKE ? OR p.codigo_barras LIKE ?) ";
+            if (tieneFiltro || tieneProveedor) {
+                sql += " WHERE ";
+                if (tieneFiltro) {
+                    sql += "(p.nombre LIKE ? OR p.codigo_barras LIKE ?) ";
+                }
+                if (tieneFiltro && tieneProveedor) {
+                    sql += "AND ";
+                }
+                if (tieneProveedor) {
+                    sql += "p.id_proveedor = ? ";
+                }
             }
             sql += " ORDER BY p.nombre ASC LIMIT ? OFFSET ?";
             
             PreparedStatement stmt = c.prepareStatement(sql);
-            int paramIndex = 1;
-            if (!filtro.isEmpty()) {
+            paramIndex = 1;
+            if (tieneFiltro) {
                 stmt.setString(paramIndex++, "%" + filtro + "%");
                 stmt.setString(paramIndex++, "%" + filtro + "%");
+            }
+            if (tieneProveedor) {
+                stmt.setInt(paramIndex++, idProveedor);
             }
             stmt.setInt(paramIndex++, limite);
             stmt.setInt(paramIndex++, offset);
