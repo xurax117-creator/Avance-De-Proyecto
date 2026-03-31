@@ -208,7 +208,7 @@
 <script>
     let productosPaginados = [];
     let paginaActual = 1;
-    const limitePorPagina = 20;
+    const limitePorPagina = 30;
     let fotoBase64 = null;
     let fotoProductoActual = null;
     let todosLosProductos = [];
@@ -243,7 +243,7 @@
             const filtro = document.getElementById('txtBusqueda').value;
             const idProveedor = document.getElementById('selProveedor').value;
             
-            const resp = await fetch(`/api/inventario/paginado?pagina=1&limite=1000&filtro=${encodeURIComponent(filtro)}&idProveedor=${idProveedor}`);
+            const resp = await fetch(`/api/inventario/paginado?pagina=1&limite=5000&filtro=${encodeURIComponent(filtro)}&idProveedor=${idProveedor}`);
             const data = await resp.json();
             
             if (mostrarDesactivados) {
