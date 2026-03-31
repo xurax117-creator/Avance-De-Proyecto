@@ -95,7 +95,7 @@
     <div class="filtros">
         <div>
             <label>Buscar Producto</label>
-            <input type="text" id="txtBusqueda" oninput="filtrar()" placeholder="Nombre o código...">
+            <input type="text" id="txtBusqueda" onkeypress="if(event.key === 'Enter') filtrar()" placeholder="Buscar producto y presionar Enter...">
         </div>
         <div>
             <label>Estado de Stock</label>
