@@ -139,6 +139,135 @@ public class InventarioController {
         return lista;
     }
 
+    @GetMapping("/todos-proveedores")
+    public List<Map<String, Object>> listarTodosProveedores() {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "SELECT id_proveedor, nombre, contacto, telefono, activo FROM proveedores ORDER BY nombre ASC";
+            ResultSet rs = c.prepareStatement(sql).executeQuery();
+            while (rs.next()) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", rs.getInt("id_proveedor"));
+                m.put("nombre", rs.getString("nombre"));
+                m.put("contacto", rs.getString("contacto"));
+                m.put("telefono", rs.getString("telefono"));
+                m.put("activo", rs.getBoolean("activo"));
+                lista.add(m);
+            }
+            c.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return lista;
+    }
+
+    @PostMapping("/guardar-proveedor")
+    public Map<String, Object> guardarProveedor(@RequestBody Map<String, Object> datos) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String id = datos.get("id") != null ? datos.get("id").toString() : "";
+            String nombre = datos.get("nombre") != null ? datos.get("nombre").toString() : "";
+            String contacto = datos.get("contacto") != null ? datos.get("contacto").toString() : "";
+            String telefono = datos.get("telefono") != null ? datos.get("telefono").toString() : "";
+            
+            if (nombre.isEmpty()) {
+                res.put("success", false);
+                res.put("message", "El nombre es obligatorio");
+                return res;
+            }
+            
+            if (!id.isEmpty()) {
+                // Actualizar
+                String sql = "UPDATE proveedores SET nombre=?, contacto=?, telefono=? WHERE id_proveedor=?";
+                PreparedStatement ps = c.prepareStatement(sql);
+                ps.setString(1, nombre);
+                ps.setString(2, contacto);
+                ps.setString(3, telefono);
+                ps.setInt(4, Integer.parseInt(id));
+                ps.executeUpdate();
+                res.put("success", true);
+                res.put("message", "Proveedor actualizado correctamente");
+            } else {
+                // Insertar
+                String sql = "INSERT INTO proveedores (nombre, contacto, telefono) VALUES (?, ?, ?)";
+                PreparedStatement ps = c.prepareStatement(sql);
+                ps.setString(1, nombre);
+                ps.setString(2, contacto);
+                ps.setString(3, telefono);
+                ps.executeUpdate();
+                res.put("success", true);
+                res.put("message", "Proveedor guardado correctamente");
+            }
+            c.close();
+        } catch (Exception e) { 
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", "Error: " + e.getMessage());
+        }
+        return res;
+    }
+
+    @PostMapping("/eliminar-proveedor/{id}")
+    public Map<String, Object> eliminarProveedor(@PathVariable int id) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            // Verificar si tiene productos asociados
+            String checkSql = "SELECT COUNT(*) as count FROM productos WHERE id_proveedor = ?";
+            PreparedStatement checkStmt = c.prepareStatement(checkSql);
+            checkStmt.setInt(1, id);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt("count") > 0) {
+                // Si tiene productos, solo desactivar
+                String sql = "UPDATE proveedores SET activo = FALSE WHERE id_proveedor = ?";
+                PreparedStatement ps = c.prepareStatement(sql);
+                ps.setInt(1, id);
+                ps.executeUpdate();
+                res.put("success", true);
+                res.put("message", "Proveedor desactivado (tiene productos asociados)");
+            } else {
+                // Si no tiene productos, eliminar
+                String sql = "DELETE FROM proveedores WHERE id_proveedor = ?";
+                PreparedStatement ps = c.prepareStatement(sql);
+                ps.setInt(1, id);
+                ps.executeUpdate();
+                res.put("success", true);
+                res.put("message", "Proveedor eliminado correctamente");
+            }
+            c.close();
+        } catch (Exception e) { 
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", "Error: " + e.getMessage());
+        }
+        return res;
+    }
+
+    @PostMapping("/activar-proveedor/{id}")
+    public Map<String, Object> activarProveedor(@PathVariable int id) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            String sql = "UPDATE proveedores SET activo = TRUE WHERE id_proveedor = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setInt(1, id);
+            ps.executeUpdate();
+            res.put("success", true);
+            res.put("message", "Proveedor activado correctamente");
+            c.close();
+        } catch (Exception e) { 
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", "Error: " + e.getMessage());
+        }
+        return res;
+    }
+
     @PostMapping("/registrar-entrada")
     public Map<String, Object> registrarEntrada(@RequestBody Map<String, Object> datos) {
         Map<String, Object> res = new HashMap<>();
