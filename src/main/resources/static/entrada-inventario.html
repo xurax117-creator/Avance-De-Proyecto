@@ -95,6 +95,17 @@
         .badge-entrada { background: #d4edda; color: #155724; }
         .badge-fecha { background: #e2e3e5; color: #383d41; }
 
+        /* Toast Notifications */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        .toast.info { background: #17a2b8; }
+        .toast.warning { background: #ffc107; color: #333; }
+        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -114,6 +125,7 @@
     </style>
 </head>
 <body>
+<div id="toastContainer" class="toast-container"></div>
 
 <div class="card">
     <div class="header">
@@ -225,6 +237,28 @@
     let todosLosProductos = [];
     let productoSeleccionado = null;
 
+    // Función para mostrar toast notifications
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✓',
+            error: '✕',
+            info: 'ℹ',
+            warning: '⚠'
+        };
+        
+        toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
     async function inicializar() {
         await cargarProductos();
         await cargarProveedores();
@@ -238,7 +272,7 @@
             dibujarTabla(todosLosProductos);
         } catch (e) { 
             console.error("Error cargando productos", e); 
-            alert("Error al cargar productos");
+            showToast("Error al cargar productos", "error");
         }
     }
 
@@ -365,19 +399,19 @@
 
     async function registrarEntrada() {
         if (!productoSeleccionado) {
-            alert("Selecciona un producto primero");
+            showToast("Selecciona un producto primero", "warning");
             return;
         }
 
         const cantidad = parseInt(document.getElementById('txtCantidad').value);
         if (!cantidad || cantidad <= 0) {
-            alert("Ingresa una cantidad válida");
+            showToast("Ingresa una cantidad válida", "warning");
             return;
         }
 
         const userId = localStorage.getItem('userId');
         if (!userId) {
-            alert("Sesión no válida. Inicia sesión nuevamente.");
+            showToast("Sesión no válida. Inicia sesión nuevamente.", "error");
             window.location.href = '/login.html';
             return;
         }
@@ -403,7 +437,7 @@
             const res = await resp.json();
             
             if (res.success) {
-                alert("✅ Entrada registrada correctamente");
+                showToast("Entrada registrada correctamente", "success");
                 
                 // Recargar datos
                 await cargarProductos();
@@ -415,11 +449,11 @@
                 document.getElementById('sinSeleccionar').style.display = 'block';
                 document.querySelectorAll('#listaProductos tr').forEach(tr => tr.classList.remove('seleccionado'));
             } else {
-                alert("Error: " + res.message);
+                showToast("Error: " + res.message, "error");
             }
         } catch (e) { 
             console.error(e);
-            alert("Error de conexión");
+            showToast("Error de conexión", "error");
         } finally {
             document.getElementById('btnRegistrar').disabled = false;
             document.getElementById('btnRegistrar').textContent = '✅ Registrar Entrada';

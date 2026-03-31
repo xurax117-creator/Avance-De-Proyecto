@@ -50,9 +50,21 @@
         .venta-espera-productos { font-size: 13px; color: #555; }
         .btn-espera { background: #ffc107; color: #333; }
         .btn-ver-espera { background: #17a2b8; color: white; }
+        
+        /* Toast Notifications */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        .toast.info { background: #17a2b8; }
+        .toast.warning { background: #ffc107; color: #333; }
+        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
     </style>
 </head>
 <body>
+<div id="toastContainer" class="toast-container"></div>
 
     <div class="header-venta">
         <button class="btn-regresar" onclick="window.location.href='/menu.html'">Menú Principal</button>
@@ -149,6 +161,28 @@
         let procesando = false;
         const txtClave = document.getElementById('txtClave');
         const cuerpoTabla = document.getElementById('cuerpoTabla');
+        
+        // Función para mostrar toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                info: 'ℹ',
+                warning: '⚠'
+            };
+            
+            toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
         txtClave.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') agregarProducto();
@@ -238,7 +272,7 @@
                 txtClave.value = '';
             } catch (e) {
                 console.error('Error:', e);
-                alert('Error al agregar producto');
+                showToast("Error al agregar producto", "error");
             } finally { procesando = false; txtClave.focus(); }
         }
 
@@ -288,7 +322,7 @@
                     if (searchResult.success && searchResult.tipo === 'sugerencias') {
                         mostrarSugerencias(searchResult.sugerencias);
                     } else {
-                        alert(result.message);
+                        showToast(result.message, "warning");
                     }
                 }
             } finally { procesando = false; txtClave.focus(); }
@@ -324,7 +358,7 @@
         }
 
         function abrirModalPago() {
-            if (listaCarrito.length === 0) return alert("Carrito vacío");
+            if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
             
             document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
@@ -351,7 +385,7 @@
         function confirmarPago() {
             const pago = parseFloat(document.getElementById('txtPago').value) || 0;
             if (pago < totalVenta) {
-                alert("El pago es insuficiente. Por favor ingresa una cantidad mayor o igual al total.");
+                showToast("El pago es insuficiente", "warning");
                 return;
             }
             cerrarModalPago();
@@ -359,7 +393,7 @@
         }
 
         async function finalizarVenta() {
-            if (listaCarrito.length === 0) return alert("Carrito vacío");
+            if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
             
             const totalFinal = listaCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
             const requestBody = {
@@ -377,10 +411,10 @@
                 });
                 const resData = await res.json();
                 if (resData.success) {
-                    alert("Venta Cobrada Correctamente");
+                    showToast("Venta Cobrada Correctamente", "success");
                     limpiarPantallaVenta();
-                } else alert("Error: " + resData.message);
-            } catch (e) { alert("Error de conexión"); }
+                } else showToast("Error: " + resData.message, "error");
+            } catch (e) { showToast("Error de conexión", "error"); }
         }
 
         function limpiarPantallaVenta() {
@@ -407,7 +441,7 @@
         // Poner la venta actual en espera
         async function ponerEnEspera() {
             if (listaCarrito.length === 0) {
-                alert("El carrito está vacío. Agrega productos primero.");
+                showToast("El carrito está vacío. Agrega productos primero.", "warning");
                 return;
             }
             
@@ -438,7 +472,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert("Venta guardada en espera correctamente");
+                    showToast("Venta guardada en espera correctamente", "success");
                     // Limpiar el carrito y el ID de venta
                     listaCarrito = [];
                     currentVentaId = -1;
@@ -446,11 +480,11 @@
                     document.getElementById('lblTotal').textContent = "Total: $0.00";
                     document.getElementById('lblVentaId').textContent = "Venta ID: -1";
                 } else {
-                    alert("Error al guardar: " + (result.message || "Error desconocido"));
+                    showToast("Error al guardar: " + (result.message || "Error desconocido"), "error");
                 }
             } catch (e) {
                 console.error("Error:", e);
-                alert("Error de conexión al guardar la venta en espera");
+                showToast("Error de conexión al guardar la venta en espera", "error");
             }
         }
         
@@ -505,7 +539,7 @@
                 
             } catch (e) {
                 console.error("Error:", e);
-                alert("Error al cargar las ventas en espera: " + e.message);
+                showToast("Error al cargar las ventas en espera", "error");
             }
         }
         
@@ -557,13 +591,13 @@
                     // Eliminar la venta de la base de datos
                     await fetch(`/api/venta/eliminar-espera/${idVenta}`, { method: 'DELETE' });
                     
-                    alert("Venta recuperada del espera");
+                    showToast("Venta recuperada del espera", "success");
                 } else {
-                    alert("Error al recuperar la venta: " + (result.message || "Error desconocido"));
+                    showToast("Error al recuperar la venta: " + (result.message || "Error desconocido"), "error");
                 }
             } catch (e) {
                 console.error("Error:", e);
-                alert("Error de conexión al recuperar la venta");
+                showToast("Error de conexión al recuperar la venta", "error");
             }
         }
     </script>
