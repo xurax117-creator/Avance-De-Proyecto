@@ -94,51 +94,9 @@
         .logout h3 {
             color: #dc3545;
         }
-        
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-        
-        /* Custom Confirm Modal */
-        .custom-confirm-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999; }
-        .custom-confirm-overlay.active { display: flex; }
-        .custom-confirm-modal { background: white; padding: 30px; border-radius: 16px; width: 380px; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; animation: modalPop 0.3s ease-out; }
-        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .custom-confirm-icon { font-size: 48px; margin-bottom: 15px; }
-        .custom-confirm-title { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 10px; }
-        .custom-confirm-message { font-size: 16px; color: #666; margin-bottom: 25px; }
-        .custom-confirm-amount { font-size: 28px; font-weight: bold; color: #19A337; margin: 15px 0; }
-        .custom-confirm-buttons { display: flex; gap: 15px; }
-        .custom-confirm-buttons button { flex: 1; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; transition: 0.2s; }
-        .custom-confirm-btn-cancel { background: #e9ecef; color: #495057; }
-        .custom-confirm-btn-cancel:hover { background: #dee2e6; }
-        .custom-confirm-btn-confirm { background: #19A337; color: white; }
-        .custom-confirm-btn-confirm:hover { background: #148a2a; }
     </style>
 </head>
 <body>
-<div id="toastContainer" class="toast-container"></div>
-
-<!-- Custom Confirm Modal -->
-<div id="customConfirmOverlay" class="custom-confirm-overlay">
-    <div class="custom-confirm-modal">
-        <div class="custom-confirm-icon" id="confirmIcon">❓</div>
-        <div class="custom-confirm-title" id="confirmTitle">Confirmar</div>
-        <div class="custom-confirm-message" id="confirmMessage">¿Estás seguro?</div>
-        <div class="custom-confirm-amount" id="confirmAmount" style="display:none;"></div>
-        <div class="custom-confirm-buttons">
-            <button class="custom-confirm-btn-cancel" onclick="closeCustomConfirm()">Cancelar</button>
-            <button class="custom-confirm-btn-confirm" id="confirmBtn" onclick="executeConfirm()">Confirmar</button>
-        </div>
-    </div>
-</div>
 
     <h1>Bienvenido al MRKdito POS</h1>
     
@@ -206,59 +164,12 @@
         }
         
         function logout() {
-            showCustomConfirm(
-                'Cerrar Sesión',
-                '¿Estás seguro que deseas cerrar sesión?',
-                null,
-                () => {
-                    localStorage.clear();
-                    window.location.href = '/login.html';
-                },
-                'warning'
-            );
-        }
-        
-        // Toast notification functions
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = 'toast ' + type;
-            const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
-            toast.innerHTML = '<span>' + (icons[type] || 'ℹ') + '</span> <span>' + message + '</span>';
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.classList.add('fade-out');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-        
-        function showCustomConfirm(title, message, amount, callback, type) {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmIcon').textContent = type === 'danger' ? '⚠️' : type === 'success' ? '✅' : '❓';
-            const amountDiv = document.getElementById('confirmAmount');
-            if (amount) {
-                amountDiv.textContent = '$' + amount.toFixed(2);
-                amountDiv.style.display = 'block';
-            } else {
-                amountDiv.style.display = 'none';
+            if(confirm("¿Estás seguro que deseas cerrar sesión?")) {
+                localStorage.clear();
+                window.location.href = '/login.html';
             }
-            document.getElementById('customConfirmOverlay').classList.add('active');
-            window.currentConfirmCallback = callback;
         }
         
-        function closeCustomConfirm() {
-            document.getElementById('customConfirmOverlay').classList.remove('active');
-            window.currentConfirmCallback = null;
-        }
-        
-        function executeConfirm() {
-            if (window.currentConfirmCallback) {
-                window.currentConfirmCallback();
-            }
-            closeCustomConfirm();
-        }
-
         window.history.pushState(null, null, window.location.href);
         window.onpopstate = function () {
             window.history.go(1);
