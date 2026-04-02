@@ -313,7 +313,7 @@ public class InventarioController {
             psUpdate.close();
             
             // Registrar en el historial de entradas
-            String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada) VALUES (?, ?, ?, ?, CONVERT_TZ(NOW(), '+01:00', '-06:00'))";
+            String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada) VALUES (?, ?, ?, ?, CONVERT_TZ(NOW(), '+02:00', '-06:00'))";
             PreparedStatement psInsert = c.prepareStatement(sqlInsert);
             psInsert.setInt(1, idProducto);
             psInsert.setInt(2, cantidad);
