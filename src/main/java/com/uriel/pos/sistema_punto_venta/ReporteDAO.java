@@ -70,7 +70,19 @@ public class ReporteDAO {
                 Map<String, Object> map = new HashMap<>();
                 map.put("idVenta", rs.getInt("id_venta"));
                 map.put("numeroVenta", rs.getInt("numero_venta"));
-                map.put("fecha", rs.getTimestamp("fecha").toString());
+                // Usar la zona horaria del servidor Java (America/Mexico_City)
+                java.util.Calendar calMexico = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Mexico_City"));
+                Timestamp ts = rs.getTimestamp("fecha", calMexico);
+                if (ts != null) {
+                    // MySQL ya tiene la hora convertida por CONVERT_TZ, solo la pasamos tal cual
+                    java.util.Calendar cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("America/Mexico_City"));
+                    cal.setTimeInMillis(ts.getTime());
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                    sdf.setTimeZone(java.util.TimeZone.getTimeZone("America/Mexico_City"));
+                    map.put("fecha", sdf.format(cal));
+                } else {
+                    map.put("fecha", "");
+                }
                 map.put("nombre", rs.getString("nombre"));
                 map.put("total", rs.getDouble("total"));
                 lista.add(map);

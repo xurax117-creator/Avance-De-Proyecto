@@ -56,7 +56,7 @@ public class Venta {
             Conexion con = new Conexion();
             Connection c = con.conectar();
             
-            String sql = "INSERT INTO ventas(id_usuario, total) VALUES(?, 0)";
+            String sql = "INSERT INTO ventas(id_usuario, total, fecha) VALUES(?, 0, CONVERT_TZ(NOW(), '+00:00', '-06:00'))";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, idUsuario);
             stmt.executeUpdate();
