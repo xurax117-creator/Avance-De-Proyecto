@@ -73,7 +73,7 @@
     </div>
     
     <div id="panel-arriba">
-        <input type="text" id="txtClave" placeholder="Escanear Código de Barras o escribir nombre..." autofocus>
+        <input type="text" id="txtClave" placeholder="Escanear Código de Barras o escribir nombre..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
         <button onclick="agregarProducto()">➕ Agregar Producto</button>
     </div>
 
@@ -159,7 +159,6 @@
         let totalVenta = 0;
         let currentUserId = localStorage.getItem('userId') || 1;
         let procesando = false;
-        let currentConfirmCallback = null;
         const txtClave = document.getElementById('txtClave');
         const cuerpoTabla = document.getElementById('cuerpoTabla');
         
@@ -185,20 +184,9 @@
             }, 3000);
         }
         
-        // Custom Confirm Modal Functions
-        function showCustomConfirm(title, message, amount, callback, type = 'info') {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmIcon').textContent = type === 'danger' ? '⚠️' : type === 'success' ? '✅' : '❓';
-            
-            const amountDiv = document.getElementById('confirmAmount');
-            if (amount) {
-                amountDiv.textContent = '$' + parseFloat(amount).toFixed(2);
-                amountDiv.style.display = 'block';
-            } else {
-                amountDiv.style.display = 'none';
-            }
-            
+        // Fin de funciones de toast
+        
+        function mostrarSugerencias(productos) {
             const container = document.getElementById('resultadosBusqueda');
             container.innerHTML = '';
             
@@ -230,7 +218,7 @@
             
             document.getElementById('modalBusqueda').classList.add('active');
         }
-
+        
         function cerrarModalBusqueda() {
             document.getElementById('modalBusqueda').classList.remove('active');
             txtClave.focus();
