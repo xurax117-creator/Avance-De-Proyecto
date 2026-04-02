@@ -13,7 +13,7 @@ public class Conexion {
             String user = System.getenv("MYSQLUSER");
             String pass = System.getenv("MYSQLPASSWORD");
 
-            String url = "jdbc:mysql://" + host + ":" + port + "/" + db + "?useSSL=false&serverTimezone=America/Mexico_City";
+            String url = "jdbc:mysql://" + host + ":" + port + "/" + db + "?useSSL=false";
 
             Class.forName("com.mysql.cj.jdbc.Driver");
             con = DriverManager.getConnection(url, user, pass);
