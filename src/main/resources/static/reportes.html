@@ -221,8 +221,13 @@
         if (tabActual === 'ventas') {
             thead.innerHTML = "<tr><th>No. Venta</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
             datosMostrar.forEach(v => {
-                // Las fechas de la BD ya están en hora de México, simplemente las mostramos
-                const fechaFormateada = v.fecha;
+                // La hora ya está guardada en hora de México (UTC-6), solo la mostramos
+                const fechaDate = new Date(v.fecha);
+                const fechaFormateada = fechaDate.toLocaleString('es-MX', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true,
+                    timeZone: 'America/Mexico_City'
+                });
                 tbody.innerHTML += `
                     <tr>
                         <td>${v.numeroVenta}</td>
