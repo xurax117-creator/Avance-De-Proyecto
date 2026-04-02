@@ -221,10 +221,16 @@
         if (tabActual === 'ventas') {
             thead.innerHTML = "<tr><th>No. Venta</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
             datosMostrar.forEach(v => {
+                // Formatear fecha con zona horaria de México
+                const fechaDate = new Date(v.fecha);
+                const fechaFormateada = fechaDate.toLocaleString('es-MX', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                });
                 tbody.innerHTML += `
                     <tr>
                         <td>${v.numeroVenta}</td>
-                        <td>${v.fecha}</td>
+                        <td>${fechaFormateada}</td>
                         <td>${v.nombre}</td>
                         <td>${v.total.toFixed(2)}</td>
                         <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta})">Detalles</button></td>

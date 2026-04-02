@@ -130,7 +130,7 @@ public class Venta {
             int ventaId = idVenta;
             if (idVenta == -1) {
                 // Crear nueva venta
-                String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, NOW())";
+                String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '-06:00'))";
                 PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS);
                 stmtVenta.setInt(1, 1); // usuario por defecto
                 stmtVenta.setDouble(2, totalFinal);
@@ -199,7 +199,7 @@ public class Venta {
             Conexion con = new Conexion();
             Connection c = con.conectar();
             
-            String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, NOW())";
+            String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '-06:00'))";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, idUsuario);
             stmt.setDouble(2, total);
