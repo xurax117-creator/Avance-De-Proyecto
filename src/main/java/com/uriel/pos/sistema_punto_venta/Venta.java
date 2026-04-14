@@ -1,5 +1,6 @@
 package com.uriel.pos.sistema_punto_venta;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,7 +35,7 @@ public class Venta {
                 data = new ProductoData(
                     rs.getInt("id_producto"),
                     rs.getString("nombre"),
-                    rs.getDouble("precio_venta"),
+                    rs.getBigDecimal("precio_venta"),
                     rs.getInt("existencias_act"),
                     fotoBase64,
                     rs.getString("codigo_barras")
@@ -102,7 +103,7 @@ public class Venta {
                 lista.add(new ProductoData(
                     rs.getInt("id_producto"),
                     rs.getString("nombre"),
-                    rs.getDouble("precio_venta"),
+                    rs.getBigDecimal("precio_venta"),
                     rs.getInt("existencias_act"),
                     fotoBase64,
                     rs.getString("codigo_barras")
@@ -118,7 +119,7 @@ public class Venta {
         return lista;
     }
 
-    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal) throws SQLException {
+    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, BigDecimal totalFinal) throws SQLException {
         Connection c = null;
         try {
             Conexion con = new Conexion();
@@ -133,7 +134,7 @@ public class Venta {
                 String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
                 PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS);
                 stmtVenta.setInt(1, 1); // usuario por defecto
-                stmtVenta.setDouble(2, totalFinal);
+                stmtVenta.setBigDecimal(2, totalFinal);
                 stmtVenta.executeUpdate();
                 
                 ResultSet rsVenta = stmtVenta.getGeneratedKeys();
@@ -147,7 +148,7 @@ public class Venta {
 
             String sqlTotal = "UPDATE ventas SET total = ? WHERE id_venta = ?";
             PreparedStatement stmtTotal = c.prepareStatement(sqlTotal);
-            stmtTotal.setDouble(1, totalFinal);
+            stmtTotal.setBigDecimal(1, totalFinal);
             stmtTotal.setInt(2, ventaId);
             int rowsUpdated = stmtTotal.executeUpdate();
             System.out.println("Filas actualizadas en ventas: " + rowsUpdated);
@@ -158,8 +159,8 @@ public class Venta {
                 PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
                 stmtInsert.setInt(1, ventaId);
                 stmtInsert.setInt(2, detalle.idProducto);
-                stmtInsert.setDouble(3, detalle.cantidad);
-                stmtInsert.setDouble(4, detalle.precioUnitario);
+                stmtInsert.setBigDecimal(3, detalle.cantidad);
+                stmtInsert.setBigDecimal(4, detalle.precioUnitario);
                 stmtInsert.executeUpdate();
                 stmtInsert.close();
 
@@ -193,7 +194,7 @@ public class Venta {
     }
     
     // Guardar venta en espera
-    public int guardarVentaEnEspera(int idUsuario, double total, List<DetalleVentaEnEspera> detalles) {
+    public int guardarVentaEnEspera(int idUsuario, BigDecimal total, List<DetalleVentaEnEspera> detalles) {
         int idVentaEspera = -1;
         try {
             Conexion con = new Conexion();
@@ -202,7 +203,7 @@ public class Venta {
             String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             stmt.setInt(1, idUsuario);
-            stmt.setDouble(2, total);
+            stmt.setBigDecimal(2, total);
             stmt.executeUpdate();
             
             ResultSet rs = stmt.getGeneratedKeys();
@@ -220,8 +221,8 @@ public class Venta {
                 stmtDetalle.setInt(2, detalle.idProducto);
                 stmtDetalle.setString(3, detalle.codigo);
                 stmtDetalle.setString(4, detalle.nombre);
-                stmtDetalle.setDouble(5, detalle.precio);
-                stmtDetalle.setDouble(6, detalle.cantidad);
+                stmtDetalle.setBigDecimal(5, detalle.precio);
+                stmtDetalle.setBigDecimal(6, detalle.cantidad);
                 stmtDetalle.setString(7, detalle.fotoProducto);
                 stmtDetalle.executeUpdate();
                 stmtDetalle.close();
@@ -266,7 +267,7 @@ public class Venta {
                     rs.getInt("id_usuario"),
                     "Usuario #" + rs.getInt("id_usuario"),  // Username fijo por ahora
                     rs.getString("fecha"),
-                    rs.getDouble("total")
+                    rs.getBigDecimal("total")
                 );
                 lista.add(venta);
             }
@@ -290,8 +291,8 @@ public class Venta {
                         rsDetalles.getInt("id_producto"),
                         rsDetalles.getString("codigo"),
                         rsDetalles.getString("nombre"),
-                        rsDetalles.getDouble("precio"),
-                        rsDetalles.getDouble("cantidad"),
+                        rsDetalles.getBigDecimal("precio"),
+                        rsDetalles.getBigDecimal("cantidad"),
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
@@ -344,14 +345,14 @@ public class Venta {
                 PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
                 stmtDetalles.setInt(1, idVentaEspera);
                 ResultSet rsDetalles = stmtDetalles.executeQuery();
-                
+
                 while (rsDetalles.next()) {
                     DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
                         rsDetalles.getInt("id_producto"),
                         rsDetalles.getString("codigo"),
                         rsDetalles.getString("nombre"),
-                        rsDetalles.getDouble("precio"),
-                        rsDetalles.getDouble("cantidad"),
+                        rsDetalles.getBigDecimal("precio"),
+                        rsDetalles.getBigDecimal("cantidad"),
                         rsDetalles.getString("foto_producto")
                     );
                     venta.detalles.add(detalle);
@@ -401,12 +402,12 @@ public class Venta {
 class ProductoData {
     public int idProducto;
     public String nombre;
-    public double precioVenta;
+    public BigDecimal precioVenta;
     public int stockActual;
     public String fotoProducto;
     public String codigoBarras;
 
-    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto, String codigoBarras) {
+    public ProductoData(int idProducto, String nombre, BigDecimal precioVenta, int stockActual, String fotoProducto, String codigoBarras) {
         this.idProducto = idProducto;
         this.nombre = nombre;
         this.precioVenta = precioVenta;
@@ -418,8 +419,8 @@ class ProductoData {
 
 class DetalleVentaRequest {
     public int idProducto;
-    public double cantidad;
-    public double precioUnitario;
+    public BigDecimal cantidad;
+    public BigDecimal precioUnitario;
 }
 
 // Clase para venta en espera
@@ -428,10 +429,10 @@ class VentaEnEspera {
     public int idUsuario;
     public String nombreUsuario;
     public String fecha;
-    public double total;
+    public BigDecimal total;
     public List<DetalleVentaEnEspera> detalles;
-    
-    public VentaEnEspera(int id, int idUsuario, String nombreUsuario, String fecha, double total) {
+
+    public VentaEnEspera(int id, int idUsuario, String nombreUsuario, String fecha, BigDecimal total) {
         this.id = id;
         this.idUsuario = idUsuario;
         this.nombreUsuario = nombreUsuario;
@@ -445,11 +446,11 @@ class DetalleVentaEnEspera {
     public int idProducto;
     public String codigo;
     public String nombre;
-    public double precio;
-    public double cantidad;
+    public BigDecimal precio;
+    public BigDecimal cantidad;
     public String fotoProducto;
-    
-    public DetalleVentaEnEspera(int idProducto, String codigo, String nombre, double precio, double cantidad, String fotoProducto) {
+
+    public DetalleVentaEnEspera(int idProducto, String codigo, String nombre, BigDecimal precio, BigDecimal cantidad, String fotoProducto) {
         this.idProducto = idProducto;
         this.codigo = codigo;
         this.nombre = nombre;

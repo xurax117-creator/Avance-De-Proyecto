@@ -360,7 +360,7 @@
 
             document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
-            document.getElementById('txtPago').value = totalVenta;
+            document.getElementById('txtPago').value = totalVenta.toFixed(2);
             document.getElementById('modalPago').classList.add('active');
             document.getElementById('txtPago').focus();
             document.getElementById('txtPago').select();
@@ -371,7 +371,13 @@
         }
         
         document.getElementById('txtPago').addEventListener('input', function() {
-            const pago = parseFloat(this.value) || 0;
+            let pago = parseFloat(this.value) || 0;
+            // Redondear a 2 decimales para evitar números largos
+            pago = Math.round(pago * 100) / 100;
+            // Actualizar el valor del input si es necesario
+            if (parseFloat(this.value) !== pago) {
+                this.value = pago.toFixed(2);
+            }
             const cambio = Math.max(0, pago - totalVenta);
             document.getElementById('modalCambio').textContent = `$${cambio.toFixed(2)}`;
         });
