@@ -1,7 +1,6 @@
 package com.uriel.pos.sistema_punto_venta;
 
 import org.springframework.web.bind.annotation.*;
-import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,14 +20,14 @@ public class VentaController {
     public static class FinalizarRequest {
         public int userId;
         public int idVenta;
-        public BigDecimal totalFinal;
+        public double totalFinal;
         public List<DetalleVentaRequest> listaCarrito;
     }
     
     // Request para guardar venta en espera
     public static class VentaEnEsperaRequest {
         public int userId;
-        public BigDecimal total;
+        public double total;
         public List<DetalleVentaEnEsperaRequest> listaCarrito;
     }
     
@@ -37,8 +36,8 @@ public class VentaController {
         public int idProducto;
         public String codigo;
         public String nombre;
-        public BigDecimal precio;
-        public BigDecimal cantidad;
+        public double precio;
+        public double cantidad;
         public String fotoProducto;
     }
 
