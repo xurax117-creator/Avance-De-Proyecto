@@ -357,10 +357,10 @@
 
         function abrirModalPago() {
             if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
-            
+
             document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
-            document.getElementById('txtPago').value = totalVenta.toFixed(2);
+            document.getElementById('txtPago').value = totalVenta;
             document.getElementById('modalPago').classList.add('active');
             document.getElementById('txtPago').focus();
             document.getElementById('txtPago').select();
@@ -382,7 +382,9 @@
         
         function confirmarPago() {
             const pago = parseFloat(document.getElementById('txtPago').value) || 0;
-            if (pago < totalVenta) {
+            // Usar tolerancia para comparación de punto flotante
+            const tolerancia = 0.01;
+            if (pago < totalVenta - tolerancia) {
                 showToast("El pago es insuficiente", "warning");
                 return;
             }
@@ -392,12 +394,11 @@
 
         async function finalizarVenta() {
             if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
-            
-            const totalFinal = listaCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
+
             const requestBody = {
                 userId: parseInt(currentUserId),
                 idVenta: currentVentaId,
-                totalFinal: totalFinal,
+                totalFinal: totalVenta,
                 listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio }))
             };
 
