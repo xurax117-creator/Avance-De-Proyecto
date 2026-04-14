@@ -66,11 +66,13 @@
 <div class="filtros">
     <div>
         <label>Desde:</label><br>
-        <input type="date" id="fechaInicio">
+        <input type="date" id="fechaInicio"><br>
+        <input type="time" id="horaInicio" value="00:00">
     </div>
     <div>
         <label>Hasta:</label><br>
-        <input type="date" id="fechaFin">
+        <input type="date" id="fechaFin"><br>
+        <input type="time" id="horaFin" value="23:59">
     </div>
     <button class="btn-consultar" onclick="cargarReporte()">🔍 Consultar</button>
 </div>
@@ -160,17 +162,19 @@
 
     async function cargarReporte() {
         const fInicio = document.getElementById('fechaInicio').value;
+        const hInicio = document.getElementById('horaInicio').value;
         const fFin = document.getElementById('fechaFin').value;
-        
+        const hFin = document.getElementById('horaFin').value;
+
         paginaActual = 1;
-        
+
         try {
-            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
-            
+            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+
             if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
-            
+
             const resp = await fetch(url);
             const data = await resp.json();
             dibujarTabla(data);
@@ -279,15 +283,17 @@
 
     async function cambiarPaginaReporte() {
         const fInicio = document.getElementById('fechaInicio').value;
+        const hInicio = document.getElementById('horaInicio').value;
         const fFin = document.getElementById('fechaFin').value;
-        
+        const hFin = document.getElementById('horaFin').value;
+
         try {
-            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&fin=${fFin}`;
-            
+            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+
             if (tabActual === 'ventas' || tabActual === 'productos') {
                 url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
             }
-            
+
             const resp = await fetch(url);
             const data = await resp.json();
             dibujarTabla(data);

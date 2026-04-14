@@ -9,12 +9,14 @@ public class ReporteController {
 
     @GetMapping("/ventas")
     public List<Map<String, Object>> getVentas(
-            @RequestParam String inicio, 
+            @RequestParam String inicio,
+            @RequestParam(defaultValue = "00:00") String horaInicio,
             @RequestParam String fin,
+            @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
             @RequestParam(defaultValue = "50") int tamano) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentas(inicio, fin, pagina, tamano);
+        return dao.obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamano);
     }
 
     @GetMapping("/detalle/{id}")
@@ -25,17 +27,23 @@ public class ReporteController {
 
     @GetMapping("/productos")
     public List<Map<String, Object>> getTopProductos(
-            @RequestParam String inicio, 
+            @RequestParam String inicio,
+            @RequestParam(defaultValue = "00:00") String horaInicio,
             @RequestParam String fin,
+            @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
             @RequestParam(defaultValue = "50") int tamano) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerTopProductos(inicio, fin, pagina, tamano);
+        return dao.obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamano);
     }
 
     @GetMapping("/cajeros")
-    public List<Map<String, Object>> getVentasPorCajero(@RequestParam String inicio, @RequestParam String fin) {
+    public List<Map<String, Object>> getVentasPorCajero(
+            @RequestParam String inicio,
+            @RequestParam(defaultValue = "00:00") String horaInicio,
+            @RequestParam String fin,
+            @RequestParam(defaultValue = "23:59") String horaFin) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentasPorCajero(inicio, fin);
+        return dao.obtenerVentasPorCajero(inicio, horaInicio, fin, horaFin);
     }
 }

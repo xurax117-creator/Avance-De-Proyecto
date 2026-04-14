@@ -5,17 +5,20 @@ import java.util.*;
 
 public class ReporteDAO {
     
-    public List<Map<String, Object>> obtenerVentas(String inicio, String fin, int pagina, int tamanoPagina) {
+    public List<Map<String, Object>> obtenerVentas(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
-            
+
+            String fechaHoraInicio = inicio + " " + horaInicio + ":00";
+            String fechaHoraFin = fin + " " + horaFin + ":59";
+
             // Primero obtener el total de ventas para la paginación
-            String sqlCount = "SELECT COUNT(*) as total FROM ventas WHERE DATE(fecha) BETWEEN ? AND ?";
+            String sqlCount = "SELECT COUNT(*) as total FROM ventas WHERE fecha BETWEEN ? AND ?";
             PreparedStatement psCount = c.prepareStatement(sqlCount);
-            psCount.setString(1, inicio);
-            psCount.setString(2, fin);
+            psCount.setString(1, fechaHoraInicio);
+            psCount.setString(2, fechaHoraFin);
             ResultSet rsCount = psCount.executeQuery();
             int totalRegistros = 0;
             if (rsCount.next()) {
@@ -23,45 +26,45 @@ public class ReporteDAO {
             }
             rsCount.close();
             psCount.close();
-            
+
             // Obtener el total general de ventas en el período
             double totalGeneral = 0;
-            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE DATE(fecha) BETWEEN ? AND ?";
+            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE fecha BETWEEN ? AND ?";
             PreparedStatement psSum = c.prepareStatement(sqlSum);
-            psSum.setString(1, inicio);
-            psSum.setString(2, fin);
+            psSum.setString(1, fechaHoraInicio);
+            psSum.setString(2, fechaHoraFin);
             ResultSet rsSum = psSum.executeQuery();
             if (rsSum.next()) {
                 totalGeneral = rsSum.getDouble("total_general");
             }
             rsSum.close();
             psSum.close();
-            
+
             System.out.println("DEBUG - totalRegistros: " + totalRegistros + ", totalGeneral: " + totalGeneral);
-            
+
             // Calcular el offset
             int offset = (pagina - 1) * tamanoPagina;
-            
+
             // Query con número de venta secuencial usando ROW_NUMBER
             String sql = "SELECT * FROM (" +
                          "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, " +
                          "ROW_NUMBER() OVER (ORDER BY v.id_venta DESC) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
-                         "WHERE DATE(v.fecha) BETWEEN ? AND ?" +
+                         "WHERE v.fecha BETWEEN ? AND ?" +
                          ") as subquery WHERE numero_venta BETWEEN ? AND ?";
-            
+
             // Para MySQL 8+, usamos la versión anterior. Para versiones anteriores, usamos una alternativa
             // Vamos a usar una subconsulta para el número
             String sqlAlternativo = "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, " +
-                         "(SELECT COUNT(*) + 1 FROM ventas v2 WHERE v2.id_venta > v.id_venta AND DATE(v2.fecha) BETWEEN ? AND ?) as numero_venta " +
+                         "(SELECT COUNT(*) + 1 FROM ventas v2 WHERE v2.id_venta > v.id_venta AND v2.fecha BETWEEN ? AND ?) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
-                         "WHERE DATE(v.fecha) BETWEEN ? AND ? ORDER BY v.id_venta DESC LIMIT ? OFFSET ?";
-            
+                         "WHERE v.fecha BETWEEN ? AND ? ORDER BY v.id_venta DESC LIMIT ? OFFSET ?";
+
             PreparedStatement ps = c.prepareStatement(sqlAlternativo);
-            ps.setString(1, inicio);
-            ps.setString(2, fin);
-            ps.setString(3, inicio);
-            ps.setString(4, fin);
+            ps.setString(1, fechaHoraInicio);
+            ps.setString(2, fechaHoraFin);
+            ps.setString(3, fechaHoraInicio);
+            ps.setString(4, fechaHoraFin);
             ps.setInt(5, tamanoPagina);
             ps.setInt(6, offset);
             ResultSet rs = ps.executeQuery();
@@ -94,7 +97,7 @@ public class ReporteDAO {
     
     // Método sin paginación (para compatibilidad)
     public List<Map<String, Object>> obtenerVentas(String inicio, String fin) {
-        return obtenerVentas(inicio, fin, 1, 1000);
+        return obtenerVentas(inicio, "00:00", fin, "23:59", 1, 1000);
     }
 
     public List<Map<String, Object>> obtenerDetalleVenta(int idVenta) {
@@ -121,20 +124,23 @@ public class ReporteDAO {
         return lista;
     }
 
-    public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin, int pagina, int tamanoPagina) {
+    public List<Map<String, Object>> obtenerTopProductos(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
-            
+
+            String fechaHoraInicio = inicio + " " + horaInicio + ":00";
+            String fechaHoraFin = fin + " " + horaFin + ":59";
+
             // Obtener total de productos diferentes vendidos
             String sqlCount = "SELECT COUNT(DISTINCT p.id_producto) as total " +
                              "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
                              "JOIN ventas v ON dv.id_venta = v.id_venta " +
-                             "WHERE DATE(v.fecha) BETWEEN ? AND ?";
+                             "WHERE v.fecha BETWEEN ? AND ?";
             PreparedStatement psCount = c.prepareStatement(sqlCount);
-            psCount.setString(1, inicio);
-            psCount.setString(2, fin);
+            psCount.setString(1, fechaHoraInicio);
+            psCount.setString(2, fechaHoraFin);
             ResultSet rsCount = psCount.executeQuery();
             int totalRegistros = 0;
             if (rsCount.next()) {
@@ -142,31 +148,31 @@ public class ReporteDAO {
             }
             rsCount.close();
             psCount.close();
-            
+
             // Obtener el total general de ventas en el período (usar la misma tabla ventas para consistencia)
             double totalGeneral = 0;
-            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE DATE(fecha) BETWEEN ? AND ?";
+            String sqlSum = "SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE fecha BETWEEN ? AND ?";
             PreparedStatement psSum = c.prepareStatement(sqlSum);
-            psSum.setString(1, inicio);
-            psSum.setString(2, fin);
+            psSum.setString(1, fechaHoraInicio);
+            psSum.setString(2, fechaHoraFin);
             ResultSet rsSum = psSum.executeQuery();
             if (rsSum.next()) {
                 totalGeneral = rsSum.getDouble("total_general");
             }
             rsSum.close();
             psSum.close();
-            
+
             int offset = (pagina - 1) * tamanoPagina;
-            
+
             String sql = "SELECT p.nombre, SUM(dv.cantidad) as cant, SUM(dv.cantidad * dv.precio_unitario) as total " +
                          "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
                          "JOIN ventas v ON dv.id_venta = v.id_venta " +
-                         "WHERE DATE(v.fecha) BETWEEN ? AND ? " +
+                         "WHERE v.fecha BETWEEN ? AND ? " +
                          "GROUP BY p.id_producto ORDER BY cant DESC LIMIT ? OFFSET ?";
-            
+
             PreparedStatement ps = c.prepareStatement(sql);
-            ps.setString(1, inicio);
-            ps.setString(2, fin);
+            ps.setString(1, fechaHoraInicio);
+            ps.setString(2, fechaHoraFin);
             ps.setInt(3, tamanoPagina);
             ps.setInt(4, offset);
             ResultSet rs = ps.executeQuery();
@@ -197,22 +203,26 @@ public class ReporteDAO {
     
     // Método sin paginación (para compatibilidad)
     public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin) {
-        return obtenerTopProductos(inicio, fin, 1, 1000);
+        return obtenerTopProductos(inicio, "00:00", fin, "23:59", 1, 1000);
     }
 
-    public List<Map<String, Object>> obtenerVentasPorCajero(String inicio, String fin) {
+    public List<Map<String, Object>> obtenerVentasPorCajero(String inicio, String horaInicio, String fin, String horaFin) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
+
+            String fechaHoraInicio = inicio + " " + horaInicio + ":00";
+            String fechaHoraFin = fin + " " + horaFin + ":59";
+
             String sql = "SELECT u.nombre_completo as nombre, COUNT(v.id_venta) as num_ventas, SUM(v.total) as total_vendido " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
-                         "WHERE DATE(v.fecha) BETWEEN ? AND ? " +
+                         "WHERE v.fecha BETWEEN ? AND ? " +
                          "GROUP BY u.id_usuario ORDER BY total_vendido DESC";
-            
+
             PreparedStatement ps = c.prepareStatement(sql);
-            ps.setString(1, inicio);
-            ps.setString(2, fin);
+            ps.setString(1, fechaHoraInicio);
+            ps.setString(2, fechaHoraFin);
             ResultSet rs = ps.executeQuery();
             
             while(rs.next()) {
