@@ -173,9 +173,15 @@ function showToast(message, type = 'info') {
 }
 
 function cargarProductos() {
+    console.log('Intentando cargar productos desde /api/inventario/todos');
     fetch('/api/inventario/todos')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Respuesta recibida, status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Datos recibidos:', data);
+            console.log('Número de productos:', data.length);
             productos = data;
             const select = document.getElementById('promo_producto');
             select.innerHTML = '<option value="">Seleccione un producto</option>';
@@ -184,8 +190,11 @@ function cargarProductos() {
                     select.innerHTML += `<option value="${p.id_producto}">${p.nombre}</option>`;
                 }
             });
+            console.log('Select poblado, opciones disponibles:', select.options.length);
         })
-        .catch(error => console.error('Error cargando productos:', error));
+        .catch(error => {
+            console.error('Error cargando productos:', error);
+        });
 }
 
 function cargarPromociones() {
