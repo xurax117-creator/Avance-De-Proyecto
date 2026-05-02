@@ -80,3 +80,19 @@ VALUES ('Axel Uriel Moreno Cervantes', 'Axel', '$2a$10$8K1p/a0dL1LXMIgoEDFrwOfMQ
 INSERT INTO proveedores (nombre) VALUES ('Coca Cola'), ('Pepsi'), ('Bimbo'), ('Centra de Abastos');
 
 ALTER TABLE detalle_venta MODIFY COLUMN cantidad DECIMAL(10,3) NOT NULL;
+
+-- Tabla para promociones
+CREATE TABLE promociones (
+    id_promocion INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    tipo ENUM('buy_x_get_y', 'percent_off', 'fixed_discount') NOT NULL,
+    id_producto INT NOT NULL,
+    cantidad_requerida DECIMAL(10,3) NOT NULL,
+    precio_especial DECIMAL(10,2),  -- para buy_x_get_y, precio total por la cantidad
+    descuento_porcentaje DECIMAL(5,2),  -- para percent_off
+    descuento_fijo DECIMAL(10,2),  -- para fixed_discount
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    activo BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
