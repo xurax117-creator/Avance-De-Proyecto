@@ -173,36 +173,19 @@ function showToast(message, type = 'info') {
 }
 
 function cargarProductos() {
-    console.log('Intentando cargar productos desde /api/inventario/todos');
     fetch('/api/inventario/todos')
-        .then(response => {
-            console.log('Respuesta recibida, status:', response.status);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('Datos recibidos:', data.length, 'productos');
-            if (data.length > 0) {
-                console.log('Primer producto:', data[0]);
-                console.log('Tipo de activo en primer producto:', typeof data[0].activo, 'valor:', data[0].activo);
-                console.log('Segundo producto:', data[1]);
-                console.log('Tipo de activo en segundo producto:', typeof data[1].activo, 'valor:', data[1].activo);
-            }
             productos = data;
             const select = document.getElementById('promo_producto');
             select.innerHTML = '<option value="">Seleccione un producto</option>';
-            let activosCount = 0;
             data.forEach(p => {
                 if (p.activo) {
                     select.innerHTML += `<option value="${p.id_producto}">${p.nombre}</option>`;
-                    activosCount++;
                 }
             });
-            console.log('Productos activos encontrados:', activosCount);
-            console.log('Select poblado, opciones disponibles:', select.options.length);
         })
-        .catch(error => {
-            console.error('Error cargando productos:', error);
-        });
+        .catch(error => console.error('Error cargando productos:', error));
 }
 
 function cargarPromociones() {
@@ -328,6 +311,7 @@ function guardarPromocion() {
     })
     .then(response => response.json())
     .then(result => {
+        console.log('Resultado de guardar promoción:', result); // Log para depuración
         if (result.success) {
             showToast(result.message, 'success');
             cerrarModal();
