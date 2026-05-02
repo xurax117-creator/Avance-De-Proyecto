@@ -101,11 +101,22 @@ public class PromocionDAO {
             Conexion con = new Conexion();
             Connection c = con.conectar();
 
+            System.out.println("DAO: Intentando crear promoción: " + request.nombre);
+            System.out.println("DAO: Tipo: " + request.tipo);
+            System.out.println("DAO: ID Producto: " + request.idProducto);
+            System.out.println("DAO: Cantidad requerida: " + request.cantidadRequerida);
+            System.out.println("DAO: Precio especial: " + request.precioEspecial);
+            System.out.println("DAO: Descuento porcentaje: " + request.descuentoPorcentaje);
+            System.out.println("DAO: Descuento fijo: " + request.descuentoFijo);
+            System.out.println("DAO: Fecha inicio: " + request.fechaInicio);
+            System.out.println("DAO: Fecha fin: " + request.fechaFin);
+            System.out.println("DAO: Activo: " + request.activo);
+
             String sql = """
-                INSERT INTO promociones (nombre, tipo, id_producto, cantidad_requerida, precio_especial,
-                                        descuento_porcentaje, descuento_fijo, fecha_inicio, fecha_fin, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
+                    INSERT INTO promociones (nombre, tipo, id_producto, cantidad_requerida, precio_especial,
+                                             descuento_porcentaje, descuento_fijo, fecha_inicio, fecha_fin, activo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """;
 
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setString(1, request.nombre);
@@ -120,10 +131,12 @@ public class PromocionDAO {
             stmt.setBoolean(10, request.activo);
 
             int rows = stmt.executeUpdate();
+            System.out.println("DAO: Filas afectadas: " + rows);
             stmt.close();
             c.close();
             return rows > 0;
         } catch (Exception e) {
+            System.err.println("DAO Error en crear: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -134,12 +147,17 @@ public class PromocionDAO {
             Conexion con = new Conexion();
             Connection c = con.conectar();
 
+            System.out.println("DAO: Intentando actualizar promoción ID: " + id);
+            System.out.println("DAO: Nombre: " + request.nombre);
+            System.out.println("DAO: Tipo: " + request.tipo);
+            System.out.println("DAO: ID Producto: " + request.idProducto);
+
             String sql = """
-                UPDATE promociones SET nombre = ?, tipo = ?, id_producto = ?, cantidad_requerida = ?,
-                                       precio_especial = ?, descuento_porcentaje = ?, descuento_fijo = ?,
-                                       fecha_inicio = ?, fecha_fin = ?, activo = ?
-                WHERE id_promocion = ?
-            """;
+                    UPDATE promociones SET nombre = ?, tipo = ?, id_producto = ?, cantidad_requerida = ?,
+                                            precio_especial = ?, descuento_porcentaje = ?, descuento_fijo = ?,
+                                            fecha_inicio = ?, fecha_fin = ?, activo = ?
+                    WHERE id_promocion = ?
+                    """;
 
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setString(1, request.nombre);
@@ -155,10 +173,12 @@ public class PromocionDAO {
             stmt.setInt(11, id);
 
             int rows = stmt.executeUpdate();
+            System.out.println("DAO: Filas afectadas en actualización: " + rows);
             stmt.close();
             c.close();
             return rows > 0;
         } catch (Exception e) {
+            System.err.println("DAO Error en actualizar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

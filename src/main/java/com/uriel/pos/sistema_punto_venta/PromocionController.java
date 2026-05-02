@@ -88,15 +88,19 @@ public class PromocionController {
                 ? datos.get("fecha_fin").toString() : null;
             request.activo = Boolean.parseBoolean(datos.get("activo").toString());
 
+            System.out.println("Datos recibidos para promocion: " + request.nombre + ", tipo: " + request.tipo + ", idProducto: " + request.idProducto);
+
             PromocionDAO dao = new PromocionDAO();
             boolean success = false;
             String id = datos.get("id_promocion") != null ? datos.get("id_promocion").toString() : "";
             if (!id.isEmpty()) {
                 success = dao.actualizar(Integer.parseInt(id), request);
                 res.put("message", "Promoción actualizada correctamente");
+                System.out.println("Actualizando promoción ID: " + id + ", success: " + success);
             } else {
                 success = dao.crear(request);
                 res.put("message", "Promoción creada correctamente");
+                System.out.println("Creando nueva promoción, success: " + success);
             }
 
             res.put("success", success);
