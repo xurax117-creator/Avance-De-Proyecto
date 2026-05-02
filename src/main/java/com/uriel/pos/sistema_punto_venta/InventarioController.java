@@ -33,6 +33,7 @@ public class InventarioController {
                 p.put("precio_venta", rs.getDouble("precio_venta"));
                 p.put("existencias_act", rs.getInt("existencias_act"));
                 p.put("existencias_min", rs.getInt("existencias_min"));
+                p.put("activo", rs.getBoolean("activo"));
                 
                 byte[] fotoBytes = rs.getBytes("foto_producto_blob");
                 if (fotoBytes != null) {
@@ -506,6 +507,7 @@ public class InventarioController {
                 p.put("nombre", rs.getString("nombre"));
                 p.put("precio_venta", rs.getDouble("precio_venta"));
                 p.put("existencias_act", rs.getInt("existencias_act"));
+                p.put("activo", rs.getBoolean("activo"));
                 
                 byte[] fotoBytes = rs.getBytes("foto_producto_blob");
                 if (fotoBytes != null) {
