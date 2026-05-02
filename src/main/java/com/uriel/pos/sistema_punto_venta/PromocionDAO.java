@@ -123,9 +123,26 @@ public class PromocionDAO {
             stmt.setString(2, request.tipo);
             stmt.setInt(3, request.idProducto);
             stmt.setDouble(4, request.cantidadRequerida);
-            stmt.setDouble(5, request.precioEspecial);
-            stmt.setDouble(6, request.descuentoPorcentaje);
-            stmt.setDouble(7, request.descuentoFijo);
+            
+            // Manejo correcto de valores nulos para Double
+            if (request.precioEspecial != null) {
+                stmt.setDouble(5, request.precioEspecial);
+            } else {
+                stmt.setNull(5, java.sql.Types.DOUBLE);
+            }
+            
+            if (request.descuentoPorcentaje != null) {
+                stmt.setDouble(6, request.descuentoPorcentaje);
+            } else {
+                stmt.setNull(6, java.sql.Types.DOUBLE);
+            }
+            
+            if (request.descuentoFijo != null) {
+                stmt.setDouble(7, request.descuentoFijo);
+            } else {
+                stmt.setNull(7, java.sql.Types.DOUBLE);
+            }
+            
             stmt.setDate(8, request.fechaInicio != null ? java.sql.Date.valueOf(request.fechaInicio) : null);
             stmt.setDate(9, request.fechaFin != null ? java.sql.Date.valueOf(request.fechaFin) : null);
             stmt.setBoolean(10, request.activo);
