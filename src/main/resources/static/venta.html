@@ -155,14 +155,15 @@
         </div>
     </div>
 
-    <script>
-        let listaCarrito = [];
-        let currentVentaId = -1;
-        let totalVenta = 0;
-        let currentUserId = localStorage.getItem('userId') || 1;
-        let procesando = false;
-        const txtClave = document.getElementById('txtClave');
-        const cuerpoTabla = document.getElementById('cuerpoTabla');
+<script>
+         let listaCarrito = [];
+         let currentVentaId = -1;
+         let totalVenta = 0;
+         let currentUserId = localStorage.getItem('userId') || 1;
+         let procesando = false;
+         const txtClave = document.getElementById('txtClave');
+         const cuerpoTabla = document.getElementById('cuerpoTabla');
+         let carritoIdCounter = 0;
         
         // Función para mostrar toast notifications
         function showToast(message, type = 'info') {
@@ -258,6 +259,7 @@
                     console.log('Producto ya existe, cantidad:', item.cantidad);
                 } else {
                     listaCarrito.unshift({
+                        carritoId: ++carritoIdCounter,
                         idProducto: producto.id_producto || producto.idProducto,
                         codigo: producto.codigoBarras || producto.codigo_barras || '',
                         nombre: producto.nombre,
@@ -265,7 +267,8 @@
                         precio: producto.precio_venta || producto.precioVenta,
                         cantidad: 1,
                         fotoProducto: producto.fotoProducto || null,
-                        promocionAplicada: null
+                        promocionAplicada: null,
+                        esPromo: false
                     });
                     console.log('Producto agregado al carrito:', listaCarrito);
                 }
@@ -303,6 +306,7 @@
                         item.cantidad++;
                     } else {
                         listaCarrito.unshift({
+                            carritoId: ++carritoIdCounter,
                             idProducto: p.idProducto,
                             codigo: codigo,
                             nombre: p.nombre,
@@ -310,7 +314,8 @@
                             precio: p.precio,
                             cantidad: 1,
                             fotoProducto: p.fotoProducto || null,
-                            promocionAplicada: null
+                            promocionAplicada: null,
+                            esPromo: false
                         });
                     }
 
@@ -335,33 +340,103 @@
         }
 
         async function aplicarPromociones() {
-            for (let item of listaCarrito) {
-                item.precio = item.precioOriginal; // reset
-                item.promocionAplicada = null;
-
+            // Agrupar productos por ID y procesar cada grupo
+            const productosAgrupados = {};
+            
+            // Primero agrupar todos los productos del mismo tipo
+            listaCarrito.forEach(item => {
+                if (!productosAgrupados[item.idProducto]) {
+                    productosAgrupados[item.idProducto] = [];
+                }
+                productosAgrupados[item.idProducto].push(item);
+            });
+            
+            // Crear un array temporal para los nuevos items
+            const nuevosItems = [];
+            
+            // Procesar cada producto por separado
+            for (let idProducto in productosAgrupados) {
+                const items = productosAgrupados[idProducto];
+                const totalCantidad = items.reduce((sum, item) => sum + item.cantidad, 0);
+                
+                // Obtener promoción para este producto
                 try {
-                    const response = await fetch(`/api/promociones/activas/producto/${item.idProducto}`);
+                    const response = await fetch(`/api/promociones/activas/producto/${idProducto}`);
                     const promociones = await response.json();
-
+                    
+                    let promoAplicada = null;
                     for (let promo of promociones) {
-                        if (item.cantidad >= promo.cantidad_requerida) {
-                            if (promo.tipo === 'buy_x_get_y' && promo.precio_especial) {
-                                item.precio = promo.precio_especial / promo.cantidad_requerida;
-                                item.promocionAplicada = promo.nombre;
-                            } else if (promo.tipo === 'percent_off' && promo.descuento_porcentaje) {
-                                item.precio = item.precioOriginal * (1 - promo.descuento_porcentaje / 100);
-                                item.promocionAplicada = promo.nombre;
-                            } else if (promo.tipo === 'fixed_discount' && promo.descuento_fijo) {
-                                item.precio = Math.max(0, item.precioOriginal - promo.descuento_fijo);
-                                item.promocionAplicada = promo.nombre;
-                            }
-                            break; // aplicar primera promoción que cumpla
+                        if (totalCantidad >= promo.cantidad_requerida) {
+                            promoAplicada = promo;
+                            break;
                         }
+                    }
+                    
+                    if (promoAplicada && promoAplicada.tipo === 'buy_x_get_y' && promoAplicada.precio_especial) {
+                        const cantidadRequerida = Math.floor(promoAplicada.cantidad_requerida);
+                        const precioPromo = promoAplicada.precio_especial / cantidadRequerida;
+                        
+                        // Calcular cuántos grupos completos de promo y unidades sobrantes
+                        const gruposPromo = Math.floor(totalCantidad / cantidadRequerida);
+                        const unidadesSobrantes = totalCantidad % cantidadRequerida;
+                        
+                        // Agregar los grupos de promoción
+                        for (let i = 0; i < gruposPromo; i++) {
+                            nuevosItems.push({
+                                carritoId: ++carritoIdCounter,
+                                idProducto: parseInt(idProducto),
+                                codigo: items[0].codigo,
+                                nombre: items[0].nombre,
+                                precioOriginal: items[0].precioOriginal,
+                                precio: precioPromo,
+                                cantidad: cantidadRequerida,
+                                fotoProducto: items[0].fotoProducto,
+                                promocionAplicada: promoAplicada.nombre,
+                                esPromo: true
+                            });
+                        }
+                        
+                        // Agregar las unidades sobrantes al precio normal
+                        if (unidadesSobrantes > 0) {
+                            nuevosItems.push({
+                                carritoId: ++carritoIdCounter,
+                                idProducto: parseInt(idProducto),
+                                codigo: items[0].codigo,
+                                nombre: items[0].nombre,
+                                precioOriginal: items[0].precioOriginal,
+                                precio: items[0].precioOriginal,
+                                cantidad: unidadesSobrantes,
+                                fotoProducto: items[0].fotoProducto,
+                                promocionAplicada: null,
+                                esPromo: false
+                            });
+                        }
+                    } else {
+                        // Sin promoción de tipo buy_x_get_y, agregar items con precio original
+                        items.forEach(item => {
+                            nuevosItems.push({
+                                carritoId: item.carritoId || ++carritoIdCounter,
+                                idProducto: parseInt(idProducto),
+                                codigo: item.codigo,
+                                nombre: item.nombre,
+                                precioOriginal: item.precioOriginal,
+                                precio: item.precioOriginal,
+                                cantidad: item.cantidad,
+                                fotoProducto: item.fotoProducto,
+                                promocionAplicada: null,
+                                esPromo: false
+                            });
+                        });
                     }
                 } catch (error) {
                     console.error('Error aplicando promociones:', error);
+                    // En caso de error, mantener los items originales
+                    items.forEach(item => nuevosItems.push(item));
                 }
             }
+            
+            // Reemplazar la lista del carrito con los nuevos items
+            listaCarrito = nuevosItems;
         }
 
         function dibujarCarrito() {
@@ -385,11 +460,11 @@
                         <td>${fotoHtml}</td>
                         <td>${prod.codigo}</td>
                         <td>${prod.nombre}</td>
-                        <td><span class="badge-cantidad" ondblclick="editarCantidad(${index})">${prod.cantidad}</span></td>
+                        <td><span class="badge-cantidad" ondblclick="editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
                         <td>${prod.precio.toFixed(2)}</td>
                         <td>${promocionHtml}</td>
                         <td>${subtotal.toFixed(2)}</td>
-                        <td><button onclick="eliminarItem(${index})" style="background:red;">Eliminar</button></td>
+                        <td><button onclick="eliminarItem(${prod.carritoId})" style="background:red;">Eliminar</button></td>
                     </tr>`;
             });
             totalVenta = sumaTotal;
@@ -465,6 +540,7 @@
 
         function limpiarPantallaVenta() {
             listaCarrito = [];
+            carritoIdCounter = 0;
             currentVentaId = -1;
             cuerpoTabla.innerHTML = "";
             document.getElementById('lblTotal').textContent = "Total: $0.00";
@@ -473,7 +549,9 @@
             txtClave.focus();
         }
 
-        async function editarCantidad(index) {
+        async function editarCantidad(carritoId) {
+            const index = listaCarrito.findIndex(p => p.carritoId === carritoId);
+            if (index === -1) return;
             const n = prompt("Nueva cantidad:", listaCarrito[index].cantidad);
             if (n && !isNaN(n) && n > 0) {
                 listaCarrito[index].cantidad = parseFloat(n);
@@ -482,7 +560,13 @@
             }
         }
 
-        function eliminarItem(index) { listaCarrito.splice(index, 1); dibujarCarrito(); }
+        function eliminarItem(carritoId) {
+            const index = listaCarrito.findIndex(p => p.carritoId === carritoId);
+            if (index !== -1) {
+                listaCarrito.splice(index, 1);
+                dibujarCarrito();
+            }
+        }
         function confirmarCancelacion() { if (confirm("¿Limpiar venta?")) limpiarPantallaVenta(); }
         document.getElementById('user-info').textContent = `Atiende: ${localStorage.getItem('nombreUsuario') || 'Cajero'}`;
         
@@ -525,6 +609,7 @@
                     showToast("Venta guardada en espera correctamente", "success");
                     // Limpiar el carrito y el ID de venta
                     listaCarrito = [];
+                    carritoIdCounter = 0;
                     currentVentaId = -1;
                     dibujarCarrito();
                     document.getElementById('lblTotal').textContent = "Total: $0.00";
@@ -617,15 +702,19 @@
                         return;
                     }
                     
-                    // Convertir detalles al formato del carrito - asegurar que cantidad sea número
-                    listaCarrito = venta.detalles.map(d => ({
-                        idProducto: d.idProducto,
-                        codigo: d.codigo,
-                        nombre: d.nombre,
-                        precio: d.precio,
-                        cantidad: Number(d.cantidad),  // Convertir a número
-                        fotoProducto: d.fotoProducto
-                    }));
+// Convertir detalles al formato del carrito - asegurar que cantidad sea número
+                     listaCarrito = venta.detalles.map(d => ({
+                         carritoId: ++carritoIdCounter,
+                         idProducto: d.idProducto,
+                         codigo: d.codigo,
+                         nombre: d.nombre,
+                         precioOriginal: d.precio, // Usar el precio guardado como original
+                         precio: d.precio,
+                         cantidad: Number(d.cantidad),  // Convertir a número
+                         fotoProducto: d.fotoProducto,
+                         promocionAplicada: null,
+                         esPromo: false
+                     }));
                     
                     console.log("Carrito convertido:", listaCarrito);
                     
