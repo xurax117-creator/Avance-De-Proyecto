@@ -164,4 +164,30 @@ public class PromocionController {
         }
         return lista;
     }
+
+    @GetMapping("/activas/todas")
+    public List<Map<String, Object>> obtenerTodasActivas() {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        try {
+            PromocionDAO dao = new PromocionDAO();
+            List<PromocionData> promociones = dao.obtenerTodas();
+            for (PromocionData p : promociones) {
+                if (p.activo) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id_promocion", p.idPromocion);
+                    m.put("nombre", p.nombre);
+                    m.put("tipo", p.tipo);
+                    m.put("productos", p.productos);
+                    m.put("cantidad_requerida", p.cantidadRequerida);
+                    m.put("precio_especial", p.precioEspecial);
+                    m.put("descuento_porcentaje", p.descuentoPorcentaje);
+                    m.put("descuento_fijo", p.descuentoFijo);
+                    lista.add(m);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
 }
