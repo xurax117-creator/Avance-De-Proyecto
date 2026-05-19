@@ -146,12 +146,22 @@ public class PromocionDAO {
         insertStmt.close();
     }
 
-public boolean crear(PromocionRequest request) {
+    public boolean crear(PromocionRequest request) {
         Connection c = null;
         try {
+            if (request == null) {
+                System.err.println("DAO ERROR: Request is null");
+                return false;
+            }
             Conexion con = new Conexion();
             c = con.conectar();
+            if (c == null) {
+                System.err.println("DAO ERROR: Connection is null");
+                return false;
+            }
+            boolean autoCommitBefore = c.getAutoCommit();
             c.setAutoCommit(false);
+            System.out.println("DAO: Transaction started, autoCommit before=" + autoCommitBefore + ", after=" + c.getAutoCommit());
 
             System.out.println("DAO: Intentando crear promoción: " + request.nombre);
             System.out.println("DAO: Tipo: " + request.tipo);
@@ -211,11 +221,13 @@ public boolean crear(PromocionRequest request) {
                 guardarProductosPromocion(idPromocion, request.productos, c);
             }
 
+            System.out.println("DAO: About to commit, idPromocion=" + idPromocion);
             c.commit();
             c.close();
+            System.out.println("DAO: Promoción creada con ID: " + idPromocion);
             return true;
         } catch (Exception e) {
-            System.err.println("DAO Error en crear: " + e.getMessage());
+            System.err.println("DAO Error en crear: " + e.getClass().getName() + ": " + e.getMessage());
             e.printStackTrace();
             if (c != null) {
                 try {
@@ -225,46 +237,6 @@ public boolean crear(PromocionRequest request) {
                     ex.printStackTrace();
                 }
             }
-            return false;
-        }
-    }
-            
-            if (request.descuentoPorcentaje != null) {
-                stmt.setDouble(5, request.descuentoPorcentaje);
-            } else {
-                stmt.setNull(5, java.sql.Types.DOUBLE);
-            }
-            
-            if (request.descuentoFijo != null) {
-                stmt.setDouble(6, request.descuentoFijo);
-            } else {
-                stmt.setNull(6, java.sql.Types.DOUBLE);
-            }
-            
-            stmt.setDate(7, request.fechaInicio != null ? java.sql.Date.valueOf(request.fechaInicio) : null);
-            stmt.setDate(8, request.fechaFin != null ? java.sql.Date.valueOf(request.fechaFin) : null);
-            stmt.setBoolean(9, request.activo);
-
-            int rows = stmt.executeUpdate();
-            
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            int idPromocion = -1;
-            if (generatedKeys.next()) {
-                idPromocion = generatedKeys.getInt(1);
-            }
-            generatedKeys.close();
-            
-            stmt.close();
-
-            if (idPromocion > 0 && request.productos != null && !request.productos.isEmpty()) {
-                guardarProductosPromocion(idPromocion, request.productos, c);
-            }
-
-            c.close();
-            return rows > 0;
-        } catch (Exception e) {
-            System.err.println("DAO Error en crear: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
