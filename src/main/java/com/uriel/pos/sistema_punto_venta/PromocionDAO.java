@@ -33,9 +33,9 @@ public class PromocionDAO {
                     rs.getString("nombre"),
                     rs.getString("tipo"),
                     rs.getDouble("cantidad_requerida"),
-                    rs.getDouble("precio_especial"),
-                    rs.getDouble("descuento_porcentaje"),
-                    rs.getDouble("descuento_fijo"),
+                    rs.getObject("precio_especial") != null ? rs.getDouble("precio_especial") : null,
+                    rs.getObject("descuento_porcentaje") != null ? rs.getDouble("descuento_porcentaje") : null,
+                    rs.getObject("descuento_fijo") != null ? rs.getDouble("descuento_fijo") : null,
                     rs.getDate("fecha_inicio"),
                     rs.getDate("fecha_fin"),
                     rs.getBoolean("activo")
@@ -76,9 +76,9 @@ public class PromocionDAO {
                     rs.getString("nombre"),
                     rs.getString("tipo"),
                     rs.getDouble("cantidad_requerida"),
-                    rs.getDouble("precio_especial"),
-                    rs.getDouble("descuento_porcentaje"),
-                    rs.getDouble("descuento_fijo"),
+                    rs.getObject("precio_especial") != null ? rs.getDouble("precio_especial") : null,
+                    rs.getObject("descuento_porcentaje") != null ? rs.getDouble("descuento_porcentaje") : null,
+                    rs.getObject("descuento_fijo") != null ? rs.getDouble("descuento_fijo") : null,
                     rs.getDate("fecha_inicio"),
                     rs.getDate("fecha_fin"),
                     rs.getBoolean("activo")
@@ -217,15 +217,28 @@ public class PromocionDAO {
             generatedKeys.close();
             stmt.close();
 
-            if (idPromocion > 0 && request.productos != null && !request.productos.isEmpty()) {
-                guardarProductosPromocion(idPromocion, request.productos, c);
+            if (idPromocion > 0) {
+                if (request.productos != null && !request.productos.isEmpty()) {
+                    try {
+                        guardarProductosPromocion(idPromocion, request.productos, c);
+                    } catch (SQLException e) {
+                        System.err.println("DAO ERROR: Fallo al guardar productos de promoción: " + e.getMessage());
+                        c.rollback();
+                        c.close();
+                        return false;
+                    }
+                }
+                System.out.println("DAO: About to commit, idPromocion=" + idPromocion);
+                c.commit();
+                c.close();
+                System.out.println("DAO: Promoción creada con ID: " + idPromocion);
+                return true;
+            } else {
+                System.err.println("DAO ERROR: No se obtuvo ID generado de la promoción");
+                c.rollback();
+                c.close();
+                return false;
             }
-
-            System.out.println("DAO: About to commit, idPromocion=" + idPromocion);
-            c.commit();
-            c.close();
-            System.out.println("DAO: Promoción creada con ID: " + idPromocion);
-            return true;
         } catch (Exception e) {
             System.err.println("DAO Error en crear: " + e.getClass().getName() + ": " + e.getMessage());
             e.printStackTrace();

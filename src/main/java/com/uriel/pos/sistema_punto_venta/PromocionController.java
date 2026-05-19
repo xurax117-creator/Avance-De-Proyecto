@@ -107,11 +107,11 @@ public class PromocionController {
             String id = datos.get("id_promocion") != null ? datos.get("id_promocion").toString() : "";
             if (!id.isEmpty()) {
                 success = dao.actualizar(Integer.parseInt(id), request);
-                res.put("message", "Promoción actualizada correctamente");
+                res.put("message", success ? "Promoción actualizada correctamente" : "Error al actualizar promoción");
                 System.out.println("Actualizando promoción ID: " + id + ", success: " + success);
             } else {
                 success = dao.crear(request);
-                res.put("message", "Promoción creada correctamente");
+                res.put("message", success ? "Promoción creada correctamente" : "Error al crear promoción");
                 System.out.println("Creando nueva promoción, success: " + success);
             }
 
