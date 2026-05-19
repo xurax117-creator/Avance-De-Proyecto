@@ -18,8 +18,8 @@ public class PromocionController {
                 m.put("id_promocion", p.idPromocion);
                 m.put("nombre", p.nombre);
                 m.put("tipo", p.tipo);
-                m.put("id_producto", p.idProducto);
-                m.put("nombre_producto", p.nombreProducto);
+                m.put("productos", p.productos);
+                m.put("productos_texto", String.join(", ", p.nombresProductos));
                 m.put("cantidad_requerida", p.cantidadRequerida);
                 m.put("precio_especial", p.precioEspecial);
                 m.put("descuento_porcentaje", p.descuentoPorcentaje);
@@ -45,8 +45,8 @@ public class PromocionController {
                 res.put("id_promocion", p.idPromocion);
                 res.put("nombre", p.nombre);
                 res.put("tipo", p.tipo);
-                res.put("id_producto", p.idProducto);
-                res.put("nombre_producto", p.nombreProducto);
+                res.put("productos", p.productos);
+                res.put("productos_texto", String.join(", ", p.nombresProductos));
                 res.put("cantidad_requerida", p.cantidadRequerida);
                 res.put("precio_especial", p.precioEspecial);
                 res.put("descuento_porcentaje", p.descuentoPorcentaje);
@@ -74,8 +74,20 @@ public class PromocionController {
             PromocionRequest request = new PromocionRequest();
             request.nombre = datos.get("nombre").toString();
             request.tipo = datos.get("tipo").toString();
-            request.idProducto = Integer.parseInt(datos.get("id_producto").toString());
             request.cantidadRequerida = Double.parseDouble(datos.get("cantidad_requerida").toString());
+            
+            if (datos.get("productos") instanceof List) {
+                List<?> prods = (List<?>) datos.get("productos");
+                request.productos = new HashSet<>();
+                for (Object prod : prods) {
+                    if (prod instanceof Number) {
+                        request.productos.add(((Number) prod).intValue());
+                    } else if (prod instanceof String) {
+                        request.productos.add(Integer.parseInt(prod.toString()));
+                    }
+                }
+            }
+            
             request.precioEspecial = datos.get("precio_especial") != null && !datos.get("precio_especial").toString().isEmpty()
                 ? Double.parseDouble(datos.get("precio_especial").toString()) : null;
             request.descuentoPorcentaje = datos.get("descuento_porcentaje") != null && !datos.get("descuento_porcentaje").toString().isEmpty()
@@ -86,9 +98,9 @@ public class PromocionController {
                 ? datos.get("fecha_inicio").toString() : null;
             request.fechaFin = datos.get("fecha_fin") != null && !datos.get("fecha_fin").toString().isEmpty()
                 ? datos.get("fecha_fin").toString() : null;
-            request.activo = Boolean.parseBoolean(datos.get("activo").toString());
+            request.activo = datos.get("activo") != null ? Boolean.parseBoolean(datos.get("activo").toString()) : true;
 
-            System.out.println("Datos recibidos para promocion: " + request.nombre + ", tipo: " + request.tipo + ", idProducto: " + request.idProducto);
+            System.out.println("Datos recibidos para promocion: " + request.nombre + ", tipo: " + request.tipo + ", productos: " + request.productos);
 
             PromocionDAO dao = new PromocionDAO();
             boolean success = false;
@@ -139,6 +151,8 @@ public class PromocionController {
                 m.put("id_promocion", p.idPromocion);
                 m.put("nombre", p.nombre);
                 m.put("tipo", p.tipo);
+                m.put("productos", p.productos);
+                m.put("productos_texto", String.join(", ", p.nombresProductos));
                 m.put("cantidad_requerida", p.cantidadRequerida);
                 m.put("precio_especial", p.precioEspecial);
                 m.put("descuento_porcentaje", p.descuentoPorcentaje);

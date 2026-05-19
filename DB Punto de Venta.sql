@@ -86,13 +86,29 @@ CREATE TABLE promociones (
     id_promocion INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     tipo ENUM('buy_x_get_y', 'percent_off', 'fixed_discount') NOT NULL,
-    id_producto INT NOT NULL,
     cantidad_requerida DECIMAL(10,3) NOT NULL,
-    precio_especial DECIMAL(10,2),  -- para buy_x_get_y, precio total por la cantidad
-    descuento_porcentaje DECIMAL(5,2),  -- para percent_off
-    descuento_fijo DECIMAL(10,2),  -- para fixed_discount
+    precio_especial DECIMAL(10,2),
+    descuento_porcentaje DECIMAL(5,2),
+    descuento_fijo DECIMAL(10,2),
     fecha_inicio DATE,
     fecha_fin DATE,
-    activo BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+    activo BOOLEAN DEFAULT TRUE
 );
+
+-- Tabla intermedia para asociar múltiples productos a una promoción
+CREATE TABLE promocion_productos (
+    id_promocion INT,
+    id_producto INT,
+    PRIMARY KEY (id_promocion, id_producto),
+    FOREIGN KEY (id_promocion) REFERENCES promociones(id_promocion) ON DELETE CASCADE,
+    FOREIGN KEY (id_producto) REFERENCES productos(id_producto) ON DELETE CASCADE
+);
+
+-- =====================================================
+-- MIGRACIÓN: Convertir promociones antiguas a nueva estructura
+-- Ejecutar esto solo si la tabla promociones ya tiene datos con id_producto
+-- =====================================================
+-- Primero, agregar los datos de la columna id_producto a la nueva tabla intermedia
+-- INSERT INTO promocion_productos (id_promocion, id_producto)
+-- SELECT id_promocion, id_producto FROM promociones WHERE id_producto IS NOT NULL;
+-- Luego, eliminar la columna id_producto de la tabla promociones (requiere recrear la tabla o usar ALTER)
