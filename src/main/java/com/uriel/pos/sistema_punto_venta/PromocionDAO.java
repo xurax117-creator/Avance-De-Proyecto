@@ -146,10 +146,12 @@ public class PromocionDAO {
         insertStmt.close();
     }
 
-    public boolean crear(PromocionRequest request) {
+public boolean crear(PromocionRequest request) {
+        Connection c = null;
         try {
             Conexion con = new Conexion();
-            Connection c = con.conectar();
+            c = con.conectar();
+            c.setAutoCommit(false);
 
             System.out.println("DAO: Intentando crear promoción: " + request.nombre);
             System.out.println("DAO: Tipo: " + request.tipo);
@@ -203,6 +205,54 @@ public class PromocionDAO {
                 idPromocion = generatedKeys.getInt(1);
             }
             generatedKeys.close();
+            stmt.close();
+
+            if (idPromocion > 0 && request.productos != null && !request.productos.isEmpty()) {
+                guardarProductosPromocion(idPromocion, request.productos, c);
+            }
+
+            c.commit();
+            c.close();
+            return true;
+        } catch (Exception e) {
+            System.err.println("DAO Error en crear: " + e.getMessage());
+            e.printStackTrace();
+            if (c != null) {
+                try {
+                    c.rollback();
+                    c.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return false;
+        }
+    }
+            
+            if (request.descuentoPorcentaje != null) {
+                stmt.setDouble(5, request.descuentoPorcentaje);
+            } else {
+                stmt.setNull(5, java.sql.Types.DOUBLE);
+            }
+            
+            if (request.descuentoFijo != null) {
+                stmt.setDouble(6, request.descuentoFijo);
+            } else {
+                stmt.setNull(6, java.sql.Types.DOUBLE);
+            }
+            
+            stmt.setDate(7, request.fechaInicio != null ? java.sql.Date.valueOf(request.fechaInicio) : null);
+            stmt.setDate(8, request.fechaFin != null ? java.sql.Date.valueOf(request.fechaFin) : null);
+            stmt.setBoolean(9, request.activo);
+
+            int rows = stmt.executeUpdate();
+            
+            ResultSet generatedKeys = stmt.getGeneratedKeys();
+            int idPromocion = -1;
+            if (generatedKeys.next()) {
+                idPromocion = generatedKeys.getInt(1);
+            }
+            generatedKeys.close();
             
             stmt.close();
 
@@ -220,9 +270,11 @@ public class PromocionDAO {
     }
 
     public boolean actualizar(int id, PromocionRequest request) {
+        Connection c = null;
         try {
             Conexion con = new Conexion();
-            Connection c = con.conectar();
+            c = con.conectar();
+            c.setAutoCommit(false);
 
             System.out.println("DAO: Intentando actualizar promoción ID: " + id);
             System.out.println("DAO: Nombre: " + request.nombre);
@@ -271,11 +323,20 @@ public class PromocionDAO {
                 guardarProductosPromocion(id, request.productos, c);
             }
 
+            c.commit();
             c.close();
             return rows > 0;
         } catch (Exception e) {
             System.err.println("DAO Error en actualizar: " + e.getMessage());
             e.printStackTrace();
+            if (c != null) {
+                try {
+                    c.rollback();
+                    c.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             return false;
         }
     }

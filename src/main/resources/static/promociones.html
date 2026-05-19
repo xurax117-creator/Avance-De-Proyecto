@@ -120,10 +120,11 @@
                 <input type="number" step="0.01" id="promo_cantidad" min="1">
             </div>
             <div class="full">
-                <label>Productos Participantes (Ctrl+Click para seleccionar múltiples)</label>
-                <select id="promo_productos" multiple size="5" style="width: 100%;">
-                </select>
-                <div class="help-text">Seleccione uno o más productos que aplican para esta promoción</div>
+                <label>Productos Participantes</label>
+                <div id="promo_productos_container" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #fafafa;">
+                    <div id="promo_productos_checkboxes"></div>
+                </div>
+                <div class="help-text">Marque los productos que aplican para esta promoción</div>
             </div>
             <div id="campo_precio_especial">
                 <label>Precio Especial ($)</label>
@@ -180,18 +181,27 @@ function cargarProductos() {
         .then(response => response.json())
         .then(data => {
             productos = data;
-            const select = document.getElementById('promo_productos');
-            select.innerHTML = '';
-            data.forEach(p => {
-                if (p.activo) {
-                    const opt = document.createElement('option');
-                    opt.value = p.id_producto;
-                    opt.textContent = p.nombre;
-                    select.appendChild(opt);
-                }
-            });
+            renderProductosCheckboxes();
         })
         .catch(error => console.error('Error cargando productos:', error));
+}
+
+function renderProductosCheckboxes() {
+    const container = document.getElementById('promo_productos_checkboxes');
+    container.innerHTML = '';
+    productos.forEach(p => {
+        if (p.activo) {
+            const div = document.createElement('div');
+            div.style.marginBottom = '5px';
+            div.innerHTML = `
+                <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                    <input type="checkbox" class="prod-checkbox" value="${p.id_producto}" style="margin-right: 8px;">
+                    ${p.nombre}
+                </label>
+            `;
+            container.appendChild(div);
+        }
+    });
 }
 
 function cargarPromociones() {
@@ -242,7 +252,8 @@ function mostrarPromociones() {
 
 function abrirModal(id = null) {
     document.getElementById('modalPromocion').style.display = 'block';
-    const selectProductos = document.getElementById('promo_productos');
+    
+    const checkboxes = document.querySelectorAll('.prod-checkbox');
     
     if (id) {
         const promo = promociones.find(p => p.id_promocion == id);
@@ -260,9 +271,9 @@ function abrirModal(id = null) {
             document.getElementById('promo_activo').checked = promo.activo;
             cambiarCampos();
             
-            for (let i = 0; i < selectProductos.options.length; i++) {
-                selectProductos.options[i].selected = promo.productos && promo.productos.includes(parseInt(selectProductos.options[i].value));
-            }
+            checkboxes.forEach(cb => {
+                cb.checked = promo.productos && promo.productos.includes(parseInt(cb.value));
+            });
         }
     } else {
         document.getElementById('modalTitulo').textContent = 'Nueva Promoción';
@@ -276,9 +287,7 @@ function abrirModal(id = null) {
         document.getElementById('promo_fecha_inicio').value = '';
         document.getElementById('promo_fecha_fin').value = '';
         document.getElementById('promo_activo').checked = true;
-        for (let i = 0; i < selectProductos.options.length; i++) {
-            selectProductos.options[i].selected = false;
-        }
+        checkboxes.forEach(cb => cb.checked = false);
         cambiarCampos();
     }
 }
@@ -297,13 +306,11 @@ function cambiarCampos() {
 function guardarPromocion() {
     const id = document.getElementById('promo_id').value;
     
-    const selectProductos = document.getElementById('promo_productos');
+    const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
     const productosSeleccionados = [];
-    for (let i = 0; i < selectProductos.options.length; i++) {
-        if (selectProductos.options[i].selected) {
-            productosSeleccionados.push(parseInt(selectProductos.options[i].value));
-        }
-    }
+    checkboxes.forEach(cb => {
+        productosSeleccionados.push(parseInt(cb.value));
+    });
     
     const data = {
         nombre: document.getElementById('promo_nombre').value,
