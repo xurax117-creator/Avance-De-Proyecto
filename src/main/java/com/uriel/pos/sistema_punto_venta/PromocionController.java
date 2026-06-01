@@ -45,8 +45,6 @@ public class PromocionController {
                 res.put("id_promocion", p.idPromocion);
                 res.put("nombre", p.nombre);
                 res.put("tipo", p.tipo);
-                res.put("productos", p.productos);
-                res.put("productos_texto", String.join(", ", p.nombresProductos));
                 res.put("cantidad_requerida", p.cantidadRequerida);
                 res.put("precio_especial", p.precioEspecial);
                 res.put("descuento_porcentaje", p.descuentoPorcentaje);
@@ -55,6 +53,7 @@ public class PromocionController {
                 res.put("fecha_fin", p.fechaFin != null ? p.fechaFin.toString() : null);
                 res.put("activo", p.activo);
                 res.put("success", true);
+                res.put("productos_detalle", p.productosConNombre);
             } else {
                 res.put("success", false);
                 res.put("message", "Promoción no encontrada");

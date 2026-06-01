@@ -42,6 +42,7 @@ public class PromocionDAO {
                 );
                 promo.productos = obtenerProductosDePromocion(promo.idPromocion, c);
                 promo.nombresProductos = obtenerNombresProductosDePromocion(promo.idPromocion, c);
+                promo.productosConNombre = obtenerProductosConNombreDePromocion(promo.idPromocion, c);
                 lista.add(promo);
             }
 
@@ -85,6 +86,7 @@ public class PromocionDAO {
                 );
                 data.productos = obtenerProductosDePromocion(id, c);
                 data.nombresProductos = obtenerNombresProductosDePromocion(id, c);
+                data.productosConNombre = obtenerProductosConNombreDePromocion(id, c);
             }
 
             rs.close();
@@ -110,10 +112,10 @@ public class PromocionDAO {
         return productos;
     }
 
-    private List<String> obtenerNombresProductosDePromocion(int idPromocion, Connection c) throws SQLException {
-        List<String> nombres = new ArrayList<>();
+    private List<Map<String, Object>> obtenerProductosConNombreDePromocion(int idPromocion, Connection c) throws SQLException {
+        List<Map<String, Object>> lista = new ArrayList<>();
         String sql = """
-            SELECT prod.nombre FROM promocion_productos pp
+            SELECT prod.id_producto, prod.nombre FROM promocion_productos pp
             JOIN productos prod ON pp.id_producto = prod.id_producto
             WHERE pp.id_promocion = ?
             ORDER BY prod.nombre
@@ -122,11 +124,14 @@ public class PromocionDAO {
         stmt.setInt(1, idPromocion);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
-            nombres.add(rs.getString("nombre"));
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", rs.getInt("id_producto"));
+            m.put("nombre", rs.getString("nombre"));
+            lista.add(m);
         }
         rs.close();
         stmt.close();
-        return nombres;
+        return lista;
     }
 
     private void guardarProductosPromocion(int idPromocion, Set<Integer> productos, Connection c) throws SQLException {
@@ -406,6 +411,7 @@ class PromocionData {
     public boolean activo;
     public Set<Integer> productos;
     public List<String> nombresProductos;
+    public List<Map<String, Object>> productosConNombre;
 
     public PromocionData(int idPromocion, String nombre, String tipo, double cantidadRequerida,
                          Double precioEspecial, Double descuentoPorcentaje, Double descuentoFijo,
@@ -422,6 +428,7 @@ class PromocionData {
         this.activo = activo;
         this.productos = new HashSet<>();
         this.nombresProductos = new ArrayList<>();
+        this.productosConNombre = new ArrayList<>();
     }
 }
 

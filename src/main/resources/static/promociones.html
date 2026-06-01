@@ -344,13 +344,17 @@ function abrirModal(id = null) {
             document.getElementById('promo_activo').checked = promo.activo;
             cambiarCampos();
 
-            if (promo.productos && promo.nombresProductos) {
-                promo.productos.forEach((idProd, index) => {
-                    const nombre = promo.nombresProductos[index] || 'Producto ' + idProd;
-                    productosSeleccionados.push({id: idProd, nombre: nombre});
+            fetch('/api/promociones/' + id)
+                .then(response => response.json())
+                .then(promoDetalle => {
+if (promoDetalle.productosConNombre && Array.isArray(promoDetalle.productosConNombre)) {
+                promoDetalle.productosConNombre.forEach(prod => {
+                    productosSeleccionados.push({id: prod.id, nombre: prod.nombre});
                 });
                 actualizarProductosSeleccionados();
             }
+                })
+                .catch(error => console.error('Error cargando detalle:', error));
         }
     } else {
         document.getElementById('modalTitulo').textContent = 'Nueva Promoción';
