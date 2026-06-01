@@ -46,4 +46,10 @@ public class ReporteController {
         ReporteDAO dao = new ReporteDAO();
         return dao.obtenerVentasPorCajero(inicio, horaInicio, fin, horaFin);
     }
+
+    @GetMapping("/inventario")
+    public Map<String, Object> getValorInventario() {
+        ReporteDAO dao = new ReporteDAO();
+        return dao.obtenerValorInventario();
+    }
 }

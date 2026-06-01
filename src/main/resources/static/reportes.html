@@ -81,6 +81,7 @@
     <button class="tab-btn active" onclick="cambiarTab(this, 'ventas')">Ventas Diarias</button>
     <button class="tab-btn" onclick="cambiarTab(this, 'productos')">Top Productos</button>
     <button class="tab-btn" onclick="cambiarTab(this, 'cajeros')">Ventas por Cajero</button>
+    <button class="tab-btn" onclick="cambiarTab(this, 'inventario')">Valor de Inventario</button>
 </div>
 
 <div id="resumenVentas" class="resumen-total">
@@ -169,10 +170,14 @@
         paginaActual = 1;
 
         try {
-            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
-
-            if (tabActual === 'ventas' || tabActual === 'productos') {
-                url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+            let url;
+            if (tabActual === 'inventario') {
+                url = `/api/reportes/${tabActual}`;
+            } else {
+                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+                if (tabActual === 'ventas' || tabActual === 'productos') {
+                    url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+                }
             }
 
             const resp = await fetch(url);
@@ -194,7 +199,15 @@
         infoPaginacion = {};
         let totalGeneralPagina = 0;
         
-        if ((tabActual === 'ventas' || tabActual === 'productos') && data.length > 0) {
+        // Manejar caso de inventario (retorna objeto en lugar de array)
+        if (tabActual === 'inventario' && data && data.totalCompra !== undefined) {
+            thead.innerHTML = "<tr><th>Concepto</th><th>Valor Total</th></tr>";
+            tbody.innerHTML = `<tr><td>Valor de compra (inversión)</td><td>$${Number(data.totalCompra).toFixed(2)}</td></tr>`;
+            tbody.innerHTML += `<tr><td><strong>Valor de venta (potencial)</strong></td><td><strong>$${Number(data.totalVenta).toFixed(2)}</strong></td></tr>`;
+            sumaSpan.textContent = "$" + Number(data.totalVenta).toFixed(2);
+            paginacionDiv.innerHTML = "";
+            return;
+        } else if ((tabActual === 'ventas' || tabActual === 'productos') && data.length > 0) {
             const ultimo = data[data.length - 1];
             if (ultimo.totalRegistros !== undefined) {
                 infoPaginacion = {
@@ -214,7 +227,15 @@
             totalMostrar = acumulado;
         }
         
-        sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
+        // Solo actualizar sumaSpan si no es inventario (ya se actualizó arriba)
+        if (tabActual !== 'inventario') {
+            sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
+        }
+        
+        if (tabActual === 'inventario') {
+            // Ya se dibujó la tabla en el bloque anterior
+            return;
+        }
         
         if (datosMostrar.length === 0) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
@@ -288,10 +309,14 @@
         const hFin = document.getElementById('horaFin').value;
 
         try {
-            let url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
-
-            if (tabActual === 'ventas' || tabActual === 'productos') {
-                url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+            let url;
+            if (tabActual === 'inventario') {
+                url = `/api/reportes/${tabActual}`;
+            } else {
+                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+                if (tabActual === 'ventas' || tabActual === 'productos') {
+                    url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+                }
             }
 
             const resp = await fetch(url);

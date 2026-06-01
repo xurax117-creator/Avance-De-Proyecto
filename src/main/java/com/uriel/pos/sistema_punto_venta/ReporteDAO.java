@@ -236,4 +236,35 @@ public class ReporteDAO {
         } catch(Exception e) { e.printStackTrace(); }
         return lista;
     }
+
+    public Map<String, Object> obtenerValorInventario() {
+        Map<String, Object> resultado = new HashMap<>();
+        try {
+            Conexion con = new Conexion();
+            Connection c = con.conectar();
+            
+            double totalCompra = 0;
+            double totalVenta = 0;
+            
+            String sql = "SELECT COALESCE(SUM(existencias_act * precio_compra), 0) as total_compra, " +
+                         "COALESCE(SUM(existencias_act * precio_venta), 0) as total_venta " +
+                         "FROM productos";
+            
+            PreparedStatement ps = c.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                totalCompra = rs.getDouble("total_compra");
+                totalVenta = rs.getDouble("total_venta");
+            }
+            
+            rs.close();
+            ps.close();
+            c.close();
+            
+            resultado.put("totalCompra", totalCompra);
+            resultado.put("totalVenta", totalVenta);
+        } catch(Exception e) { e.printStackTrace(); }
+        return resultado;
+    }
 }
