@@ -248,7 +248,7 @@ public class ReporteDAO {
             
             String sql = "SELECT COALESCE(SUM(existencias_act * precio_compra), 0) as total_compra, " +
                          "COALESCE(SUM(existencias_act * precio_venta), 0) as total_venta " +
-                         "FROM productos";
+                         "FROM productos WHERE existencias_act > 0";
             
             PreparedStatement ps = c.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
