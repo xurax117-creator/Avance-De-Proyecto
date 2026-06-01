@@ -485,20 +485,21 @@ public class InventarioController {
         return res;
     }
 
-    // Endpoint para buscar productos (búsqueda parcial) - solo productos activos
+    // Endpoint para buscar productos (búsqueda parcial) - incluye todos los productos
     @GetMapping("/buscar")
     public List<Map<String, Object>> buscarProductos(@RequestParam String q) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             Conexion con = new Conexion();
             Connection c = con.conectar();
-            String sql = "SELECT p.id_producto, p.codigo_barras, p.nombre, p.precio_venta, p.existencias_act, p.foto_producto_blob " +
+            String sql = "SELECT p.id_producto, p.codigo_barras, p.nombre, p.precio_venta, p.existencias_act, p.foto_producto_blob, p.activo " +
                          "FROM productos p " +
-                         "WHERE p.activo = TRUE AND (p.nombre LIKE ? OR p.codigo_barras LIKE ?) " +
+                         "WHERE (p.nombre LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_barras_secundario LIKE ?) " +
                          "ORDER BY p.nombre ASC LIMIT 20";
             PreparedStatement stmt = c.prepareStatement(sql);
             stmt.setString(1, "%" + q + "%");
             stmt.setString(2, "%" + q + "%");
+            stmt.setString(3, "%" + q + "%");
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 Map<String, Object> p = new HashMap<>();
