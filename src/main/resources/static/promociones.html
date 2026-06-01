@@ -121,10 +121,17 @@
             </div>
             <div class="full">
                 <label>Productos Participantes</label>
-                <div id="promo_productos_container" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #fafafa;">
-                    <div id="promo_productos_checkboxes"></div>
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="buscador_productos" placeholder="Escribe para buscar productos y presiona Enter" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn btn-nuevo" style="padding: 8px 15px;" onclick="buscarProductos()">Buscar</button>
+                    </div>
+                    <div id="productos_seleccionados" style="margin-top: 10px; min-height: 40px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
                 </div>
-                <div class="help-text">Marque los productos que aplican para esta promoción</div>
+                <div id="resultados_busqueda" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #fafafa; display: none;">
+                    <div id="lista_resultados"></div>
+                </div>
+                <div class="help-text">Escriba el nombre del producto y presione Enter para buscar. Los productos seleccionados aparecen arriba.</div>
             </div>
             <div id="campo_precio_especial">
                 <label>Precio Especial ($)</label>
@@ -163,6 +170,7 @@
 <script>
 let productos = [];
 let promociones = [];
+let productosSeleccionados = [];
 
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
@@ -181,27 +189,93 @@ function cargarProductos() {
         .then(response => response.json())
         .then(data => {
             productos = data;
-            renderProductosCheckboxes();
         })
         .catch(error => console.error('Error cargando productos:', error));
 }
 
-function renderProductosCheckboxes() {
-    const container = document.getElementById('promo_productos_checkboxes');
+function buscarProductos() {
+    const query = document.getElementById('buscador_productos').value.trim();
+    const resultadosDiv = document.getElementById('resultados_busqueda');
+    const listaDiv = document.getElementById('lista_resultados');
+
+    if (!query) {
+        resultadosDiv.style.display = 'none';
+        return;
+    }
+
+    fetch('/api/inventario/buscar?q=' + encodeURIComponent(query))
+        .then(response => response.json())
+        .then(data => {
+            listaDiv.innerHTML = '';
+            if (data.length === 0) {
+                listaDiv.innerHTML = '<p style="color: #888; margin: 0;">No se encontraron productos</p>';
+            } else {
+                data.forEach(p => {
+                    const yaSeleccionado = productosSeleccionados.some(ps => ps.id === p.id_producto);
+                    const div = document.createElement('div');
+                    div.style.padding = '8px';
+                    div.style.marginBottom = '5px';
+                    div.style.cursor = yaSeleccionado ? 'not-allowed' : 'pointer';
+                    div.style.backgroundColor = yaSeleccionado ? '#a5d6a7' : '#fff';
+                    div.style.border = '1px solid #ddd';
+                    div.style.borderRadius = '4px';
+                    div.style.opacity = yaSeleccionado ? '0.6' : '1';
+                    const nombreEscapado = p.nombre.replace(/'/g, "\\'");
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>${p.nombre} - $${p.precio_venta}</span>
+                            ${yaSeleccionado 
+                                ? '<span style="color: #2e7d32; font-size: 12px;">✓ Seleccionado</span>'
+                                : '<button class="btn btn-nuevo" style="padding: 4px 8px; font-size: 12px;" onclick="seleccionarProducto(' + p.id_producto + ', \'' + nombreEscapado + '\')">+</button>'
+                            }
+                        </div>
+                    `;
+                    listaDiv.appendChild(div);
+                });
+            }
+            resultadosDiv.style.display = 'block';
+        })
+        .catch(error => console.error('Error buscando productos:', error));
+}
+
+function seleccionarProducto(id, nombre) {
+    const existe = productosSeleccionados.some(p => p.id === id);
+    if (!existe) {
+        productosSeleccionados.push({id: id, nombre: nombre});
+        actualizarProductosSeleccionados();
+        document.getElementById('buscador_productos').value = '';
+        document.getElementById('resultados_busqueda').style.display = 'none';
+    }
+}
+
+function eliminarProductoSeleccionado(id) {
+    productosSeleccionados = productosSeleccionados.filter(p => p.id !== id);
+    actualizarProductosSeleccionados();
+}
+
+function actualizarProductosSeleccionados() {
+    const container = document.getElementById('productos_seleccionados');
     container.innerHTML = '';
-    productos.forEach(p => {
-        if (p.activo) {
-            const div = document.createElement('div');
-            div.style.marginBottom = '5px';
-            div.innerHTML = `
-                <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
-                    <input type="checkbox" class="prod-checkbox" value="${p.id_producto}" style="margin-right: 8px;">
-                    ${p.nombre}
-                </label>
+    if (productosSeleccionados.length === 0) {
+        container.innerHTML = '<span style="color: #888; font-size: 12px;">Ningún producto seleccionado</span>';
+    } else {
+        productosSeleccionados.forEach(p => {
+            const tag = document.createElement('div');
+            tag.style.backgroundColor = '#4caf50';
+            tag.style.color = 'white';
+            tag.style.padding = '4px 8px';
+            tag.style.borderRadius = '12px';
+            tag.style.fontSize = '12px';
+            tag.style.display = 'flex';
+            tag.style.alignItems = 'center';
+            tag.style.gap = '6px';
+            tag.innerHTML = `
+                <span>${p.nombre}</span>
+                <button onclick="eliminarProductoSeleccionado(${p.id})" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; margin: 0;">×</button>
             `;
-            container.appendChild(div);
-        }
-    });
+            container.appendChild(tag);
+        });
+    }
 }
 
 function cargarPromociones() {
@@ -252,9 +326,8 @@ function mostrarPromociones() {
 
 function abrirModal(id = null) {
     document.getElementById('modalPromocion').style.display = 'block';
-    
-    const checkboxes = document.querySelectorAll('.prod-checkbox');
-    
+    productosSeleccionados = [];
+
     if (id) {
         const promo = promociones.find(p => p.id_promocion == id);
         if (promo) {
@@ -270,10 +343,14 @@ function abrirModal(id = null) {
             document.getElementById('promo_fecha_fin').value = promo.fecha_fin || '';
             document.getElementById('promo_activo').checked = promo.activo;
             cambiarCampos();
-            
-            checkboxes.forEach(cb => {
-                cb.checked = promo.productos && promo.productos.includes(parseInt(cb.value));
-            });
+
+            if (promo.productos && promo.nombresProductos) {
+                promo.productos.forEach((idProd, index) => {
+                    const nombre = promo.nombresProductos[index] || 'Producto ' + idProd;
+                    productosSeleccionados.push({id: idProd, nombre: nombre});
+                });
+                actualizarProductosSeleccionados();
+            }
         }
     } else {
         document.getElementById('modalTitulo').textContent = 'Nueva Promoción';
@@ -287,7 +364,9 @@ function abrirModal(id = null) {
         document.getElementById('promo_fecha_inicio').value = '';
         document.getElementById('promo_fecha_fin').value = '';
         document.getElementById('promo_activo').checked = true;
-        checkboxes.forEach(cb => cb.checked = false);
+        document.getElementById('buscador_productos').value = '';
+        document.getElementById('resultados_busqueda').style.display = 'none';
+        actualizarProductosSeleccionados();
         cambiarCampos();
     }
 }
@@ -305,17 +384,11 @@ function cambiarCampos() {
 
 function guardarPromocion() {
     const id = document.getElementById('promo_id').value;
-    
-    const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
-    const productosSeleccionados = [];
-    checkboxes.forEach(cb => {
-        productosSeleccionados.push(parseInt(cb.value));
-    });
-    
+
     const data = {
         nombre: document.getElementById('promo_nombre').value,
         tipo: document.getElementById('promo_tipo').value,
-        productos: productosSeleccionados,
+        productos: productosSeleccionados.map(p => p.id),
         cantidad_requerida: parseFloat(document.getElementById('promo_cantidad').value),
         precio_especial: document.getElementById('promo_precio_especial').value ? parseFloat(document.getElementById('promo_precio_especial').value) : null,
         descuento_porcentaje: document.getElementById('promo_descuento_porcentaje').value ? parseFloat(document.getElementById('promo_descuento_porcentaje').value) : null,
@@ -378,10 +451,15 @@ function eliminarPromocion(id) {
     }
 }
 
-// Inicializar
 document.addEventListener('DOMContentLoaded', function() {
     cargarProductos();
     cargarPromociones();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.target.id === 'buscador_productos' && e.key === 'Enter') {
+        buscarProductos();
+    }
 });
 </script>
 </body>
