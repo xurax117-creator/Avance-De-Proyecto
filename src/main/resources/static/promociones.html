@@ -347,12 +347,12 @@ function abrirModal(id = null) {
             fetch('/api/promociones/' + id)
                 .then(response => response.json())
                 .then(promoDetalle => {
-if (promoDetalle.productosConNombre && Array.isArray(promoDetalle.productosConNombre)) {
-                promoDetalle.productosConNombre.forEach(prod => {
-                    productosSeleccionados.push({id: prod.id, nombre: prod.nombre});
-                });
-                actualizarProductosSeleccionados();
-            }
+                    if (promoDetalle.productos_detalle && Array.isArray(promoDetalle.productos_detalle)) {
+                        promoDetalle.productos_detalle.forEach(prod => {
+                            productosSeleccionados.push({id: prod.id, nombre: prod.nombre});
+                        });
+                        actualizarProductosSeleccionados();
+                    }
                 })
                 .catch(error => console.error('Error cargando detalle:', error));
         }

@@ -5,8 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class PromocionDAO {
@@ -132,6 +134,25 @@ public class PromocionDAO {
         rs.close();
         stmt.close();
         return lista;
+    }
+
+    private List<String> obtenerNombresProductosDePromocion(int idPromocion, Connection c) throws SQLException {
+        List<String> nombres = new ArrayList<>();
+        String sql = """
+            SELECT prod.nombre FROM promocion_productos pp
+            JOIN productos prod ON pp.id_producto = prod.id_producto
+            WHERE pp.id_promocion = ?
+            ORDER BY prod.nombre
+        """;
+        PreparedStatement stmt = c.prepareStatement(sql);
+        stmt.setInt(1, idPromocion);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            nombres.add(rs.getString("nombre"));
+        }
+        rs.close();
+        stmt.close();
+        return nombres;
     }
 
     private void guardarProductosPromocion(int idPromocion, Set<Integer> productos, Connection c) throws SQLException {
