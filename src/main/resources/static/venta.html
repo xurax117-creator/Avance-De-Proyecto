@@ -339,119 +339,138 @@
             } finally { procesando = false; txtClave.focus(); }
         }
 
-        async function aplicarPromociones() {
-            // Crear un array temporal para los nuevos items
-            const nuevosItems = [];
+async function aplicarPromociones() {
+             const nuevosItems = [];
             
-            try {
-                // Obtener todas las promociones activas
-                const responsePromos = await fetch('/api/promociones/activas/todas');
-                const todasLasPromos = await responsePromos.json();
+             try {
+                 const responsePromos = await fetch('/api/promociones/activas/todas');
+                 const todasLasPromos = await responsePromos.json();
                 
-                // Crear un mapa de promociones por ID para acceso rápido
-                const promoMap = {};
-                todasLasPromos.forEach(p => promoMap[p.id_promocion] = p);
+                 // Crear una copia del carrito con cantidades disponibles
+                 let carritoCopia = listaCarrito.map(item => ({
+                     ...item,
+                     cantidadDisponible: item.cantidad
+                 }));
                 
-                // Agrupar productos del carrito por promoción
-                const productosPorPromo = {}; // idPromocion -> { totalCantidad, items, productosIds }
-                const productosSinPromo = []; // Items que no tienen promoción aplicable
+                 // Separar promociones: simples (1 producto) vs mixtas (varios productos)
+                 const promosSimples = todasLasPromos.filter(p => (p.productos || []).length === 1);
+                 const promosMixtas = todasLasPromos.filter(p => (p.productos || []).length > 1);
                 
-                // Para cada item del carrito, encontrar a qué promoción pertenece
-                listaCarrito.forEach(item => {
-                    let promoEncontrada = null;
+                 // Procesar promociones simples primero
+                 for (const promo of promosSimples) {
+                     if (promo.tipo !== 'buy_x_get_y' || !promo.precio_especial) continue;
                     
-                    for (let promo of todasLasPromos) {
-                        const productosPromo = promo.productos || [];
-                        if (productosPromo.includes(item.idProducto)) {
-                            promoEncontrada = promo;
-                            break;
-                        }
-                    }
+                     const idProductoPromo = (promo.productos || [])[0];
+                     const itemsMismoProducto = carritoCopia.filter(item => item.idProducto === idProductoPromo);
                     
-                    if (promoEncontrada) {
-                        const idPromo = promoEncontrada.id_promocion;
-                        if (!productosPorPromo[idPromo]) {
-                            productosPorPromo[idPromo] = { 
-                                totalCantidad: 0, 
-                                items: [], 
-                                promo: promoEncontrada,
-                                productosIds: new Set()
-                            };
-                        }
-                        productosPorPromo[idPromo].totalCantidad += item.cantidad;
-                        productosPorPromo[idPromo].items.push(item);
-                        productosPorPromo[idPromo].productosIds.add(item.idProducto);
-                    } else {
-                        productosSinPromo.push(item);
-                    }
-                });
-                
-// Procesar cada grupo de promoción
-                 for (let idPromo in productosPorPromo) {
-                     const grupo = productosPorPromo[idPromo];
-                     const promo = grupo.promo;
-                     
-                     if (promo.tipo === 'buy_x_get_y' && promo.precio_especial && grupo.totalCantidad >= promo.cantidad_requerida) {
-                         const cantidadRequerida = Math.floor(promo.cantidad_requerida);
-                         const precioPromo = promo.precio_especial / cantidadRequerida;
-                         
-                         // Calcular cuántos grupos completos de promo y unidades sobrantes
-                         const gruposPromo = Math.floor(grupo.totalCantidad / cantidadRequerida);
-                         const unidadesSobrantes = grupo.totalCantidad % cantidadRequerida;
-                         
-                         // Agregar los grupos de promoción (usar el primer producto como representativo)
-                         const primerItem = grupo.items[0];
+                     if (itemsMismoProducto.length === 0) continue;
+                    
+                     let totalDisponible = 0;
+                     itemsMismoProducto.forEach(item => {
+                         totalDisponible += item.cantidadDisponible;
+                     });
+                    
+                     const cantidadRequerida = Math.floor(promo.cantidad_requerida);
+                     const precioPromo = promo.precio_especial / cantidadRequerida;
+                    
+                     const gruposPromo = Math.floor(totalDisponible / cantidadRequerida);
+                    
+                     if (gruposPromo > 0) {
+                         // Agregar grupos de promoción
                          for (let i = 0; i < gruposPromo; i++) {
                              nuevosItems.push({
                                  carritoId: ++carritoIdCounter,
-                                 idProducto: primerItem.idProducto,
-                                 codigo: primerItem.codigo,
-                                 nombre: primerItem.nombre,
-                                 precioOriginal: primerItem.precioOriginal,
+                                 idProducto: idProductoPromo,
+                                 codigo: itemsMismoProducto[0].codigo,
+                                 nombre: itemsMismoProducto[0].nombre,
+                                 precioOriginal: itemsMismoProducto[0].precioOriginal,
                                  precio: precioPromo,
                                  cantidad: cantidadRequerida,
-                                 fotoProducto: primerItem.fotoProducto,
+                                 fotoProducto: itemsMismoProducto[0].fotoProducto,
                                  promocionAplicada: promo.nombre,
                                  esPromo: true
                              });
                          }
-                         
-                         // Agregar las unidades sobrantes al precio normal
-                         if (unidadesSobrantes > 0) {
-                             nuevosItems.push({
-                                 carritoId: ++carritoIdCounter,
-                                 idProducto: primerItem.idProducto,
-                                 codigo: primerItem.codigo,
-                                 nombre: primerItem.nombre,
-                                 precioOriginal: primerItem.precioOriginal,
-                                 precio: primerItem.precioOriginal,
-                                 cantidad: unidadesSobrantes,
-                                 fotoProducto: primerItem.fotoProducto,
-                                 promocionAplicada: null,
-                                 esPromo: false
-                             });
+                        
+                         // Restar cantidad usada en promo
+                         let restantePorRestar = gruposPromo * cantidadRequerida;
+                         for (const item of itemsMismoProducto) {
+                             if (restantePorRestar <= 0) break;
+                             const aRestar = Math.min(restantePorRestar, item.cantidadDisponible);
+                             item.cantidadDisponible -= aRestar;
+                             restantePorRestar -= aRestar;
                          }
-                     } else {
-                         // No aplica la promoción buy_x_get_y: revertir todos los items al precio original
-                         grupo.items.forEach(item => {
-                             nuevosItems.push({
-                                 carritoId: ++carritoIdCounter,
-                                 idProducto: item.idProducto,
-                                 codigo: item.codigo,
-                                 nombre: item.nombre,
-                                 precioOriginal: item.precioOriginal,
-                                 precio: item.precioOriginal, // Revertir al precio original
-                                 cantidad: item.cantidad,
-                                 fotoProducto: item.fotoProducto,
-                                 promocionAplicada: null, // Limpiar promoción aplicada
-                                 esPromo: false
-                             });
-                         });
                      }
                  }
                 
-// Agregar productos sin promoción (asegurar precio original)
-                 productosSinPromo.forEach(item => {
+                 // Procesar promociones mixtas
+                 for (const promo of promosMixtas) {
+                     if (promo.tipo !== 'buy_x_get_y' || !promo.precio_especial) continue;
+                    
+                     const productosRequeridos = promo.productos || [];
+                     const cantidadRequerida = Math.floor(promo.cantidad_requerida);
+                     const cantidadPorProducto = Math.floor(cantidadRequerida / productosRequeridos.length);
+                     const precioUnitarioPromo = promo.precio_especial / cantidadRequerida;
+                    
+                     // Verificar si hay suficiente de cada producto
+                     let gruposPosibles = Infinity;
+                     for (const idProd of productosRequeridos) {
+                         const item = carritoCopia.find(i => i.idProducto === idProd && i.cantidadDisponible >= cantidadPorProducto);
+                         if (!item) {
+                             gruposPosibles = 0;
+                             break;
+                         }
+                         gruposPosibles = Math.min(gruposPosibles, Math.floor(item.cantidadDisponible / cantidadPorProducto));
+                     }
+                    
+                     if (gruposPosibles > 0) {
+                         // Agregar grupos mixtos
+                         for (let i = 0; i < gruposPosibles; i++) {
+                             for (const idProd of productosRequeridos) {
+                                 const item = carritoCopia.find(it => it.idProducto === idProd);
+                                 if (item) {
+                                     nuevosItems.push({
+                                         carritoId: ++carritoIdCounter,
+                                         idProducto: item.idProducto,
+                                         codigo: item.codigo,
+                                         nombre: item.nombre,
+                                         precioOriginal: item.precioOriginal,
+                                         precio: precioUnitarioPromo,
+                                         cantidad: cantidadPorProducto,
+                                         fotoProducto: item.fotoProducto,
+                                         promocionAplicada: promo.nombre,
+                                         esPromo: true
+                                     });
+                                     // Reducir cantidad disponible
+                                     const idx = carritoCopia.indexOf(item);
+                                     carritoCopia[idx].cantidadDisponible -= cantidadPorProducto;
+                                 }
+                             }
+                         }
+                     }
+                 }
+                
+                 // Agregar items restantes al precio original
+                 carritoCopia.forEach(item => {
+                     if (item.cantidadDisponible > 0) {
+                         nuevosItems.push({
+                             carritoId: ++carritoIdCounter,
+                             idProducto: item.idProducto,
+                             codigo: item.codigo,
+                             nombre: item.nombre,
+                             precioOriginal: item.precioOriginal,
+                             precio: item.precioOriginal,
+                             cantidad: item.cantidadDisponible,
+                             fotoProducto: item.fotoProducto,
+                             promocionAplicada: null,
+                             esPromo: false
+                         });
+                     }
+                 });
+            
+             } catch (error) {
+                 console.error('Error aplicando promociones:', error);
+                 listaCarrito.forEach(item => {
                      nuevosItems.push({
                          carritoId: ++carritoIdCounter,
                          idProducto: item.idProducto,
@@ -465,29 +484,10 @@
                          esPromo: false
                      });
                  });
-                
-            } catch (error) {
-                console.error('Error aplicando promociones:', error);
-                // En caso de error, revertir todos los items al precio original
-                listaCarrito.forEach(item => {
-                    nuevosItems.push({
-                        carritoId: ++carritoIdCounter,
-                        idProducto: item.idProducto,
-                        codigo: item.codigo,
-                        nombre: item.nombre,
-                        precioOriginal: item.precioOriginal,
-                        precio: item.precioOriginal,
-                        cantidad: item.cantidad,
-                        fotoProducto: item.fotoProducto,
-                        promocionAplicada: null,
-                        esPromo: false
-                    });
-                });
-            }
+             }
             
-            // Reemplazar la lista del carrito con los nuevos items
-            listaCarrito = nuevosItems;
-        }
+             listaCarrito = nuevosItems;
+         }
 
         function dibujarCarrito() {
             cuerpoTabla.innerHTML = "";
