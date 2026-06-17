@@ -6,395 +6,266 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Venta {
 
     public ProductoData obtenerDatosProducto(String codigo) {
         ProductoData data = null;
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-
-            String sql = """
-                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
-                FROM productos 
-                WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE
-            """;
-
-            PreparedStatement stmt = c.prepareStatement(sql);
+        String sql = """
+            SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
+            FROM productos
+            WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE
+        """;
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql)) {
             stmt.setString(1, codigo);
             stmt.setString(2, codigo);
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
-                String fotoBase64 = fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null;
-                
-                data = new ProductoData(
-                    rs.getInt("id_producto"),
-                    rs.getString("nombre"),
-                    rs.getDouble("precio_venta"),
-                    rs.getInt("existencias_act"),
-                    fotoBase64,
-                    rs.getString("codigo_barras")
-                );
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                    data = new ProductoData(
+                        rs.getInt("id_producto"),
+                        rs.getString("nombre"),
+                        rs.getDouble("precio_venta"),
+                        rs.getInt("existencias_act"),
+                        fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null,
+                        rs.getString("codigo_barras")
+                    );
+                }
             }
-
-            rs.close();
-            stmt.close();
-            c.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return data;
     }
 
     public int crearVenta(int idUsuario) {
         int idVenta = -1;
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-            
-            String sql = "INSERT INTO ventas(id_usuario, total, fecha) VALUES(?, 0, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
-            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+        String sql = "INSERT INTO ventas(id_usuario, total, fecha) VALUES(?, 0, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, idUsuario);
             stmt.executeUpdate();
-
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                idVenta = rs.getInt(1);
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) idVenta = rs.getInt(1);
             }
-
-            rs.close();
-            stmt.close();
-            c.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return idVenta;
     }
 
-    // Método para búsqueda parcial de productos
     public List<ProductoData> buscarProductosParcial(String busqueda) {
         List<ProductoData> lista = new ArrayList<>();
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-
-            String sql = """
-                SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
-                FROM productos 
-                WHERE activo = TRUE AND (nombre LIKE ? OR codigo_barras LIKE ?)
-                ORDER BY nombre ASC
-                LIMIT 20
-            """;
-
-            PreparedStatement stmt = c.prepareStatement(sql);
+        String sql = """
+            SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
+            FROM productos
+            WHERE activo = TRUE AND (nombre LIKE ? OR codigo_barras LIKE ?)
+            ORDER BY nombre ASC LIMIT 20
+        """;
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql)) {
             stmt.setString(1, "%" + busqueda + "%");
             stmt.setString(2, "%" + busqueda + "%");
-
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
-                String fotoBase64 = fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null;
-                
-                lista.add(new ProductoData(
-                    rs.getInt("id_producto"),
-                    rs.getString("nombre"),
-                    rs.getDouble("precio_venta"),
-                    rs.getInt("existencias_act"),
-                    fotoBase64,
-                    rs.getString("codigo_barras")
-                ));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                    lista.add(new ProductoData(
+                        rs.getInt("id_producto"),
+                        rs.getString("nombre"),
+                        rs.getDouble("precio_venta"),
+                        rs.getInt("existencias_act"),
+                        fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null,
+                        rs.getString("codigo_barras")
+                    ));
+                }
             }
-
-            rs.close();
-            stmt.close();
-            c.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return lista;
     }
 
     public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal) throws SQLException {
         Connection c = null;
         try {
-            Conexion con = new Conexion();
-            c = con.conectar();
-            c.setAutoCommit(false); 
+            c = new Conexion().conectar();
+            c.setAutoCommit(false);
 
-            // Si idVenta es -1, significa que es una venta recuperada del espera y no existe en la tabla ventas
-            // Debemo crear una nueva venta primero
             int ventaId = idVenta;
             if (idVenta == -1) {
-                // Crear nueva venta
                 String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
-                PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS);
-                stmtVenta.setInt(1, 1); // usuario por defecto
-                stmtVenta.setDouble(2, totalFinal);
-                stmtVenta.executeUpdate();
-                
-                ResultSet rsVenta = stmtVenta.getGeneratedKeys();
-                if (rsVenta.next()) {
-                    ventaId = rsVenta.getInt(1);
-                    System.out.println("Nueva venta creada con ID: " + ventaId);
+                try (PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    stmtVenta.setInt(1, 1);
+                    stmtVenta.setDouble(2, totalFinal);
+                    stmtVenta.executeUpdate();
+                    try (ResultSet rsVenta = stmtVenta.getGeneratedKeys()) {
+                        if (rsVenta.next()) ventaId = rsVenta.getInt(1);
+                    }
                 }
-                rsVenta.close();
-                stmtVenta.close();
             }
 
-            String sqlTotal = "UPDATE ventas SET total = ? WHERE id_venta = ?";
-            PreparedStatement stmtTotal = c.prepareStatement(sqlTotal);
-            stmtTotal.setDouble(1, totalFinal);
-            stmtTotal.setInt(2, ventaId);
-            int rowsUpdated = stmtTotal.executeUpdate();
-            System.out.println("Filas actualizadas en ventas: " + rowsUpdated);
-            stmtTotal.close();
-
-            for (DetalleVentaRequest detalle : detalles) {
-                String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
-                PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
-                stmtInsert.setInt(1, ventaId);
-                stmtInsert.setInt(2, detalle.idProducto);
-                stmtInsert.setDouble(3, detalle.cantidad);
-                stmtInsert.setDouble(4, detalle.precioUnitario);
-                stmtInsert.executeUpdate();
-                stmtInsert.close();
-
-                String sqlStock = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
-                PreparedStatement stmtStock = c.prepareStatement(sqlStock);
-                stmtStock.setDouble(1, detalle.cantidad);
-                stmtStock.setInt(2, detalle.idProducto);
-                stmtStock.executeUpdate();
-                stmtStock.close();
+            try (PreparedStatement stmtTotal = c.prepareStatement("UPDATE ventas SET total = ? WHERE id_venta = ?")) {
+                stmtTotal.setDouble(1, totalFinal);
+                stmtTotal.setInt(2, ventaId);
+                stmtTotal.executeUpdate();
             }
 
-            c.commit(); 
-            System.out.println("Transacción completada exitosamente");
+            String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
+            String sqlStock  = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
+            try (PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
+                 PreparedStatement stmtStock  = c.prepareStatement(sqlStock)) {
+                for (DetalleVentaRequest detalle : detalles) {
+                    stmtInsert.setInt(1, ventaId);
+                    stmtInsert.setInt(2, detalle.idProducto);
+                    stmtInsert.setDouble(3, detalle.cantidad);
+                    stmtInsert.setDouble(4, detalle.precioUnitario);
+                    stmtInsert.executeUpdate();
+
+                    stmtStock.setDouble(1, detalle.cantidad);
+                    stmtStock.setInt(2, detalle.idProducto);
+                    stmtStock.executeUpdate();
+                }
+            }
+
+            c.commit();
         } catch (SQLException e) {
-            System.out.println("Error SQL: " + e.getMessage());
             if (c != null) c.rollback();
             throw e;
         } catch (Exception e) {
-            System.out.println("Error general: " + e.getMessage());
-            e.printStackTrace();
-            if (c != null) {
-                try { c.rollback(); } catch (Exception ex) {}
-            }
+            if (c != null) { try { c.rollback(); } catch (Exception ex) {} }
             throw new SQLException(e.getMessage());
         } finally {
-            if (c != null) {
-                c.setAutoCommit(true);
-                c.close();
-            }
+            if (c != null) { c.setAutoCommit(true); c.close(); }
         }
     }
-    
-    // Guardar venta en espera
+
     public int guardarVentaEnEspera(int idUsuario, double total, List<DetalleVentaEnEspera> detalles) {
         int idVentaEspera = -1;
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-            
+        try (Connection c = new Conexion().conectar()) {
             String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
-            PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
-            stmt.setInt(1, idUsuario);
-            stmt.setDouble(2, total);
-            stmt.executeUpdate();
-            
-            ResultSet rs = stmt.getGeneratedKeys();
-            if (rs.next()) {
-                idVentaEspera = rs.getInt(1);
+            try (PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                stmt.setInt(1, idUsuario);
+                stmt.setDouble(2, total);
+                stmt.executeUpdate();
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) idVentaEspera = rs.getInt(1);
+                }
             }
-            rs.close();
-            stmt.close();
-            
-            // Guardar detalles
-            for (DetalleVentaEnEspera detalle : detalles) {
-                String sqlDetalle = "INSERT INTO detalles_venta_en_espera (id_venta_espera, id_producto, codigo, nombre, precio, cantidad, foto_producto) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                PreparedStatement stmtDetalle = c.prepareStatement(sqlDetalle);
-                stmtDetalle.setInt(1, idVentaEspera);
-                stmtDetalle.setInt(2, detalle.idProducto);
-                stmtDetalle.setString(3, detalle.codigo);
-                stmtDetalle.setString(4, detalle.nombre);
-                stmtDetalle.setDouble(5, detalle.precio);
-                stmtDetalle.setDouble(6, detalle.cantidad);
-                stmtDetalle.setString(7, detalle.fotoProducto);
-                stmtDetalle.executeUpdate();
-                stmtDetalle.close();
+
+            String sqlDetalle = "INSERT INTO detalles_venta_en_espera (id_venta_espera, id_producto, codigo, nombre, precio, cantidad, foto_producto) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmtDetalle = c.prepareStatement(sqlDetalle)) {
+                for (DetalleVentaEnEspera detalle : detalles) {
+                    stmtDetalle.setInt(1, idVentaEspera);
+                    stmtDetalle.setInt(2, detalle.idProducto);
+                    stmtDetalle.setString(3, detalle.codigo);
+                    stmtDetalle.setString(4, detalle.nombre);
+                    stmtDetalle.setDouble(5, detalle.precio);
+                    stmtDetalle.setDouble(6, detalle.cantidad);
+                    stmtDetalle.setString(7, detalle.fotoProducto);
+                    stmtDetalle.executeUpdate();
+                }
             }
-            
-            c.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return idVentaEspera;
     }
-    
-    // Obtener todas las ventas en espera
+
+    // N+1 resuelto: 2 queries en total en lugar de 1 + N
     public List<VentaEnEspera> obtenerVentasEnEspera() {
         List<VentaEnEspera> lista = new ArrayList<>();
-        try {
-            System.out.println("Conectando a BD para obtener ventas en espera...");
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-            System.out.println("Conexión exitosa");
-            
-            // Primero verificar si hay datos en la tabla
-            String sqlCheck = "SELECT COUNT(*) as total FROM ventas_en_espera";
-            PreparedStatement stmtCheck = c.prepareStatement(sqlCheck);
-            ResultSet rsCheck = stmtCheck.executeQuery();
-            if (rsCheck.next()) {
-                System.out.println("Ventas en espera en BD: " + rsCheck.getInt("total"));
-            }
-            rsCheck.close();
-            stmtCheck.close();
-            
-            // Consulta simplificada sin JOIN
-            String sql = "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera ORDER BY fecha DESC";
-            PreparedStatement stmt = c.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
-            System.out.println("Query ejecutado, buscando resultados...");
-            
-            while (rs.next()) {
-                System.out.println("Encontrada venta: " + rs.getInt("id_venta_espera"));
-                VentaEnEspera venta = new VentaEnEspera(
-                    rs.getInt("id_venta_espera"),
-                    rs.getInt("id_usuario"),
-                    "Usuario #" + rs.getInt("id_usuario"),  // Username fijo por ahora
-                    rs.getString("fecha"),
-                    rs.getDouble("total")
-                );
-                lista.add(venta);
-            }
-            
-            System.out.println("Total de ventas encontradas: " + lista.size());
-            
-            rs.close();
-            stmt.close();
-            
-            // Obtener detalles para cada venta
-            for (VentaEnEspera venta : lista) {
-                String sqlDetalles = "SELECT id_producto, codigo, nombre, precio, cantidad, foto_producto FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
-                PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
-                stmtDetalles.setInt(1, venta.id);
-                ResultSet rsDetalles = stmtDetalles.executeQuery();
-                
-                System.out.println("Obteniendo detalles para venta " + venta.id + ", encontrados: " + rsDetalles.getFetchSize());
-                
-                while (rsDetalles.next()) {
-                    DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
-                        rsDetalles.getInt("id_producto"),
-                        rsDetalles.getString("codigo"),
-                        rsDetalles.getString("nombre"),
-                        rsDetalles.getDouble("precio"),
-                        rsDetalles.getDouble("cantidad"),
-                        rsDetalles.getString("foto_producto")
+        try (Connection c = new Conexion().conectar()) {
+            Map<Integer, VentaEnEspera> ventaMap = new LinkedHashMap<>();
+            try (PreparedStatement stmt = c.prepareStatement(
+                    "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera ORDER BY fecha DESC");
+                 ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    VentaEnEspera venta = new VentaEnEspera(
+                        rs.getInt("id_venta_espera"),
+                        rs.getInt("id_usuario"),
+                        "Usuario #" + rs.getInt("id_usuario"),
+                        rs.getString("fecha"),
+                        rs.getDouble("total")
                     );
-                    venta.detalles.add(detalle);
-                    System.out.println("  - Detalle: " + detalle.nombre + " x" + detalle.cantidad);
+                    ventaMap.put(venta.id, venta);
+                    lista.add(venta);
                 }
-                rsDetalles.close();
-                stmtDetalles.close();
             }
-            
-            c.close();
-            System.out.println("Conexión cerrada");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+            if (!ventaMap.isEmpty()) {
+                String ids = ventaMap.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
+                String sqlDet = "SELECT id_venta_espera, id_producto, codigo, nombre, precio, cantidad, foto_producto " +
+                                "FROM detalles_venta_en_espera WHERE id_venta_espera IN (" + ids + ")";
+                try (PreparedStatement stmtDet = c.prepareStatement(sqlDet);
+                     ResultSet rsDet = stmtDet.executeQuery()) {
+                    while (rsDet.next()) {
+                        VentaEnEspera venta = ventaMap.get(rsDet.getInt("id_venta_espera"));
+                        if (venta != null) {
+                            venta.detalles.add(new DetalleVentaEnEspera(
+                                rsDet.getInt("id_producto"),
+                                rsDet.getString("codigo"),
+                                rsDet.getString("nombre"),
+                                rsDet.getDouble("precio"),
+                                rsDet.getDouble("cantidad"),
+                                rsDet.getString("foto_producto")
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         return lista;
     }
-    
-    // Obtener una venta en espera por ID
-    public VentaEnEspera obtenerVentaEnEspera(int idVentaEspera) {
-        System.out.println("Obteniendo venta en espera con ID: " + idVentaEspera);
-        VentaEnEspera venta = null;
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-            System.out.println("Conexión obtenida");
-            
-            // Consulta simplificada sin JOIN
-            String sql = "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera WHERE id_venta_espera = ?";
-            PreparedStatement stmt = c.prepareStatement(sql);
-            stmt.setInt(1, idVentaEspera);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                System.out.println("Venta encontrada en BD");
-                venta = new VentaEnEspera(
-                    rs.getInt("id_venta_espera"),
-                    rs.getInt("id_usuario"),
-                    "Usuario #" + rs.getInt("id_usuario"),
-                    rs.getString("fecha"),
-                    rs.getDouble("total")
-                );
-            } else {
-                System.out.println("NO se encontró la venta en la BD");
-            }
-            rs.close();
-            stmt.close();
-            
-            if (venta != null) {
-                String sqlDetalles = "SELECT id_producto, codigo, nombre, precio, cantidad, foto_producto FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
-                PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
-                stmtDetalles.setInt(1, idVentaEspera);
-                ResultSet rsDetalles = stmtDetalles.executeQuery();
 
-                while (rsDetalles.next()) {
-                    DetalleVentaEnEspera detalle = new DetalleVentaEnEspera(
-                        rsDetalles.getInt("id_producto"),
-                        rsDetalles.getString("codigo"),
-                        rsDetalles.getString("nombre"),
-                        rsDetalles.getDouble("precio"),
-                        rsDetalles.getDouble("cantidad"),
-                        rsDetalles.getString("foto_producto")
-                    );
-                    venta.detalles.add(detalle);
-                    System.out.println("Detalle agregado: " + detalle.nombre);
+    public VentaEnEspera obtenerVentaEnEspera(int idVentaEspera) {
+        VentaEnEspera venta = null;
+        try (Connection c = new Conexion().conectar()) {
+            try (PreparedStatement stmt = c.prepareStatement(
+                    "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera WHERE id_venta_espera = ?")) {
+                stmt.setInt(1, idVentaEspera);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        venta = new VentaEnEspera(
+                            rs.getInt("id_venta_espera"),
+                            rs.getInt("id_usuario"),
+                            "Usuario #" + rs.getInt("id_usuario"),
+                            rs.getString("fecha"),
+                            rs.getDouble("total")
+                        );
+                    }
                 }
-                rsDetalles.close();
-                stmtDetalles.close();
             }
-            
-            c.close();
-            System.out.println("Venta retornada: " + (venta != null ? "SI" : "NO"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+            if (venta != null) {
+                try (PreparedStatement stmtDet = c.prepareStatement(
+                        "SELECT id_producto, codigo, nombre, precio, cantidad, foto_producto FROM detalles_venta_en_espera WHERE id_venta_espera = ?")) {
+                    stmtDet.setInt(1, idVentaEspera);
+                    try (ResultSet rsDet = stmtDet.executeQuery()) {
+                        while (rsDet.next()) {
+                            venta.detalles.add(new DetalleVentaEnEspera(
+                                rsDet.getInt("id_producto"),
+                                rsDet.getString("codigo"),
+                                rsDet.getString("nombre"),
+                                rsDet.getDouble("precio"),
+                                rsDet.getDouble("cantidad"),
+                                rsDet.getString("foto_producto")
+                            ));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         return venta;
     }
-    
-    // Eliminar venta en espera
+
     public boolean eliminarVentaEnEspera(int idVentaEspera) {
-        try {
-            Conexion con = new Conexion();
-            Connection c = con.conectar();
-            
-            // Eliminar detalles primero
-            String sqlDetalles = "DELETE FROM detalles_venta_en_espera WHERE id_venta_espera = ?";
-            PreparedStatement stmtDetalles = c.prepareStatement(sqlDetalles);
-            stmtDetalles.setInt(1, idVentaEspera);
-            stmtDetalles.executeUpdate();
-            stmtDetalles.close();
-            
-            // Eliminar venta
-            String sql = "DELETE FROM ventas_en_espera WHERE id_venta_espera = ?";
-            PreparedStatement stmt = c.prepareStatement(sql);
-            stmt.setInt(1, idVentaEspera);
-            stmt.executeUpdate();
-            stmt.close();
-            
-            c.close();
+        try (Connection c = new Conexion().conectar()) {
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM detalles_venta_en_espera WHERE id_venta_espera = ?")) {
+                ps.setInt(1, idVentaEspera); ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement("DELETE FROM ventas_en_espera WHERE id_venta_espera = ?")) {
+                ps.setInt(1, idVentaEspera); ps.executeUpdate();
+            }
             return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        } catch (Exception e) { e.printStackTrace(); }
+        return false;
     }
 }
 
@@ -422,7 +293,6 @@ class DetalleVentaRequest {
     public double precioUnitario;
 }
 
-// Clase para venta en espera
 class VentaEnEspera {
     public int id;
     public int idUsuario;
