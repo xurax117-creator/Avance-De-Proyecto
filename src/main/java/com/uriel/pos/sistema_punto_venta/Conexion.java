@@ -25,7 +25,7 @@ public class Conexion {
             // Producción (Railway) — todas las variables de entorno están presentes
             String host     = System.getenv("MYSQLHOST");
             String port     = System.getenv("MYSQLPORT");
-            String database = System.getenv("MYSQLDATABASE");
+            String database = System.getenv("MYSQL_DATABASE");
             user = System.getenv("MYSQLUSER");
             url  = "jdbc:mysql://" + host + ":" + port + "/" + database
                    + "?useSSL=false&serverTimezone=America/Mexico_City";
