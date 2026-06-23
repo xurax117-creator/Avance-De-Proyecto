@@ -84,6 +84,7 @@
                 <th>Foto</th>
                 <th>Código</th>
                 <th>Nombre</th>
+                <th>Existencias</th>
                 <th>Cantidad</th>
                 <th>Precio Unit.</th>
                 <th>Promoción</th>
@@ -213,7 +214,7 @@
                     </div>
                     <div style="text-align: right;">
                         <div style="font-size: 18px; font-weight: bold; color: #19A337;">${p.precioVenta.toFixed(2)}</div>
-                        <div style="font-size: 12px; color: ${p.existencias_act <= 5 ? '#dc3545' : '#666'};">Stock: ${p.existencias_act}</div>
+                        <div style="font-size: 12px; color: ${p.stockActual <= 5 ? '#dc3545' : '#666'};">Stock: ${p.stockActual}</div>
                     </div>
                 `;
                 container.appendChild(div);
@@ -266,6 +267,7 @@
                         precioOriginal: producto.precio_venta || producto.precioVenta,
                         precio: producto.precio_venta || producto.precioVenta,
                         cantidad: 1,
+                        stockActual: producto.stockActual,
                         fotoProducto: producto.fotoProducto || null,
                         promocionAplicada: null,
                         esPromo: false
@@ -313,6 +315,7 @@
                             precioOriginal: p.precio,
                             precio: p.precio,
                             cantidad: 1,
+                            stockActual: p.stock,
                             fotoProducto: p.fotoProducto || null,
                             promocionAplicada: null,
                             esPromo: false
@@ -386,6 +389,7 @@ async function aplicarPromociones() {
                                  precioOriginal: itemsMismoProducto[0].precioOriginal,
                                  precio: precioPromo,
                                  cantidad: cantidadRequerida,
+                                 stockActual: itemsMismoProducto[0].stockActual,
                                  fotoProducto: itemsMismoProducto[0].fotoProducto,
                                  promocionAplicada: promo.nombre,
                                  esPromo: true
@@ -437,6 +441,7 @@ async function aplicarPromociones() {
                                          precioOriginal: item.precioOriginal,
                                          precio: precioUnitarioPromo,
                                          cantidad: cantidadPorProducto,
+                                         stockActual: item.stockActual,
                                          fotoProducto: item.fotoProducto,
                                          promocionAplicada: promo.nombre,
                                          esPromo: true
@@ -461,6 +466,7 @@ async function aplicarPromociones() {
                              precioOriginal: item.precioOriginal,
                              precio: item.precioOriginal,
                              cantidad: item.cantidadDisponible,
+                             stockActual: item.stockActual,
                              fotoProducto: item.fotoProducto,
                              promocionAplicada: null,
                              esPromo: false
@@ -479,6 +485,7 @@ async function aplicarPromociones() {
                          precioOriginal: item.precioOriginal,
                          precio: item.precioOriginal,
                          cantidad: item.cantidad,
+                         stockActual: item.stockActual,
                          fotoProducto: item.fotoProducto,
                          promocionAplicada: null,
                          esPromo: false
@@ -505,11 +512,15 @@ async function aplicarPromociones() {
                 
                 const promocionHtml = prod.promocionAplicada ? `<span class="promocion-badge">${prod.promocionAplicada}</span>` : '';
 
+                const stock = prod.stockActual;
+                const stockColor = stock != null && stock <= 5 ? '#dc3545' : '#333';
+                const stockText = stock != null ? stock : '—';
                 cuerpoTabla.innerHTML += `
                     <tr>
                         <td>${fotoHtml}</td>
                         <td>${prod.codigo}</td>
                         <td>${prod.nombre}</td>
+                        <td style="font-weight: bold; color: ${stockColor};">${stockText}</td>
                         <td><span class="badge-cantidad" ondblclick="editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
                         <td>${prod.precio.toFixed(2)}</td>
                         <td>${promocionHtml}</td>

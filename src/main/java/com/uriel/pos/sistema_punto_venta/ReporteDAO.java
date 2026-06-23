@@ -85,18 +85,22 @@ public class ReporteDAO {
         return lista;
     }
 
-    public List<Map<String, Object>> obtenerTopProductos(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina) {
+    public List<Map<String, Object>> obtenerTopProductos(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina, String busqueda) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String fechaHoraInicio = inicio + " " + horaInicio + ":00";
         String fechaHoraFin    = fin    + " " + horaFin    + ":59";
+        boolean filtrar = busqueda != null && !busqueda.isBlank();
+        String like = filtrar ? "%" + busqueda.trim() + "%" : null;
+        String extraWhere = filtrar ? " AND (p.nombre LIKE ? OR p.codigo_barras LIKE ?)" : "";
 
         try (Connection c = new Conexion().conectar()) {
             int totalRegistros = 0;
             try (PreparedStatement ps = c.prepareStatement(
                     "SELECT COUNT(DISTINCT p.id_producto) as total FROM detalle_venta dv " +
                     "JOIN productos p ON dv.id_producto = p.id_producto " +
-                    "JOIN ventas v ON dv.id_venta = v.id_venta WHERE v.fecha BETWEEN ? AND ?")) {
+                    "JOIN ventas v ON dv.id_venta = v.id_venta WHERE v.fecha BETWEEN ? AND ?" + extraWhere)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin);
+                if (filtrar) { ps.setString(3, like); ps.setString(4, like); }
                 try (ResultSet rs = ps.executeQuery()) { if (rs.next()) totalRegistros = rs.getInt("total"); }
             }
 
@@ -110,10 +114,16 @@ public class ReporteDAO {
             String sql = "SELECT p.nombre, SUM(dv.cantidad) as cant, SUM(dv.cantidad * dv.precio_unitario) as total " +
                          "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
                          "JOIN ventas v ON dv.id_venta = v.id_venta " +
-                         "WHERE v.fecha BETWEEN ? AND ? GROUP BY p.id_producto ORDER BY cant DESC LIMIT ? OFFSET ?";
+                         "WHERE v.fecha BETWEEN ? AND ?" + extraWhere +
+                         " GROUP BY p.id_producto ORDER BY cant DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin);
-                ps.setInt(3, tamanoPagina); ps.setInt(4, (pagina - 1) * tamanoPagina);
+                if (filtrar) {
+                    ps.setString(3, like); ps.setString(4, like);
+                    ps.setInt(5, tamanoPagina); ps.setInt(6, (pagina - 1) * tamanoPagina);
+                } else {
+                    ps.setInt(3, tamanoPagina); ps.setInt(4, (pagina - 1) * tamanoPagina);
+                }
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         Map<String, Object> map = new HashMap<>();
@@ -136,8 +146,12 @@ public class ReporteDAO {
         return lista;
     }
 
+    public List<Map<String, Object>> obtenerTopProductos(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina) {
+        return obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamanoPagina, null);
+    }
+
     public List<Map<String, Object>> obtenerTopProductos(String inicio, String fin) {
-        return obtenerTopProductos(inicio, "00:00", fin, "23:59", 1, 1000);
+        return obtenerTopProductos(inicio, "00:00", fin, "23:59", 1, 1000, null);
     }
 
     public List<Map<String, Object>> obtenerVentasPorCajero(String inicio, String horaInicio, String fin, String horaFin) {

@@ -32,9 +32,10 @@ public class ReporteController {
             @RequestParam String fin,
             @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "50") int tamano) {
+            @RequestParam(defaultValue = "50") int tamano,
+            @RequestParam(defaultValue = "") String busqueda) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamano);
+        return dao.obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamano, busqueda);
     }
 
     @GetMapping("/cajeros")
