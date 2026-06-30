@@ -157,6 +157,12 @@
     </div>
 
 <script>
+         const _idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+         if (!_idSucursal || !localStorage.getItem('userId')) {
+             window.location.href = '/sucursal.html';
+         }
+         document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
          let listaCarrito = [];
          let currentVentaId = -1;
          let totalVenta = 0;
@@ -244,7 +250,7 @@
                     const resVenta = await fetch('/api/venta/producto', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ codigo: producto.codigoBarras || producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId) })
+                        body: JSON.stringify({ codigo: producto.codigoBarras || producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId), idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                     });
                     const resultVenta = await resVenta.json();
                     console.log('Resultado crear venta:', resultVenta);
@@ -294,7 +300,7 @@
                 const response = await fetch('/api/venta/producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ codigo, idVentaActual: currentVentaId, userId: parseInt(currentUserId) })
+                    body: JSON.stringify({ codigo, idVentaActual: currentVentaId, userId: parseInt(currentUserId), idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                 });
                 const result = await response.json();
                 
@@ -329,7 +335,7 @@
                     const searchResponse = await fetch('/api/venta/buscar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ busqueda: codigo })
+                        body: JSON.stringify({ busqueda: codigo, idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                     });
                     const searchResult = await searchResponse.json();
                     
@@ -346,7 +352,7 @@ async function aplicarPromociones() {
              const nuevosItems = [];
             
              try {
-                 const responsePromos = await fetch('/api/promociones/activas/todas');
+                 const responsePromos = await fetch(`/api/promociones/activas/todas?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
                  const todasLasPromos = await responsePromos.json();
                 
                  // Crear una copia del carrito con cantidades disponibles
@@ -582,6 +588,7 @@ async function aplicarPromociones() {
                 userId: parseInt(currentUserId),
                 idVenta: currentVentaId,
                 totalFinal: totalVenta,
+                idSucursal: parseInt(localStorage.getItem('idSucursal') || '1'),
                 listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio }))
             };
 
@@ -653,6 +660,7 @@ function eliminarItem(carritoId) {
                     body: JSON.stringify({
                         userId: parseInt(currentUserId),
                         total: totalCarrito,
+                        idSucursal: parseInt(localStorage.getItem('idSucursal') || '1'),
                         listaCarrito: listaCarrito.map(p => ({
                             idProducto: p.idProducto,
                             codigo: p.codigo,
@@ -688,7 +696,7 @@ function eliminarItem(carritoId) {
         async function abrirVentasEnEspera() {
             console.log("Cargando ventas en espera...");
             try {
-                const response = await fetch('/api/venta/lista-espera');
+                const response = await fetch(`/api/venta/lista-espera?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
                 console.log("Response status:", response.status);
                 const result = await response.json();
                 console.log("Result:", result);

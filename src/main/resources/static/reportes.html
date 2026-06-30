@@ -145,6 +145,12 @@
 </div>
 
 <script>
+    const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+    if (!idSucursal || !localStorage.getItem('userId')) {
+        window.location.href = '/sucursal.html';
+    }
+    document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
     let tabActual = 'ventas';
     let paginaActual = 1;
     let tamanoPagina = 50;
@@ -210,11 +216,12 @@
         paginaActual = 1;
 
         try {
+            const suc = parseInt(localStorage.getItem('idSucursal') || '1');
             let url;
             if (tabActual === 'inventario') {
-                url = `/api/reportes/${tabActual}`;
+                url = `/api/reportes/${tabActual}?sucursal=${suc}`;
             } else {
-                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}&sucursal=${suc}`;
                 if (tabActual === 'ventas' || tabActual === 'productos') {
                     url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
                 }
@@ -353,11 +360,12 @@
         const hFin = document.getElementById('horaFin').value;
 
         try {
+            const suc = parseInt(localStorage.getItem('idSucursal') || '1');
             let url;
             if (tabActual === 'inventario') {
-                url = `/api/reportes/${tabActual}`;
+                url = `/api/reportes/${tabActual}?sucursal=${suc}`;
             } else {
-                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}`;
+                url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}&sucursal=${suc}`;
                 if (tabActual === 'ventas' || tabActual === 'productos') {
                     url += `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
                 }

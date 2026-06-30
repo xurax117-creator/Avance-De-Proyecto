@@ -14,9 +14,10 @@ public class ReporteController {
             @RequestParam String fin,
             @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
-            @RequestParam(defaultValue = "50") int tamano) {
+            @RequestParam(defaultValue = "50") int tamano,
+            @RequestParam(defaultValue = "1") int sucursal) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamano);
+        return dao.obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamano, sucursal);
     }
 
     @GetMapping("/detalle/{id}")
@@ -33,9 +34,10 @@ public class ReporteController {
             @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
             @RequestParam(defaultValue = "50") int tamano,
-            @RequestParam(defaultValue = "") String busqueda) {
+            @RequestParam(defaultValue = "") String busqueda,
+            @RequestParam(defaultValue = "1") int sucursal) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamano, busqueda);
+        return dao.obtenerTopProductos(inicio, horaInicio, fin, horaFin, pagina, tamano, busqueda, sucursal);
     }
 
     @GetMapping("/cajeros")
@@ -43,14 +45,15 @@ public class ReporteController {
             @RequestParam String inicio,
             @RequestParam(defaultValue = "00:00") String horaInicio,
             @RequestParam String fin,
-            @RequestParam(defaultValue = "23:59") String horaFin) {
+            @RequestParam(defaultValue = "23:59") String horaFin,
+            @RequestParam(defaultValue = "1") int sucursal) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentasPorCajero(inicio, horaInicio, fin, horaFin);
+        return dao.obtenerVentasPorCajero(inicio, horaInicio, fin, horaFin, sucursal);
     }
 
     @GetMapping("/inventario")
-    public Map<String, Object> getValorInventario() {
+    public Map<String, Object> getValorInventario(@RequestParam(defaultValue = "1") int sucursal) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerValorInventario();
+        return dao.obtenerValorInventario(sucursal);
     }
 }

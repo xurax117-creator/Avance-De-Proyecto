@@ -220,6 +220,12 @@
 </div>
 
 <script>
+    const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+    if (!idSucursal || !localStorage.getItem('userId')) {
+        window.location.href = '/sucursal.html';
+    }
+    document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
     let todosLosProductos = [];
     let productoSeleccionado = null;
 
@@ -236,7 +242,7 @@
 
     async function cargarProductos() {
         try {
-            const resp = await fetch('/api/inventario/todos');
+            const resp = await fetch(`/api/inventario/todos?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
             todosLosProductos = await resp.json();
             dibujarTabla(todosLosProductos);
         } catch (e) { 
@@ -247,7 +253,7 @@
 
     async function cargarProveedores() {
         try {
-            const resp = await fetch('/api/inventario/proveedores');
+            const resp = await fetch(`/api/inventario/proveedores?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
             const lista = await resp.json();
             const select = document.getElementById('selProveedor');
             lista.forEach(prov => {
@@ -258,7 +264,7 @@
 
     async function cargarHistorial() {
         try {
-            const resp = await fetch('/api/inventario/historial-entradas');
+            const resp = await fetch(`/api/inventario/historial-entradas?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
             const lista = await resp.json();
             dibujarHistorial(lista);
         } catch (e) { console.error("Error cargando historial", e); }
@@ -381,7 +387,7 @@
         const userId = localStorage.getItem('userId');
         if (!userId) {
             showToast("Sesión no válida. Inicia sesión nuevamente.", "error");
-            window.location.href = '/login.html';
+            window.location.href = '/sucursal.html';
             return;
         }
 
@@ -390,7 +396,8 @@
             cantidad: cantidad,
             nota: document.getElementById('txtNota').value,
             id_usuario: userId,
-            precio_compra: document.getElementById('txtPrecioCompra').value
+            precio_compra: document.getElementById('txtPrecioCompra').value,
+            sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 
         try {

@@ -13,17 +13,18 @@ import java.util.stream.Collectors;
 
 public class Venta {
 
-    public ProductoData obtenerDatosProducto(String codigo) {
+    public ProductoData obtenerDatosProducto(String codigo, int idSucursal) {
         ProductoData data = null;
         String sql = """
             SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
             FROM productos
-            WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE
+            WHERE (codigo_barras = ? OR codigo_barras_secundario = ?) AND activo = TRUE AND id_sucursal = ?
         """;
         try (Connection c = new Conexion().conectar();
              PreparedStatement stmt = c.prepareStatement(sql)) {
             stmt.setString(1, codigo);
             stmt.setString(2, codigo);
+            stmt.setInt(3, idSucursal);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     byte[] fotoBytes = rs.getBytes("foto_producto_blob");
@@ -41,12 +42,13 @@ public class Venta {
         return data;
     }
 
-    public int crearVenta(int idUsuario) {
+    public int crearVenta(int idUsuario, int idSucursal) {
         int idVenta = -1;
-        String sql = "INSERT INTO ventas(id_usuario, total, fecha) VALUES(?, 0, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
+        String sql = "INSERT INTO ventas(id_usuario, total, fecha, id_sucursal) VALUES(?, 0, CONVERT_TZ(NOW(), '+02:00', '-04:00'), ?)";
         try (Connection c = new Conexion().conectar();
              PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, idUsuario);
+            stmt.setInt(2, idSucursal);
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) idVenta = rs.getInt(1);
@@ -55,18 +57,19 @@ public class Venta {
         return idVenta;
     }
 
-    public List<ProductoData> buscarProductosParcial(String busqueda) {
+    public List<ProductoData> buscarProductosParcial(String busqueda, int idSucursal) {
         List<ProductoData> lista = new ArrayList<>();
         String sql = """
             SELECT id_producto, nombre, precio_venta, existencias_act, foto_producto_blob, codigo_barras
             FROM productos
-            WHERE activo = TRUE AND (nombre LIKE ? OR codigo_barras LIKE ?)
+            WHERE activo = TRUE AND (nombre LIKE ? OR codigo_barras LIKE ?) AND id_sucursal = ?
             ORDER BY nombre ASC LIMIT 20
         """;
         try (Connection c = new Conexion().conectar();
              PreparedStatement stmt = c.prepareStatement(sql)) {
             stmt.setString(1, "%" + busqueda + "%");
             stmt.setString(2, "%" + busqueda + "%");
+            stmt.setInt(3, idSucursal);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     byte[] fotoBytes = rs.getBytes("foto_producto_blob");
@@ -84,7 +87,7 @@ public class Venta {
         return lista;
     }
 
-    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal) throws SQLException {
+    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal, int idSucursal) throws SQLException {
         Connection c = null;
         try {
             c = new Conexion().conectar();
@@ -92,10 +95,11 @@ public class Venta {
 
             int ventaId = idVenta;
             if (idVenta == -1) {
-                String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
+                String sqlInsertVenta = "INSERT INTO ventas (id_usuario, total, fecha, id_sucursal) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'), ?)";
                 try (PreparedStatement stmtVenta = c.prepareStatement(sqlInsertVenta, PreparedStatement.RETURN_GENERATED_KEYS)) {
                     stmtVenta.setInt(1, 1);
                     stmtVenta.setDouble(2, totalFinal);
+                    stmtVenta.setInt(3, idSucursal);
                     stmtVenta.executeUpdate();
                     try (ResultSet rsVenta = stmtVenta.getGeneratedKeys()) {
                         if (rsVenta.next()) ventaId = rsVenta.getInt(1);
@@ -138,13 +142,14 @@ public class Venta {
         }
     }
 
-    public int guardarVentaEnEspera(int idUsuario, double total, List<DetalleVentaEnEspera> detalles) {
+    public int guardarVentaEnEspera(int idUsuario, double total, List<DetalleVentaEnEspera> detalles, int idSucursal) {
         int idVentaEspera = -1;
         try (Connection c = new Conexion().conectar()) {
-            String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
+            String sql = "INSERT INTO ventas_en_espera (id_usuario, total, fecha, id_sucursal) VALUES (?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'), ?)";
             try (PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, idUsuario);
                 stmt.setDouble(2, total);
+                stmt.setInt(3, idSucursal);
                 stmt.executeUpdate();
                 try (ResultSet rs = stmt.getGeneratedKeys()) {
                     if (rs.next()) idVentaEspera = rs.getInt(1);
@@ -169,23 +174,25 @@ public class Venta {
     }
 
     // N+1 resuelto: 2 queries en total en lugar de 1 + N
-    public List<VentaEnEspera> obtenerVentasEnEspera() {
+    public List<VentaEnEspera> obtenerVentasEnEspera(int idSucursal) {
         List<VentaEnEspera> lista = new ArrayList<>();
         try (Connection c = new Conexion().conectar()) {
             Map<Integer, VentaEnEspera> ventaMap = new LinkedHashMap<>();
             try (PreparedStatement stmt = c.prepareStatement(
-                    "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera ORDER BY fecha DESC");
-                 ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    VentaEnEspera venta = new VentaEnEspera(
-                        rs.getInt("id_venta_espera"),
-                        rs.getInt("id_usuario"),
-                        "Usuario #" + rs.getInt("id_usuario"),
-                        rs.getString("fecha"),
-                        rs.getDouble("total")
-                    );
-                    ventaMap.put(venta.id, venta);
-                    lista.add(venta);
+                    "SELECT id_venta_espera, id_usuario, total, fecha FROM ventas_en_espera WHERE id_sucursal = ? ORDER BY fecha DESC")) {
+                stmt.setInt(1, idSucursal);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        VentaEnEspera venta = new VentaEnEspera(
+                            rs.getInt("id_venta_espera"),
+                            rs.getInt("id_usuario"),
+                            "Usuario #" + rs.getInt("id_usuario"),
+                            rs.getString("fecha"),
+                            rs.getDouble("total")
+                        );
+                        ventaMap.put(venta.id, venta);
+                        lista.add(venta);
+                    }
                 }
             }
 

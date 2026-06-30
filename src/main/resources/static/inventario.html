@@ -277,7 +277,8 @@
             const filtro = document.getElementById('txtBusqueda').value;
             const idProveedor = document.getElementById('selProveedor').value;
             
-            const resp = await fetch(`/api/inventario/paginado?pagina=1&limite=5000&filtro=${encodeURIComponent(filtro)}&idProveedor=${idProveedor}`);
+            const idSucursal = parseInt(localStorage.getItem('idSucursal') || '1');
+            const resp = await fetch(`/api/inventario/paginado?pagina=1&limite=5000&filtro=${encodeURIComponent(filtro)}&idProveedor=${idProveedor}&sucursal=${idSucursal}`);
             const data = await resp.json();
             
             if (mostrarDesactivados) {
@@ -302,7 +303,8 @@
 
     async function cargarProveedoresSelect() {
         try {
-            const resp = await fetch('/api/inventario/proveedores');
+            const idSucursal = parseInt(localStorage.getItem('idSucursal') || '1');
+            const resp = await fetch(`/api/inventario/proveedores?sucursal=${idSucursal}`);
             const lista = await resp.json();
             const select = document.getElementById('selProveedor');
             select.innerHTML = '<option value="0">Todos los proveedores</option>';
@@ -363,7 +365,8 @@
 
     async function cargarProveedores() {
         try {
-            const resp = await fetch('/api/inventario/proveedores');
+            const idSucursal = parseInt(localStorage.getItem('idSucursal') || '1');
+            const resp = await fetch(`/api/inventario/proveedores?sucursal=${idSucursal}`);
             const lista = await resp.json();
             const select = document.getElementById('p_prov');
             select.innerHTML = '<option value="">Sin Proveedor</option>';
@@ -491,7 +494,8 @@
             precio_venta: document.getElementById('p_venta').value,
             existencias_act: document.getElementById('p_stock').value,
             existencias_min: document.getElementById('p_min').value,
-            foto_producto: fotoParaGuardar
+            foto_producto: fotoParaGuardar,
+            sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 
         if(!data.nombre || !data.precio_venta) {
@@ -578,6 +582,13 @@
     });
 
     window.onload = async () => {
+        const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+        if (!idSucursal || !localStorage.getItem('userId')) {
+            window.location.href = '/sucursal.html';
+            return;
+        }
+        const colorSuc = localStorage.getItem('colorSucursal') || '#19A337';
+        document.documentElement.style.setProperty('--primary', colorSuc);
         await cargarProveedoresSelect();
         await cargarProductos();
     };

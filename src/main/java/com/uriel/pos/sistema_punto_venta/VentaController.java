@@ -15,23 +15,24 @@ public class VentaController {
         public String codigo;
         public int idVentaActual;
         public int userId;
+        public int idSucursal;
     }
 
     public static class FinalizarRequest {
         public int userId;
         public int idVenta;
         public double totalFinal;
+        public int idSucursal;
         public List<DetalleVentaRequest> listaCarrito;
     }
-    
-    // Request para guardar venta en espera
+
     public static class VentaEnEsperaRequest {
         public int userId;
         public double total;
+        public int idSucursal;
         public List<DetalleVentaEnEsperaRequest> listaCarrito;
     }
-    
-    // Request para detalles de venta en espera
+
     public static class DetalleVentaEnEsperaRequest {
         public int idProducto;
         public String codigo;
@@ -46,7 +47,8 @@ public class VentaController {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
-            ProductoData data = oper.obtenerDatosProducto(request.codigo);
+            int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
+            ProductoData data = oper.obtenerDatosProducto(request.codigo, sucursal);
             if (data == null) {
                 response.put("success", false);
                 response.put("message", "Producto no encontrado.");
@@ -55,7 +57,7 @@ public class VentaController {
 
             int ventaId = request.idVentaActual;
             if (ventaId == -1) {
-                ventaId = oper.crearVenta(request.userId);
+                ventaId = oper.crearVenta(request.userId, sucursal);
             }
 
             Map<String, Object> productoMap = new HashMap<>();
@@ -84,8 +86,9 @@ public class VentaController {
             System.out.println("idVenta: " + request.idVenta);
             System.out.println("totalFinal: " + request.totalFinal);
             System.out.println("Items en carrito: " + request.listaCarrito.size());
-            
-            oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal);
+
+            int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
+            oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal, sucursal);
             response.put("success", true);
             System.out.println("Venta finalizada exitosamente");
         } catch (Exception e) {
@@ -96,31 +99,29 @@ public class VentaController {
         return response;
     }
 
-    // Endpoint para búsqueda parcial de productos (cuando no encuentra exacto)
     @PostMapping("/buscar")
-    public Map<String, Object> buscarProductos(@RequestBody Map<String, String> request) {
+    public Map<String, Object> buscarProductos(@RequestBody Map<String, Object> request) {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
-            String busqueda = request.get("busqueda");
-            if (busqueda == null || busqueda.trim().isEmpty()) {
+            String busqueda = request.get("busqueda") != null ? request.get("busqueda").toString() : "";
+            int sucursal = request.get("idSucursal") != null ? Integer.parseInt(request.get("idSucursal").toString()) : 1;
+
+            if (busqueda.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Búsqueda vacía");
                 return response;
             }
-            
-            // Primero verificar si existe coincidencia exacta
-            ProductoData productoExacto = oper.obtenerDatosProducto(busqueda.trim());
-            
+
+            ProductoData productoExacto = oper.obtenerDatosProducto(busqueda.trim(), sucursal);
+
             if (productoExacto != null) {
-                // Encontró producto exacto
                 response.put("success", true);
                 response.put("tipo", "exacto");
                 response.put("producto", productoExacto);
             } else {
-                // No encontró exacto, buscar coincidencias parciales
-                List<ProductoData> sugerencias = oper.buscarProductosParcial(busqueda.trim());
-                
+                List<ProductoData> sugerencias = oper.buscarProductosParcial(busqueda.trim(), sucursal);
+
                 if (sugerencias.isEmpty()) {
                     response.put("success", false);
                     response.put("message", "No se encontraron productos");
@@ -137,27 +138,21 @@ public class VentaController {
         }
         return response;
     }
-    
-    // Endpoint para guardar venta en espera
+
     @PostMapping("/guardar-espera")
     public Map<String, Object> guardarVentaEnEspera(@RequestBody VentaEnEsperaRequest request) {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
-            // Convertir los detalles del request a objetos Venta
             List<DetalleVentaEnEspera> detalles = new ArrayList<>();
             for (DetalleVentaEnEsperaRequest det : request.listaCarrito) {
                 detalles.add(new DetalleVentaEnEspera(
-                    det.idProducto,
-                    det.codigo,
-                    det.nombre,
-                    det.precio,
-                    det.cantidad,
-                    det.fotoProducto
+                    det.idProducto, det.codigo, det.nombre, det.precio, det.cantidad, det.fotoProducto
                 ));
             }
-            
-            int idVentaEspera = oper.guardarVentaEnEspera(request.userId, request.total, detalles);
+
+            int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
+            int idVentaEspera = oper.guardarVentaEnEspera(request.userId, request.total, detalles, sucursal);
             if (idVentaEspera > 0) {
                 response.put("success", true);
                 response.put("idVentaEspera", idVentaEspera);
@@ -172,19 +167,15 @@ public class VentaController {
         }
         return response;
     }
-    
-    // Endpoint para listar ventas en espera
+
     @GetMapping("/lista-espera")
-    public Map<String, Object> listarVentasEnEspera() {
+    public Map<String, Object> listarVentasEnEspera(@RequestParam(defaultValue = "1") int sucursal) {
         Venta oper = new Venta();
         Map<String, Object> response = new HashMap<>();
         try {
-            System.out.println("Obteniendo ventas en espera...");
-            List<VentaEnEspera> lista = oper.obtenerVentasEnEspera();
-            System.out.println("Ventas obtenidas: " + lista.size());
+            List<VentaEnEspera> lista = oper.obtenerVentasEnEspera(sucursal);
             response.put("success", true);
             response.put("ventas", lista);
-            System.out.println("Response preparado");
         } catch (Exception e) {
             e.printStackTrace();
             response.put("success", false);
@@ -192,8 +183,7 @@ public class VentaController {
         }
         return response;
     }
-    
-    // Endpoint para obtener una venta en espera por ID
+
     @GetMapping("/obtener-espera/{id}")
     public Map<String, Object> obtenerVentaEnEspera(@PathVariable int id) {
         Venta oper = new Venta();
@@ -214,8 +204,7 @@ public class VentaController {
         }
         return response;
     }
-    
-    // Endpoint para eliminar una venta en espera
+
     @DeleteMapping("/eliminar-espera/{id}")
     public Map<String, Object> eliminarVentaEnEspera(@PathVariable int id) {
         Venta oper = new Venta();

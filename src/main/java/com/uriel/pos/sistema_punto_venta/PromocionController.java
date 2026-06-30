@@ -8,11 +8,11 @@ import java.util.*;
 public class PromocionController {
 
     @GetMapping("/todas")
-    public List<Map<String, Object>> listarTodas() {
+    public List<Map<String, Object>> listarTodas(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             PromocionDAO dao = new PromocionDAO();
-            List<PromocionData> promociones = dao.obtenerTodas();
+            List<PromocionData> promociones = dao.obtenerTodas(sucursal);
             for (PromocionData p : promociones) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id_promocion", p.idPromocion);
@@ -74,7 +74,8 @@ public class PromocionController {
             request.nombre = datos.get("nombre").toString();
             request.tipo = datos.get("tipo").toString();
             request.cantidadRequerida = Double.parseDouble(datos.get("cantidad_requerida").toString());
-            
+            request.sucursal = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
+
             if (datos.get("productos") instanceof List) {
                 List<?> prods = (List<?>) datos.get("productos");
                 request.productos = new HashSet<>();
@@ -86,7 +87,7 @@ public class PromocionController {
                     }
                 }
             }
-            
+
             request.precioEspecial = datos.get("precio_especial") != null && !datos.get("precio_especial").toString().isEmpty()
                 ? Double.parseDouble(datos.get("precio_especial").toString()) : null;
             request.descuentoPorcentaje = datos.get("descuento_porcentaje") != null && !datos.get("descuento_porcentaje").toString().isEmpty()
@@ -140,11 +141,11 @@ public class PromocionController {
     }
 
     @GetMapping("/activas/producto/{idProducto}")
-    public List<Map<String, Object>> obtenerActivasPorProducto(@PathVariable int idProducto) {
+    public List<Map<String, Object>> obtenerActivasPorProducto(@PathVariable int idProducto, @RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             PromocionDAO dao = new PromocionDAO();
-            List<PromocionData> promociones = dao.obtenerPromocionesActivasPorProducto(idProducto);
+            List<PromocionData> promociones = dao.obtenerPromocionesActivasPorProducto(idProducto, sucursal);
             for (PromocionData p : promociones) {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id_promocion", p.idPromocion);
@@ -165,11 +166,11 @@ public class PromocionController {
     }
 
     @GetMapping("/activas/todas")
-    public List<Map<String, Object>> obtenerTodasActivas() {
+    public List<Map<String, Object>> obtenerTodasActivas(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         try {
             PromocionDAO dao = new PromocionDAO();
-            List<PromocionData> promociones = dao.obtenerTodas();
+            List<PromocionData> promociones = dao.obtenerTodas(sucursal);
             for (PromocionData p : promociones) {
                 if (p.activo) {
                     Map<String, Object> m = new HashMap<>();

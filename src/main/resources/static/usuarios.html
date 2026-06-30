@@ -167,17 +167,20 @@
 
         const userId = localStorage.getItem('userId');
         const rol = localStorage.getItem('rolUsuario');
-        if (!userId || !rol) {
-            window.location.href = '/login.html';
+        const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+        if (!userId || !rol || !idSucursal) {
+            window.location.href = '/sucursal.html';
         } else {
             document.getElementById('user-info').textContent = `Admin: ${localStorage.getItem('nombreUsuario') || 'Usuario'} (${rol})`;
+            const colorSuc = localStorage.getItem('colorSucursal') || '#19A337';
+            document.documentElement.style.setProperty('--primary', colorSuc);
         }
 
         window.onload = () => { cargarUsuarios(); };
 
         async function cargarUsuarios() {
             try {
-                const response = await fetch('/api/usuario/listar');
+                const response = await fetch(`/api/usuario/listar?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
                 const result = await response.json();
                 if (result.success) {
                     usuarios = result.data;
@@ -288,7 +291,8 @@
                 contraseña: document.getElementById('txtPassword').value.trim(),
                 rol: document.getElementById('txtRol').value,
                 activo: document.getElementById('txtActivo').checked,
-                fotoPerfil: fotoBase64
+                fotoPerfil: fotoBase64,
+                idSucursal: parseInt(localStorage.getItem('idSucursal') || '1')
             };
 
             if (!datos.nombreCompleto || !datos.alias || !datos.contraseña || !datos.rol) {

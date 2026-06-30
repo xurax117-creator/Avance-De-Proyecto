@@ -16,28 +16,30 @@ import java.util.stream.Collectors;
 public class PromocionDAO {
 
     // N+1 resuelto: 2 queries en total en lugar de 3N
-    public List<PromocionData> obtenerTodas() {
+    public List<PromocionData> obtenerTodas(int idSucursal) {
         List<PromocionData> lista = new ArrayList<>();
         try (Connection c = new Conexion().conectar()) {
             Map<Integer, PromocionData> promoMap = new LinkedHashMap<>();
             String sqlPromos = """
                 SELECT id_promocion, nombre, tipo, cantidad_requerida, precio_especial,
                        descuento_porcentaje, descuento_fijo, fecha_inicio, fecha_fin, activo
-                FROM promociones ORDER BY id_promocion DESC
+                FROM promociones WHERE id_sucursal = ? ORDER BY id_promocion DESC
             """;
-            try (PreparedStatement stmt = c.prepareStatement(sqlPromos);
-                 ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    PromocionData promo = new PromocionData(
-                        rs.getInt("id_promocion"), rs.getString("nombre"), rs.getString("tipo"),
-                        rs.getDouble("cantidad_requerida"),
-                        rs.getObject("precio_especial")       != null ? rs.getDouble("precio_especial")       : null,
-                        rs.getObject("descuento_porcentaje")  != null ? rs.getDouble("descuento_porcentaje")  : null,
-                        rs.getObject("descuento_fijo")        != null ? rs.getDouble("descuento_fijo")        : null,
-                        rs.getDate("fecha_inicio"), rs.getDate("fecha_fin"), rs.getBoolean("activo")
-                    );
-                    promoMap.put(promo.idPromocion, promo);
-                    lista.add(promo);
+            try (PreparedStatement stmt = c.prepareStatement(sqlPromos)) {
+                stmt.setInt(1, idSucursal);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        PromocionData promo = new PromocionData(
+                            rs.getInt("id_promocion"), rs.getString("nombre"), rs.getString("tipo"),
+                            rs.getDouble("cantidad_requerida"),
+                            rs.getObject("precio_especial")       != null ? rs.getDouble("precio_especial")       : null,
+                            rs.getObject("descuento_porcentaje")  != null ? rs.getDouble("descuento_porcentaje")  : null,
+                            rs.getObject("descuento_fijo")        != null ? rs.getDouble("descuento_fijo")        : null,
+                            rs.getDate("fecha_inicio"), rs.getDate("fecha_fin"), rs.getBoolean("activo")
+                        );
+                        promoMap.put(promo.idPromocion, promo);
+                        lista.add(promo);
+                    }
                 }
             }
 
@@ -77,7 +79,6 @@ public class PromocionDAO {
         return data;
     }
 
-    // Carga productos e IDs de una sola promoción en una sola query
     private void cargarProductosDePromocion(PromocionData promo, Connection c) throws SQLException {
         String sql = """
             SELECT prod.id_producto, prod.nombre
@@ -102,7 +103,6 @@ public class PromocionDAO {
         }
     }
 
-    // Carga productos de N promociones en una sola query (en lote)
     private void cargarProductosEnLote(Map<Integer, PromocionData> promoMap, Connection c) throws SQLException {
         String ids = promoMap.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
         String sql = "SELECT pp.id_promocion, prod.id_producto, prod.nombre " +
@@ -146,8 +146,8 @@ public class PromocionDAO {
 
             String sql = """
                 INSERT INTO promociones (nombre, tipo, cantidad_requerida, precio_especial,
-                                         descuento_porcentaje, descuento_fijo, fecha_inicio, fecha_fin, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         descuento_porcentaje, descuento_fijo, fecha_inicio, fecha_fin, activo, id_sucursal)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
             int idPromocion = -1;
             try (PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -160,6 +160,7 @@ public class PromocionDAO {
                 stmt.setDate(7, request.fechaInicio != null ? java.sql.Date.valueOf(request.fechaInicio) : null);
                 stmt.setDate(8, request.fechaFin    != null ? java.sql.Date.valueOf(request.fechaFin)    : null);
                 stmt.setBoolean(9, request.activo);
+                stmt.setInt(10, request.sucursal > 0 ? request.sucursal : 1);
                 stmt.executeUpdate();
                 try (ResultSet rs = stmt.getGeneratedKeys()) {
                     if (rs.next()) idPromocion = rs.getInt(1);
@@ -227,7 +228,7 @@ public class PromocionDAO {
         return false;
     }
 
-    public List<PromocionData> obtenerPromocionesActivasPorProducto(int idProducto) {
+    public List<PromocionData> obtenerPromocionesActivasPorProducto(int idProducto, int idSucursal) {
         List<PromocionData> lista = new ArrayList<>();
         String sql = """
             SELECT DISTINCT p.id_promocion, p.nombre, p.tipo, p.cantidad_requerida,
@@ -235,7 +236,7 @@ public class PromocionDAO {
                    p.fecha_inicio, p.fecha_fin, p.activo
             FROM promociones p
             JOIN promocion_productos pp ON p.id_promocion = pp.id_promocion
-            WHERE pp.id_producto = ? AND p.activo = TRUE
+            WHERE pp.id_producto = ? AND p.activo = TRUE AND p.id_sucursal = ?
               AND (p.fecha_inicio IS NULL OR p.fecha_inicio <= CURDATE())
               AND (p.fecha_fin   IS NULL OR p.fecha_fin   >= CURDATE())
             ORDER BY p.tipo, p.cantidad_requerida DESC
@@ -243,6 +244,7 @@ public class PromocionDAO {
         try (Connection c = new Conexion().conectar();
              PreparedStatement stmt = c.prepareStatement(sql)) {
             stmt.setInt(1, idProducto);
+            stmt.setInt(2, idSucursal);
             Map<Integer, PromocionData> promoMap = new LinkedHashMap<>();
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -307,4 +309,5 @@ class PromocionRequest {
     public String fechaInicio;
     public String fechaFin;
     public boolean activo;
+    public int sucursal;
 }

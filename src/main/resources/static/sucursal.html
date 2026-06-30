@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Seleccionar Sucursal - MRKdito</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .logo-container { text-align: center; margin-bottom: 40px; }
+        .logo-container img { width: 260px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+        .titulo {
+            color: rgba(255,255,255,0.75);
+            font-size: 1.1em;
+            margin-top: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .sucursales-grid {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .sucursal-card {
+            background: white;
+            border-radius: 18px;
+            padding: 40px 50px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            min-width: 230px;
+            border: 3px solid transparent;
+        }
+        .sucursal-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 22px 44px rgba(0,0,0,0.4);
+        }
+        .sucursal-card .icono { font-size: 3.5em; margin-bottom: 14px; }
+        .sucursal-card .nombre {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 14px;
+            line-height: 1.3;
+        }
+        .indicador {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .btn-entrar {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-entrar:hover { opacity: 0.85; transform: scale(1.04); }
+        #cargando { color: rgba(255,255,255,0.8); font-size: 1.1em; }
+        #error-msg { color: #ff6b6b; font-size: 1em; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="/logo MRKdito.png" alt="MRKdito">
+        <p class="titulo">Selecciona tu sucursal</p>
+    </div>
+
+    <div class="sucursales-grid" id="grid">
+        <p id="cargando">Cargando sucursales...</p>
+    </div>
+    <p id="error-msg">Error al cargar sucursales. Recarga la página.</p>
+
+    <script>
+        window.onload = async () => {
+            // Si ya tiene sesión activa, ir al menú
+            if (localStorage.getItem('idSucursal') && localStorage.getItem('userId')) {
+                window.location.href = '/menu.html';
+                return;
+            }
+            // Limpiar datos de sesión pero no de sucursal
+            localStorage.removeItem('userId');
+            localStorage.removeItem('nombreUsuario');
+            localStorage.removeItem('rolUsuario');
+
+            try {
+                const resp = await fetch('/api/sucursales/activas');
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const sucursales = await resp.json();
+                const grid = document.getElementById('grid');
+                grid.innerHTML = '';
+
+                if (sucursales.length === 0) {
+                    grid.innerHTML = '<p style="color:white">No hay sucursales configuradas.</p>';
+                    return;
+                }
+
+                sucursales.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = 'sucursal-card';
+                    card.style.borderColor = s.color;
+                    card.innerHTML = `
+                        <div class="icono">🏪</div>
+                        <div class="nombre">
+                            <span class="indicador" style="background:${s.color}"></span>${s.nombre}
+                        </div>
+                        <button class="btn-entrar" style="background:${s.color}">Entrar →</button>
+                    `;
+                    card.onclick = () => seleccionarSucursal(s);
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                document.getElementById('cargando').style.display = 'none';
+                document.getElementById('error-msg').style.display = 'block';
+                console.error(e);
+            }
+        };
+
+        function seleccionarSucursal(s) {
+            localStorage.setItem('idSucursal', s.id);
+            localStorage.setItem('nombreSucursal', s.nombre);
+            localStorage.setItem('colorSucursal', s.color);
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

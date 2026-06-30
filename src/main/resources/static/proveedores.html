@@ -134,6 +134,12 @@
 </div>
 
 <script>
+    const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+    if (!idSucursal || !localStorage.getItem('userId')) {
+        window.location.href = '/sucursal.html';
+    }
+    document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
     let todosLosProveedores = [];
 
     // Función para mostrar toast notifications
@@ -163,7 +169,7 @@
             const mostrarDesactivados = document.getElementById('chkMostrarDesactivados').checked;
             const filtro = document.getElementById('txtBusqueda').value;
             
-            const resp = await fetch('/api/inventario/todos-proveedores');
+            const resp = await fetch(`/api/inventario/todos-proveedores?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
             let data = await resp.json();
             
             // Filtrar por búsqueda
@@ -241,7 +247,8 @@
             id: document.getElementById('p_id').value,
             nombre: document.getElementById('p_nombre').value,
             contacto: document.getElementById('p_contacto').value,
-            telefono: document.getElementById('p_telefono').value
+            telefono: document.getElementById('p_telefono').value,
+            sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 
         if(!data.nombre) {

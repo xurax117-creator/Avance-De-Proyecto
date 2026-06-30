@@ -168,6 +168,12 @@
 </div>
 
 <script>
+const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+if (!idSucursal || !localStorage.getItem('userId')) {
+    window.location.href = '/sucursal.html';
+}
+document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
 let productos = [];
 let promociones = [];
 let productosSeleccionados = [];
@@ -185,7 +191,7 @@ function showToast(message, type = 'info') {
 }
 
 function cargarProductos() {
-    fetch('/api/inventario/todos')
+    fetch(`/api/inventario/todos?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
         .then(response => response.json())
         .then(data => {
             productos = data;
@@ -203,7 +209,7 @@ function buscarProductos() {
         return;
     }
 
-    fetch('/api/inventario/buscar?q=' + encodeURIComponent(query))
+    fetch(`/api/inventario/buscar?q=${encodeURIComponent(query)}&sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
         .then(response => response.json())
         .then(data => {
             listaDiv.innerHTML = '';
@@ -279,7 +285,7 @@ function actualizarProductosSeleccionados() {
 }
 
 function cargarPromociones() {
-    fetch('/api/promociones/todas')
+    fetch(`/api/promociones/todas?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
         .then(response => response.json())
         .then(data => {
             promociones = data;
@@ -399,7 +405,8 @@ function guardarPromocion() {
         descuento_fijo: document.getElementById('promo_descuento_fijo').value ? parseFloat(document.getElementById('promo_descuento_fijo').value) : null,
         fecha_inicio: document.getElementById('promo_fecha_inicio').value || null,
         fecha_fin: document.getElementById('promo_fecha_fin').value || null,
-        activo: document.getElementById('promo_activo').checked
+        activo: document.getElementById('promo_activo').checked,
+        sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
     };
 
     if (!data.nombre || !data.productos || data.productos.length === 0 || !data.cantidad_requerida) {

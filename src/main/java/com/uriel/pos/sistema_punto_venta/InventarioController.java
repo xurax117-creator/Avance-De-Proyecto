@@ -10,31 +10,33 @@ import java.util.Base64;
 public class InventarioController {
 
     @GetMapping("/todos")
-    public List<Map<String, Object>> listarTodos() {
+    public List<Map<String, Object>> listarTodos(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT p.*, prov.nombre as nombre_proveedor " +
                      "FROM productos p " +
                      "LEFT JOIN proveedores prov ON p.id_proveedor = prov.id_proveedor " +
-                     "WHERE p.activo = TRUE ORDER BY p.nombre ASC";
+                     "WHERE p.activo = TRUE AND p.id_sucursal = ? ORDER BY p.nombre ASC";
         try (Connection c = new Conexion().conectar();
-             PreparedStatement stmt = c.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> p = new HashMap<>();
-                p.put("id_producto", rs.getInt("id_producto"));
-                p.put("codigo_barras", rs.getString("codigo_barras"));
-                p.put("nombre", rs.getString("nombre"));
-                p.put("categoria", rs.getString("categoria"));
-                p.put("nombre_proveedor", rs.getString("nombre_proveedor"));
-                p.put("id_proveedor", rs.getInt("id_proveedor"));
-                p.put("precio_compra", rs.getDouble("precio_compra"));
-                p.put("precio_venta", rs.getDouble("precio_venta"));
-                p.put("existencias_act", rs.getInt("existencias_act"));
-                p.put("existencias_min", rs.getInt("existencias_min"));
-                p.put("activo", rs.getBoolean("activo"));
-                byte[] fotoBytes = rs.getBytes("foto_producto_blob");
-                p.put("foto_producto", fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null);
-                lista.add(p);
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            stmt.setInt(1, sucursal);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> p = new HashMap<>();
+                    p.put("id_producto", rs.getInt("id_producto"));
+                    p.put("codigo_barras", rs.getString("codigo_barras"));
+                    p.put("nombre", rs.getString("nombre"));
+                    p.put("categoria", rs.getString("categoria"));
+                    p.put("nombre_proveedor", rs.getString("nombre_proveedor"));
+                    p.put("id_proveedor", rs.getInt("id_proveedor"));
+                    p.put("precio_compra", rs.getDouble("precio_compra"));
+                    p.put("precio_venta", rs.getDouble("precio_venta"));
+                    p.put("existencias_act", rs.getInt("existencias_act"));
+                    p.put("existencias_min", rs.getInt("existencias_min"));
+                    p.put("activo", rs.getBoolean("activo"));
+                    byte[] fotoBytes = rs.getBytes("foto_producto_blob");
+                    p.put("foto_producto", fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null);
+                    lista.add(p);
+                }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
@@ -44,6 +46,7 @@ public class InventarioController {
     public Map<String, Object> guardar(@RequestBody Map<String, Object> p) {
         Map<String, Object> res = new HashMap<>();
         boolean esUpdate = p.get("id_producto") != null && !p.get("id_producto").toString().isEmpty();
+        int sucursal = p.get("sucursal") != null ? Integer.parseInt(p.get("sucursal").toString()) : 1;
 
         byte[] fotoBytes = null;
         if (p.get("foto_producto") != null && !p.get("foto_producto").toString().isEmpty()) {
@@ -59,8 +62,8 @@ public class InventarioController {
                 : "UPDATE productos SET codigo_barras=?, nombre=?, categoria=?, id_proveedor=?, precio_compra=?, precio_venta=?, existencias_act=?, existencias_min=? WHERE id_producto=?";
         } else {
             sql = fotoBytes != null
-                ? "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min, foto_producto_blob) VALUES (?,?,?,?,?,?,?,?,?)"
-                : "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min) VALUES (?,?,?,?,?,?,?,?)";
+                ? "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min, foto_producto_blob, id_sucursal) VALUES (?,?,?,?,?,?,?,?,?,?)"
+                : "INSERT INTO productos (codigo_barras, nombre, categoria, id_proveedor, precio_compra, precio_venta, existencias_act, existencias_min, id_sucursal) VALUES (?,?,?,?,?,?,?,?,?)";
         }
 
         try (Connection c = new Conexion().conectar();
@@ -81,7 +84,8 @@ public class InventarioController {
                 if (fotoBytes != null) { ps.setBytes(9, fotoBytes); ps.setInt(10, Integer.parseInt(p.get("id_producto").toString())); }
                 else                   { ps.setInt(9, Integer.parseInt(p.get("id_producto").toString())); }
             } else {
-                if (fotoBytes != null) { ps.setBytes(9, fotoBytes); }
+                if (fotoBytes != null) { ps.setBytes(9, fotoBytes); ps.setInt(10, sucursal); }
+                else                   { ps.setInt(9, sucursal); }
             }
             ps.executeUpdate();
             res.put("success", true);
@@ -94,37 +98,41 @@ public class InventarioController {
     }
 
     @GetMapping("/proveedores")
-    public List<Map<String, Object>> listarProveedores() {
+    public List<Map<String, Object>> listarProveedores(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT id_proveedor, nombre FROM proveedores WHERE activo = TRUE ORDER BY nombre ASC";
+        String sql = "SELECT id_proveedor, nombre FROM proveedores WHERE activo = TRUE AND id_sucursal = ? ORDER BY nombre ASC";
         try (Connection c = new Conexion().conectar();
-             PreparedStatement stmt = c.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", rs.getInt("id_proveedor"));
-                m.put("nombre", rs.getString("nombre"));
-                lista.add(m);
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            stmt.setInt(1, sucursal);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", rs.getInt("id_proveedor"));
+                    m.put("nombre", rs.getString("nombre"));
+                    lista.add(m);
+                }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
     }
 
     @GetMapping("/todos-proveedores")
-    public List<Map<String, Object>> listarTodosProveedores() {
+    public List<Map<String, Object>> listarTodosProveedores(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT id_proveedor, nombre, contacto, telefono, activo FROM proveedores ORDER BY nombre ASC";
+        String sql = "SELECT id_proveedor, nombre, contacto, telefono, activo FROM proveedores WHERE id_sucursal = ? ORDER BY nombre ASC";
         try (Connection c = new Conexion().conectar();
-             PreparedStatement stmt = c.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", rs.getInt("id_proveedor"));
-                m.put("nombre", rs.getString("nombre"));
-                m.put("contacto", rs.getString("contacto"));
-                m.put("telefono", rs.getString("telefono"));
-                m.put("activo", rs.getBoolean("activo"));
-                lista.add(m);
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            stmt.setInt(1, sucursal);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", rs.getInt("id_proveedor"));
+                    m.put("nombre", rs.getString("nombre"));
+                    m.put("contacto", rs.getString("contacto"));
+                    m.put("telefono", rs.getString("telefono"));
+                    m.put("activo", rs.getBoolean("activo"));
+                    lista.add(m);
+                }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
@@ -137,6 +145,7 @@ public class InventarioController {
         String nombre  = datos.get("nombre")   != null ? datos.get("nombre").toString()   : "";
         String contacto= datos.get("contacto") != null ? datos.get("contacto").toString() : "";
         String telefono= datos.get("telefono") != null ? datos.get("telefono").toString() : "";
+        int sucursal   = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
 
         if (nombre.isEmpty()) {
             res.put("success", false);
@@ -159,10 +168,10 @@ public class InventarioController {
                 res.put("message", "Error: " + e.getMessage());
             }
         } else {
-            String sql = "INSERT INTO proveedores (nombre, contacto, telefono) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO proveedores (nombre, contacto, telefono, id_sucursal) VALUES (?, ?, ?, ?)";
             try (Connection c = new Conexion().conectar();
                  PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setString(1, nombre); ps.setString(2, contacto); ps.setString(3, telefono);
+                ps.setString(1, nombre); ps.setString(2, contacto); ps.setString(3, telefono); ps.setInt(4, sucursal);
                 ps.executeUpdate();
                 res.put("success", true);
                 res.put("message", "Proveedor guardado correctamente");
@@ -230,6 +239,7 @@ public class InventarioController {
             int cantidad   = Integer.parseInt(datos.get("cantidad").toString());
             String nota    = datos.get("nota") != null ? datos.get("nota").toString() : "";
             int idUsuario  = Integer.parseInt(datos.get("id_usuario").toString());
+            int sucursal   = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
             Double precioCompra = datos.get("precio_compra") != null && !datos.get("precio_compra").toString().isEmpty()
                 ? Double.parseDouble(datos.get("precio_compra").toString()) : null;
 
@@ -251,10 +261,11 @@ public class InventarioController {
                 psUpdate.executeUpdate();
             }
 
-            String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada) VALUES (?, ?, ?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'))";
+            String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada, id_sucursal) VALUES (?, ?, ?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'), ?)";
             try (PreparedStatement psInsert = c.prepareStatement(sqlInsert)) {
                 psInsert.setInt(1, idProducto); psInsert.setInt(2, cantidad);
                 psInsert.setString(3, nota);    psInsert.setInt(4, idUsuario);
+                psInsert.setInt(5, sucursal);
                 psInsert.executeUpdate();
             }
 
@@ -269,26 +280,28 @@ public class InventarioController {
     }
 
     @GetMapping("/historial-entradas")
-    public List<Map<String, Object>> historialEntradas() {
+    public List<Map<String, Object>> historialEntradas(@RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT e.*, p.nombre as nombre_producto, u.nombre_completo as nombre_usuario " +
                      "FROM entradas_inventario e " +
                      "LEFT JOIN productos p ON e.id_producto = p.id_producto " +
                      "LEFT JOIN usuarios u ON e.id_usuario = u.id_usuario " +
-                     "ORDER BY e.fecha_entrada DESC LIMIT 20";
+                     "WHERE e.id_sucursal = ? ORDER BY e.fecha_entrada DESC LIMIT 20";
         try (Connection c = new Conexion().conectar();
-             PreparedStatement stmt = c.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> e = new HashMap<>();
-                e.put("id_entrada",      rs.getInt("id_entrada"));
-                e.put("id_producto",     rs.getInt("id_producto"));
-                e.put("nombre_producto", rs.getString("nombre_producto"));
-                e.put("cantidad",        rs.getInt("cantidad"));
-                e.put("nota",            rs.getString("nota"));
-                e.put("nombre_usuario",  rs.getString("nombre_usuario"));
-                e.put("fecha_entrada",   rs.getTimestamp("fecha_entrada").toString());
-                lista.add(e);
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            stmt.setInt(1, sucursal);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> e = new HashMap<>();
+                    e.put("id_entrada",      rs.getInt("id_entrada"));
+                    e.put("id_producto",     rs.getInt("id_producto"));
+                    e.put("nombre_producto", rs.getString("nombre_producto"));
+                    e.put("cantidad",        rs.getInt("cantidad"));
+                    e.put("nota",            rs.getString("nota"));
+                    e.put("nombre_usuario",  rs.getString("nombre_usuario"));
+                    e.put("fecha_entrada",   rs.getTimestamp("fecha_entrada").toString());
+                    lista.add(e);
+                }
             }
         } catch (Exception e) { e.printStackTrace(); }
         return lista;
@@ -298,25 +311,22 @@ public class InventarioController {
     public Map<String, Object> listarPaginado(@RequestParam(defaultValue = "1") int pagina,
                                                @RequestParam(defaultValue = "20") int limite,
                                                @RequestParam(defaultValue = "") String filtro,
-                                               @RequestParam(defaultValue = "0") int idProveedor) {
+                                               @RequestParam(defaultValue = "0") int idProveedor,
+                                               @RequestParam(defaultValue = "1") int sucursal) {
         Map<String, Object> res = new HashMap<>();
         List<Map<String, Object>> lista = new ArrayList<>();
         boolean tieneFiltro   = !filtro.isEmpty();
         boolean tieneProveedor = idProveedor > 0;
 
-        StringBuilder where = new StringBuilder();
-        if (tieneFiltro || tieneProveedor) {
-            where.append(" WHERE ");
-            if (tieneFiltro)   where.append("(p.nombre LIKE ? OR p.codigo_barras LIKE ?) ");
-            if (tieneFiltro && tieneProveedor) where.append("AND ");
-            if (tieneProveedor) where.append("p.id_proveedor = ? ");
-        }
+        StringBuilder where = new StringBuilder(" WHERE p.id_sucursal = ?");
+        if (tieneFiltro)   where.append(" AND (p.nombre LIKE ? OR p.codigo_barras LIKE ?)");
+        if (tieneProveedor) where.append(" AND p.id_proveedor = ?");
 
         try (Connection c = new Conexion().conectar()) {
-            // Total de registros
             int totalRegistros = 0;
             try (PreparedStatement psCount = c.prepareStatement("SELECT COUNT(*) as total FROM productos p" + where)) {
                 int idx = 1;
+                psCount.setInt(idx++, sucursal);
                 if (tieneFiltro)    { psCount.setString(idx++, "%" + filtro + "%"); psCount.setString(idx++, "%" + filtro + "%"); }
                 if (tieneProveedor) { psCount.setInt(idx, idProveedor); }
                 try (ResultSet rs = psCount.executeQuery()) {
@@ -324,13 +334,13 @@ public class InventarioController {
                 }
             }
 
-            // Productos paginados — subconsulta O(n²) eliminada, el # se calcula en el cliente
             String sql = "SELECT p.*, prov.nombre as nombre_proveedor " +
                          "FROM productos p " +
                          "LEFT JOIN proveedores prov ON p.id_proveedor = prov.id_proveedor" +
                          where + " ORDER BY p.nombre ASC LIMIT ? OFFSET ?";
             try (PreparedStatement stmt = c.prepareStatement(sql)) {
                 int idx = 1;
+                stmt.setInt(idx++, sucursal);
                 if (tieneFiltro)    { stmt.setString(idx++, "%" + filtro + "%"); stmt.setString(idx++, "%" + filtro + "%"); }
                 if (tieneProveedor) { stmt.setInt(idx++, idProveedor); }
                 stmt.setInt(idx++, limite);
@@ -369,16 +379,16 @@ public class InventarioController {
     }
 
     @GetMapping("/buscar")
-    public List<Map<String, Object>> buscarProductos(@RequestParam String q) {
+    public List<Map<String, Object>> buscarProductos(@RequestParam String q, @RequestParam(defaultValue = "1") int sucursal) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT p.id_producto, p.codigo_barras, p.nombre, p.precio_venta, p.existencias_act, p.foto_producto_blob, p.activo " +
                      "FROM productos p " +
-                     "WHERE (p.nombre LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_barras_secundario LIKE ?) " +
+                     "WHERE (p.nombre LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_barras_secundario LIKE ?) AND p.id_sucursal = ? " +
                      "ORDER BY p.nombre ASC LIMIT 20";
         try (Connection c = new Conexion().conectar();
              PreparedStatement stmt = c.prepareStatement(sql)) {
             String like = "%" + q + "%";
-            stmt.setString(1, like); stmt.setString(2, like); stmt.setString(3, like);
+            stmt.setString(1, like); stmt.setString(2, like); stmt.setString(3, like); stmt.setInt(4, sucursal);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> p = new HashMap<>();

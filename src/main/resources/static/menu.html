@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <title>Menú Principal - MRKdito POS</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            padding: 50px; 
-            background-color: #f4f4f4; 
+        :root { --primary: #19A337; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f4;
             margin: 0;
         }
         h1 { color: #333; margin-bottom: 5px; }
-        
+
         .user-card {
             background-color: #fff;
             display: inline-block;
@@ -30,15 +31,25 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .rol-badge {
-            background-color: #19A337;
+            background-color: var(--primary);
             color: white;
             padding: 3px 12px;
             border-radius: 20px;
             font-size: 0.8em;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+        .sucursal-badge {
+            background-color: #f0f0f0;
+            color: #555;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            border: 1px solid #ddd;
         }
 
         .menu-container {
@@ -68,11 +79,11 @@
         .menu-item:hover {
             transform: translateY(-10px);
             box-shadow: 0 15px 30px rgba(0,0,0,0.12);
-            border-color: #19A337;
+            border-color: var(--primary);
         }
         .menu-item h3 {
             margin: 15px 0 8px 0;
-            color: #19A337;
+            color: var(--primary);
             font-size: 1.3em;
         }
         .menu-item p {
@@ -81,32 +92,24 @@
             color: #666;
             line-height: 1.4;
         }
-        .icon {
-            font-size: 3em;
-        }
-        .logout {
-            border-bottom: 4px solid #dc3545;
-        }
-        .logout:hover {
-            border-color: #dc3545;
-            background-color: #fff5f5;
-        }
-        .logout h3 {
-            color: #dc3545;
-        }
+        .icon { font-size: 3em; }
+        .logout { border-bottom: 4px solid #dc3545; }
+        .logout:hover { border-color: #dc3545; background-color: #fff5f5; }
+        .logout h3 { color: #dc3545; }
     </style>
 </head>
 <body>
 
     <h1>Bienvenido al MRKdito POS</h1>
-    
+
     <div class="user-card">
         <p id="user-display">
             👤 <span id="txtNombre">Cargando...</span>
             <span id="txtRol" class="rol-badge">...</span>
+            <span id="txtSucursal" class="sucursal-badge">...</span>
         </p>
     </div>
-    
+
     <div class="menu-container">
         <a href="/venta.html" class="menu-item">
             <span class="icon">🛒</span>
@@ -149,7 +152,7 @@
             <h3>Proveedores</h3>
             <p>Gestionar proveedores del negocio.</p>
         </a>
-        
+
         <a href="javascript:void(0)" onclick="logout()" class="menu-item logout">
             <span class="icon">🚪</span>
             <h3>Salir</h3>
@@ -158,24 +161,32 @@
     </div>
 
     <script>
-        const userId = localStorage.getItem('userId');
-        const nombre = localStorage.getItem('nombreUsuario');
-        const rol = localStorage.getItem('rolUsuario');
-        
-        if (!userId || !nombre) {
-            window.location.href = '/login.html';
+        const userId       = localStorage.getItem('userId');
+        const nombre       = localStorage.getItem('nombreUsuario');
+        const rol          = localStorage.getItem('rolUsuario');
+        const idSucursal   = localStorage.getItem('idSucursal');
+        const nombreSuc    = localStorage.getItem('nombreSucursal');
+        const colorSuc     = localStorage.getItem('colorSucursal') || '#19A337';
+
+        if (!userId || !nombre || !idSucursal) {
+            window.location.href = '/sucursal.html';
         } else {
             document.getElementById('txtNombre').textContent = nombre;
             document.getElementById('txtRol').textContent = rol;
+            document.getElementById('txtSucursal').textContent = '🏪 ' + (nombreSuc || 'Sucursal');
+
+            // Aplicar color de sucursal
+            document.documentElement.style.setProperty('--primary', colorSuc);
+            document.getElementById('txtRol').style.backgroundColor = colorSuc;
         }
-        
+
         function logout() {
-            if(confirm("¿Estás seguro que deseas cerrar sesión?")) {
+            if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
                 localStorage.clear();
-                window.location.href = '/login.html';
+                window.location.href = '/sucursal.html';
             }
         }
-        
+
         window.history.pushState(null, null, window.location.href);
         window.onpopstate = function () {
             window.history.go(1);

@@ -18,14 +18,15 @@ public class UsuarioController {
         public String rol;
         public Boolean activo;
         public String fotoPerfil;
+        public int idSucursal;
     }
 
     @GetMapping("/listar")
-    public Map<String, Object> listarUsuarios() {
+    public Map<String, Object> listarUsuarios(@RequestParam(defaultValue = "1") int sucursal) {
         Usuario oper = new Usuario();
         Map<String, Object> response = new HashMap<>();
         try {
-            List<UsuarioData> usuarios = oper.obtenerTodos();
+            List<UsuarioData> usuarios = oper.obtenerTodos(sucursal);
             response.put("success", true);
             response.put("data", usuarios);
         } catch (Exception e) {
@@ -87,12 +88,15 @@ public class UsuarioController {
                 }
             }
 
+            int idSucursal = request.idSucursal > 0 ? request.idSucursal : 1;
+
             boolean resultado = oper.crearUsuario(
                 request.nombreCompleto.trim(),
                 request.alias.trim(),
                 request.contraseña.trim(),
                 rol,
-                fotoBytes
+                fotoBytes,
+                idSucursal
             );
 
             if (resultado) {
