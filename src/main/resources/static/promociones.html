@@ -3,111 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <title>Promociones - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        :root {
-            --primary: #19A337;
-            --danger: #dc3545;
-            --dark: #343a40;
-            --light: #f4f7f6;
-        }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 20px; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h2 { margin: 0; color: var(--dark); }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background-color: #f8f9fa; color: #666; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #fcfcfc; cursor: pointer; }
-
-        .promocion-inactiva { opacity: 0.6; background-color: #f5f5f5; }
-        .promocion-inactiva td { text-decoration: line-through; color: #999; }
-
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-nuevo { background: var(--primary); color: white; }
-        .btn-nuevo:hover { background: #158a2e; }
-        .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
-        .btn-eliminar { background: var(--danger); color: white; padding: 6px 12px; font-size: 12px; }
-        .btn-eliminar:hover { background: #c82333; }
-        .btn-editar { background: #ffc107; color: #333; padding: 6px 12px; font-size: 12px; }
-        .btn-editar:hover { background: #e0a800; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
-        .modal-content { background: white; margin: 3% auto; padding: 30px; width: 600px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .full { grid-column: span 2; }
-        label { font-size: 13px; font-weight: 600; color: #555; }
-        .modal-footer { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
-
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .promocion-inactiva { opacity: 0.5; }
+        .promocion-inactiva td { text-decoration: line-through; color: #9ca3af; }
 
         .tipo-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
-        .tipo-buy_x_get_y { background: #e7f3ff; color: #0066cc; }
-        .tipo-percent_off { background: #fff2e8; color: #ff6600; }
-        .tipo-fixed_discount { background: #f0f9ff; color: #0099cc; }
 
-        .help-text { font-size: 11px; color: #888; margin-top: 5px; }
+        .tipo-buy_x_get_y     { background: #dbeafe; color: #1d4ed8; }
+        .tipo-percent_off     { background: #fff7ed; color: #c2410c; }
+        .tipo-fixed_discount  { background: #ecfdf5; color: #047857; }
+
+        .btn-editar, .btn-eliminar {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: filter 0.15s;
+            margin-right: 3px;
+        }
+
+        .btn-editar  { background: #fef3c7; color: #92400e; }
+        .btn-eliminar { background: #fee2e2; color: #b91c1c; }
+        .btn-editar:hover, .btn-eliminar:hover { filter: brightness(0.9); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,15,30,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 32px 16px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 620px;
+            margin: 0 auto;
+            padding: 28px;
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-content h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .full { grid-column: span 2; }
+
+        .help-text { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+        .modal-footer {
+            margin-top: 22px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .product-search-wrap {
+            display: flex;
+            gap: 8px;
+        }
+
+        #productos_seleccionados {
+            min-height: 38px;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .prod-tag {
+            background: var(--primary);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .prod-tag-remove {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.8;
+        }
+
+        .prod-tag-remove:hover { opacity: 1; }
+
+        #resultados_busqueda {
+            margin-top: 8px;
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            display: none;
+        }
+
+        #lista_resultados > div {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        #lista_resultados > div:last-child { border-bottom: none; }
+        #lista_resultados > div:hover { background: #f9fafb; }
+
+        .modal-form .form-group { margin-bottom: 0; }
+        .modal-form .form-group label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+        .modal-form .form-group input,
+        .modal-form .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .modal-form .form-group input:focus,
+        .modal-form .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(25,163,55,0.10);
+        }
+
+        .promo-active-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .promo-active-label input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+
 <div id="toastContainer" class="toast-container"></div>
 
-<div class="card">
-    <div class="header">
-        <h2>🏷️ Gestión de Promociones</h2>
-        <div>
-            <button class="btn btn-volver" onclick="window.location.href='/menu.html'">Volver</button>
-            <button class="btn btn-nuevo" onclick="abrirModal()">+ Nueva Promoción</button>
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>🏷️</span> Promociones</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="abrirModal()">+ Nueva Promoción</button>
+            </div>
+        </header>
+        <div class="content-scroll">
+
+            <div class="card">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Productos</th>
+                                <th>Cant. Req.</th>
+                                <th>Precio / Descuento</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaPromociones"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Productos</th>
-                <th>Cantidad Requerida</th>
-                <th>Precio Especial / Descuento</th>
-                <th>Fecha Inicio</th>
-                <th>Fecha Fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="listaPromociones">
-        </tbody>
-    </table>
 </div>
 
+<!-- Modal Promoción -->
 <div id="modalPromocion" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitulo" style="margin-top:0">Promoción</h3>
+        <h3 id="modalTitulo">Promoción</h3>
         <input type="hidden" id="promo_id">
 
-        <div class="form-grid">
-            <div class="full">
+        <div class="form-grid modal-form">
+
+            <div class="full form-group">
                 <label>Nombre de la Promoción</label>
                 <input type="text" id="promo_nombre" placeholder="Ej. 2x1 en cervezas">
             </div>
-            <div>
+
+            <div class="form-group">
                 <label>Tipo de Promoción</label>
                 <select id="promo_tipo" onchange="cambiarCampos()">
                     <option value="buy_x_get_y">Compra X paga Y</option>
@@ -115,58 +255,68 @@
                     <option value="fixed_discount">Descuento fijo</option>
                 </select>
             </div>
-            <div>
+
+            <div class="form-group">
                 <label>Cantidad Requerida</label>
                 <input type="number" step="0.01" id="promo_cantidad" min="1">
             </div>
-            <div class="full">
+
+            <div class="full form-group">
                 <label>Productos Participantes</label>
-                <div style="margin-bottom: 10px;">
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" id="buscador_productos" placeholder="Escribe para buscar productos y presiona Enter" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <button class="btn btn-nuevo" style="padding: 8px 15px;" onclick="buscarProductos()">Buscar</button>
-                    </div>
-                    <div id="productos_seleccionados" style="margin-top: 10px; min-height: 40px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                <div class="product-search-wrap">
+                    <input type="text" id="buscador_productos" placeholder="Escribe para buscar y presiona Enter..." style="flex:1">
+                    <button class="btn btn-secondary" onclick="buscarProductos()">Buscar</button>
                 </div>
-                <div id="resultados_busqueda" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; background: #fafafa; display: none;">
+                <div id="productos_seleccionados">
+                    <span style="color:#9ca3af;font-size:12px">Ningún producto seleccionado</span>
+                </div>
+                <div id="resultados_busqueda">
                     <div id="lista_resultados"></div>
                 </div>
-                <div class="help-text">Escriba el nombre del producto y presione Enter para buscar. Los productos seleccionados aparecen arriba.</div>
+                <p class="help-text">Presione Enter o el botón Buscar. Los productos seleccionados aparecen arriba.</p>
             </div>
-            <div id="campo_precio_especial">
+
+            <div id="campo_precio_especial" class="form-group">
                 <label>Precio Especial ($)</label>
                 <input type="number" step="0.01" id="promo_precio_especial">
             </div>
-            <div id="campo_descuento_porcentaje" style="display: none;">
+
+            <div id="campo_descuento_porcentaje" class="form-group" style="display:none">
                 <label>Descuento Porcentual (%)</label>
                 <input type="number" step="0.01" id="promo_descuento_porcentaje" min="0" max="100">
             </div>
-            <div id="campo_descuento_fijo" style="display: none;">
+
+            <div id="campo_descuento_fijo" class="form-group" style="display:none">
                 <label>Descuento Fijo ($)</label>
                 <input type="number" step="0.01" id="promo_descuento_fijo">
             </div>
-            <div>
+
+            <div class="form-group">
                 <label>Fecha Inicio (opcional)</label>
                 <input type="date" id="promo_fecha_inicio">
             </div>
-            <div>
+
+            <div class="form-group">
                 <label>Fecha Fin (opcional)</label>
                 <input type="date" id="promo_fecha_fin">
             </div>
+
             <div class="full">
-                <label>
-                    <input type="checkbox" id="promo_activo" checked> Activa
+                <label class="promo-active-label">
+                    <input type="checkbox" id="promo_activo" checked>
+                    Promoción Activa
                 </label>
             </div>
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-volver" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn btn-nuevo" onclick="guardarPromocion()">Guardar</button>
+            <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
         </div>
     </div>
 </div>
 
+<script src="/sidebar.js"></script>
 <script>
 const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
 if (!idSucursal || !localStorage.getItem('userId')) {
@@ -179,11 +329,12 @@ let promociones = [];
 let productosSeleccionados = [];
 
 function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    document.getElementById('toastContainer').appendChild(toast);
-
+    const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+    toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+    container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('fade-out');
         setTimeout(() => toast.remove(), 300);
@@ -192,11 +343,9 @@ function showToast(message, type = 'info') {
 
 function cargarProductos() {
     fetch(`/api/inventario/todos?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
-        .then(response => response.json())
-        .then(data => {
-            productos = data;
-        })
-        .catch(error => console.error('Error cargando productos:', error));
+        .then(r => r.json())
+        .then(data => { productos = data; })
+        .catch(err => console.error('Error cargando productos:', err));
 }
 
 function buscarProductos() {
@@ -210,44 +359,37 @@ function buscarProductos() {
     }
 
     fetch(`/api/inventario/buscar?q=${encodeURIComponent(query)}&sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             listaDiv.innerHTML = '';
             if (data.length === 0) {
-                listaDiv.innerHTML = '<p style="color: #888; margin: 0;">No se encontraron productos</p>';
+                listaDiv.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:12px">No se encontraron productos</div>';
             } else {
                 data.forEach(p => {
                     const yaSeleccionado = productosSeleccionados.some(ps => ps.id === p.id_producto);
                     const div = document.createElement('div');
-                    div.style.padding = '8px';
-                    div.style.marginBottom = '5px';
-                    div.style.cursor = yaSeleccionado ? 'not-allowed' : 'pointer';
-                    div.style.backgroundColor = yaSeleccionado ? '#a5d6a7' : '#fff';
-                    div.style.border = '1px solid #ddd';
-                    div.style.borderRadius = '4px';
-                    div.style.opacity = yaSeleccionado ? '0.6' : '1';
+                    div.style.cursor = yaSeleccionado ? 'default' : 'pointer';
+                    div.style.opacity = yaSeleccionado ? '0.5' : '1';
                     const nombreEscapado = p.nombre.replace(/'/g, "\\'");
                     div.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span>${p.nombre} - $${p.precio_venta}</span>
-                            ${yaSeleccionado 
-                                ? '<span style="color: #2e7d32; font-size: 12px;">✓ Seleccionado</span>'
-                                : '<button class="btn btn-nuevo" style="padding: 4px 8px; font-size: 12px;" onclick="seleccionarProducto(' + p.id_producto + ', \'' + nombreEscapado + '\')">+</button>'
-                            }
-                        </div>
+                        <span>${p.nombre} — <span style="color:#9ca3af">$${p.precio_venta}</span></span>
+                        ${yaSeleccionado
+                            ? '<span style="color:#15803d;font-size:12px;font-weight:600">✓ Seleccionado</span>'
+                            : `<button class="btn btn-primary btn-sm" onclick="seleccionarProducto(${p.id_producto}, '${nombreEscapado}')">+ Agregar</button>`
+                        }
                     `;
                     listaDiv.appendChild(div);
                 });
             }
             resultadosDiv.style.display = 'block';
         })
-        .catch(error => console.error('Error buscando productos:', error));
+        .catch(err => console.error('Error buscando productos:', err));
 }
 
 function seleccionarProducto(id, nombre) {
     const existe = productosSeleccionados.some(p => p.id === id);
     if (!existe) {
-        productosSeleccionados.push({id: id, nombre: nombre});
+        productosSeleccionados.push({ id, nombre });
         actualizarProductosSeleccionados();
         document.getElementById('buscador_productos').value = '';
         document.getElementById('resultados_busqueda').style.display = 'none';
@@ -263,21 +405,14 @@ function actualizarProductosSeleccionados() {
     const container = document.getElementById('productos_seleccionados');
     container.innerHTML = '';
     if (productosSeleccionados.length === 0) {
-        container.innerHTML = '<span style="color: #888; font-size: 12px;">Ningún producto seleccionado</span>';
+        container.innerHTML = '<span style="color:#9ca3af;font-size:12px">Ningún producto seleccionado</span>';
     } else {
         productosSeleccionados.forEach(p => {
             const tag = document.createElement('div');
-            tag.style.backgroundColor = '#4caf50';
-            tag.style.color = 'white';
-            tag.style.padding = '4px 8px';
-            tag.style.borderRadius = '12px';
-            tag.style.fontSize = '12px';
-            tag.style.display = 'flex';
-            tag.style.alignItems = 'center';
-            tag.style.gap = '6px';
+            tag.className = 'prod-tag';
             tag.innerHTML = `
                 <span>${p.nombre}</span>
-                <button onclick="eliminarProductoSeleccionado(${p.id})" style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; margin: 0;">×</button>
+                <button class="prod-tag-remove" onclick="eliminarProductoSeleccionado(${p.id})">×</button>
             `;
             container.appendChild(tag);
         });
@@ -286,44 +421,47 @@ function actualizarProductosSeleccionados() {
 
 function cargarPromociones() {
     fetch(`/api/promociones/todas?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`)
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             promociones = data;
             mostrarPromociones();
         })
-        .catch(error => console.error('Error cargando promociones:', error));
+        .catch(err => console.error('Error cargando promociones:', err));
 }
 
 function mostrarPromociones() {
     const tbody = document.getElementById('listaPromociones');
     tbody.innerHTML = '';
 
+    if (promociones.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:#9ca3af">No hay promociones registradas</td></tr>';
+        return;
+    }
+
     promociones.forEach(p => {
         const tr = document.createElement('tr');
         if (!p.activo) tr.className = 'promocion-inactiva';
 
         let descuentoTexto = '';
-        if (p.tipo === 'buy_x_get_y') {
-            descuentoTexto = `$${p.precio_especial || 0} por ${p.cantidad_requerida}`;
-        } else if (p.tipo === 'percent_off') {
-            descuentoTexto = `${p.descuento_porcentaje || 0}%`;
-        } else if (p.tipo === 'fixed_discount') {
-            descuentoTexto = `$${p.descuento_fijo || 0}`;
-        }
+        if (p.tipo === 'buy_x_get_y')        descuentoTexto = `$${p.precio_especial || 0} × ${p.cantidad_requerida}`;
+        else if (p.tipo === 'percent_off')    descuentoTexto = `${p.descuento_porcentaje || 0}%`;
+        else if (p.tipo === 'fixed_discount') descuentoTexto = `$${p.descuento_fijo || 0}`;
+
+        const tipoLabel = { buy_x_get_y: 'X→Y', percent_off: '% Desc.', fixed_discount: '$ Fijo' };
 
         tr.innerHTML = `
-            <td>${p.id_promocion}</td>
-            <td>${p.nombre}</td>
-            <td><span class="tipo-badge tipo-${p.tipo}">${p.tipo.replace('_', ' ')}</span></td>
-            <td>${p.productos_texto || ''}</td>
-            <td>${p.cantidad_requerida}</td>
-            <td>${descuentoTexto}</td>
-            <td>${p.fecha_inicio || 'Indefinido'}</td>
-            <td>${p.fecha_fin || 'Indefinido'}</td>
-            <td>${p.activo ? 'Activa' : 'Inactiva'}</td>
+            <td style="color:#9ca3af;font-size:12px">${p.id_promocion}</td>
+            <td style="font-weight:600">${p.nombre}</td>
+            <td><span class="tipo-badge tipo-${p.tipo}">${tipoLabel[p.tipo] || p.tipo}</span></td>
+            <td style="font-size:12px;color:#6b7280;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.productos_texto || '—'}</td>
+            <td style="text-align:center">${p.cantidad_requerida}</td>
+            <td style="font-weight:600">${descuentoTexto}</td>
+            <td style="font-size:12px;color:#6b7280">${p.fecha_inicio || 'Indefinido'}</td>
+            <td style="font-size:12px;color:#6b7280">${p.fecha_fin || 'Indefinido'}</td>
+            <td>${p.activo ? '<span class="badge badge-success">Activa</span>' : '<span class="badge badge-danger">Inactiva</span>'}</td>
             <td>
-                <button class="btn btn-editar" onclick="editarPromocion(${p.id_promocion})">Editar</button>
-                <button class="btn btn-eliminar" onclick="eliminarPromocion(${p.id_promocion})">Eliminar</button>
+                <button class="btn-editar" onclick="editarPromocion(${p.id_promocion})">✏️ Editar</button>
+                <button class="btn-eliminar" onclick="eliminarPromocion(${p.id_promocion})">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -351,16 +489,16 @@ function abrirModal(id = null) {
             cambiarCampos();
 
             fetch('/api/promociones/' + id)
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(promoDetalle => {
                     if (promoDetalle.productos_detalle && Array.isArray(promoDetalle.productos_detalle)) {
                         promoDetalle.productos_detalle.forEach(prod => {
-                            productosSeleccionados.push({id: prod.id, nombre: prod.nombre});
+                            productosSeleccionados.push({ id: prod.id, nombre: prod.nombre });
                         });
                         actualizarProductosSeleccionados();
                     }
                 })
-                .catch(error => console.error('Error cargando detalle:', error));
+                .catch(err => console.error('Error cargando detalle:', err));
         }
     } else {
         document.getElementById('modalTitulo').textContent = 'Nueva Promoción';
@@ -387,9 +525,9 @@ function cerrarModal() {
 
 function cambiarCampos() {
     const tipo = document.getElementById('promo_tipo').value;
-    document.getElementById('campo_precio_especial').style.display = tipo === 'buy_x_get_y' ? 'block' : 'none';
-    document.getElementById('campo_descuento_porcentaje').style.display = tipo === 'percent_off' ? 'block' : 'none';
-    document.getElementById('campo_descuento_fijo').style.display = tipo === 'fixed_discount' ? 'block' : 'none';
+    document.getElementById('campo_precio_especial').style.display      = tipo === 'buy_x_get_y'    ? 'block' : 'none';
+    document.getElementById('campo_descuento_porcentaje').style.display = tipo === 'percent_off'    ? 'block' : 'none';
+    document.getElementById('campo_descuento_fijo').style.display       = tipo === 'fixed_discount' ? 'block' : 'none';
 }
 
 function guardarPromocion() {
@@ -410,21 +548,19 @@ function guardarPromocion() {
     };
 
     if (!data.nombre || !data.productos || data.productos.length === 0 || !data.cantidad_requerida) {
-        showToast('Por favor complete todos los campos obligatorios y seleccione al menos un producto', 'warning');
+        showToast('Complete todos los campos obligatorios y seleccione al menos un producto', 'warning');
         return;
     }
 
-    const url = '/api/promociones/guardar';
     if (id) data.id_promocion = id;
 
-    fetch(url, {
+    fetch('/api/promociones/guardar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(result => {
-        console.log('Resultado de guardar promoción:', result);
         if (result.success) {
             showToast(result.message, 'success');
             cerrarModal();
@@ -433,8 +569,8 @@ function guardarPromocion() {
             showToast(result.message || 'Error al guardar', 'error');
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
+    .catch(err => {
+        console.error('Error:', err);
         showToast('Error al guardar promoción', 'error');
     });
 }
@@ -446,7 +582,7 @@ function editarPromocion(id) {
 function eliminarPromocion(id) {
     if (confirm('¿Está seguro de eliminar esta promoción?')) {
         fetch(`/api/promociones/eliminar/${id}`, { method: 'DELETE' })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(result => {
             if (result.success) {
                 showToast(result.message, 'success');
@@ -455,12 +591,17 @@ function eliminarPromocion(id) {
                 showToast('Error al eliminar', 'error');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(err => {
+            console.error('Error:', err);
             showToast('Error al eliminar promoción', 'error');
         });
     }
 }
+
+window.onclick = function(event) {
+    const modal = document.getElementById('modalPromocion');
+    if (event.target == modal) cerrarModal();
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     cargarProductos();
@@ -473,5 +614,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+
 </body>
 </html>

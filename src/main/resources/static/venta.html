@@ -1,160 +1,573 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"> <title>Punto de Venta - MRKdito</title>
+    <meta charset="UTF-8">
+    <title>Punto de Venta - MRKdito</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }
-        .header-venta { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        #panel-arriba { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 20px; }
-        input, button { padding: 12px; font-size: 16px; border: 1px solid #ddd; border-radius: 6px; }
-        button { cursor: pointer; background: #19A337; color: white; border: none; transition: 0.3s; }
-        .btn-regresar { background: #6c757d; font-size: 14px; padding: 8px 15px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
-        th, td { border: 1px solid #eee; padding: 15px; text-align: left; }
-        th { background-color: #f1f1f1; }
-        .promocion-badge { background: #ffc107; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .total-box { margin-top: 20px; padding: 20px; background: #defae7; border-left: 5px solid #19A337; text-align: right; }
-        .badge-cantidad { background: #19A337; color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-block; }
-        
-        .product-foto { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .no-foto { width: 50px; height: 50px; border-radius: 8px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #ddd; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0f172a;
+        }
+
+        .pos-layout {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── HEADER ── */
+        .pos-header {
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 0 20px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .pos-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pos-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.10);
+            color: rgba(255,255,255,0.65);
+            padding: 6px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .pos-back-btn:hover {
+            background: rgba(255,255,255,0.12);
+            color: white;
+        }
+
+        .pos-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.2px;
+        }
+
+        .pos-branch-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .pos-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #user-info {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* ── SCAN BAR ── */
+        .scan-bar {
+            background: #1e293b;
+            padding: 12px 20px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+
+        #txtClave {
+            padding: 11px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 9px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #txtClave::placeholder { color: rgba(255,255,255,0.3); }
+        #txtClave:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(25,163,55,0.2);
+        }
+
+        .scan-bar .btn-add {
+            padding: 11px 22px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 9px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: filter 0.15s;
+            white-space: nowrap;
+        }
+
+        .scan-bar .btn-add:hover { filter: brightness(0.9); }
+
+        /* ── CART TABLE ── */
+        .cart-area {
+            flex: 1;
+            overflow-y: auto;
+            background: #f0f4f9;
+        }
+
+        .cart-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .cart-table thead th {
+            background: #1e293b;
+            color: rgba(255,255,255,0.55);
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            padding: 10px 14px;
+            border-bottom: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .cart-table tbody td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13.5px;
+            background: white;
+            vertical-align: middle;
+        }
+
+        .cart-table tbody tr:hover td { background: #f9fafb; }
+
+        .product-foto {
+            width: 46px;
+            height: 46px;
+            border-radius: 9px;
+            object-fit: cover;
+            border: 1px solid #e5e7eb;
+        }
+
+        .no-foto {
+            width: 46px;
+            height: 46px;
+            border-radius: 9px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .badge-cantidad {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 13px;
+            transition: filter 0.15s;
+        }
+
+        .badge-cantidad:hover { filter: brightness(0.9); }
+
+        .promocion-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid #fde68a;
+        }
+
+        .btn-eliminar-item {
+            padding: 5px 12px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.15s;
+        }
+
+        .btn-eliminar-item:hover { background: #fecaca; }
+
+        /* ── TOTAL BAR ── */
+        .total-bar {
+            background: #1e293b;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-shrink: 0;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .total-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        #lblTotal {
+            font-size: 24px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+
+        #lblVentaId {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .total-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-cobrar {
+            padding: 12px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: filter 0.15s, transform 0.1s;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-cobrar:hover { filter: brightness(0.9); }
+        .btn-cobrar:active { transform: scale(0.98); }
+
+        .btn-cancelar-venta {
+            padding: 12px 20px;
+            background: rgba(220,38,38,0.15);
+            color: #f87171;
+            border: 1px solid rgba(220,38,38,0.25);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-cancelar-venta:hover { background: rgba(220,38,38,0.25); }
+
+        .btn-espera {
+            padding: 12px 18px;
+            background: rgba(217,119,6,0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(217,119,6,0.25);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-espera:hover { background: rgba(217,119,6,0.25); }
+
+        .btn-ver-espera {
+            padding: 12px 18px;
+            background: rgba(37,99,235,0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(37,99,235,0.25);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-ver-espera:hover { background: rgba(37,99,235,0.25); }
+
+        /* ── MODALS (common) ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,15,30,0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top: 0; color: #19A337; text-align: center; }
-        .modal-row { margin: 15px 0; }
-        .modal-row label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        .modal-row .amount { font-size: 24px; color: #19A337; font-weight: bold; text-align: center; }
-        .modal-row input { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #19A337; border-radius: 8px; box-sizing: border-box; }
-        .modal-result { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; margin: 15px 0; }
-        .modal-result .change { font-size: 28px; color: #dc3545; font-weight: bold; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-buttons button { flex: 1; padding: 12px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-pagar { background: #19A337; color: white; }
-        .btn-cancelar { background: #6c757d; color: white; }
-        
-        /* Estilos para modal de búsqueda */
-        #modalBusqueda .modal-content { width: 500px; max-height: 80vh; overflow-y: auto; }
-        .search-result-item { display: flex; align-items: center; gap: 15px; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
-        .search-result-item:hover { background-color: #f8f9fa; }
-        .search-result-item img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
-        
-        /* Estilos para modal de ventas en espera */
-        #modalVentasEspera .modal-content { width: 600px; max-height: 80vh; overflow-y: auto; }
-        .venta-espera-item { padding: 15px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; background: #f8f9fa; }
-        .venta-espera-item:hover { border-color: #19A337; background: #e8f5e9; }
-        .venta-espera-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .venta-espera-user { font-weight: bold; color: #333; }
-        .venta-espera-fecha { font-size: 12px; color: #666; }
-        .venta-espera-total { font-size: 20px; font-weight: bold; color: #19A337; }
-        .venta-espera-productos { font-size: 13px; color: #555; }
-        .btn-espera { background: #ffc107; color: #333; }
-        .btn-ver-espera { background: #17a2b8; color: white; }
-        
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 440px;
+            padding: 28px;
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-content h3 {
+            margin: 0 0 20px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #111827;
+            text-align: center;
+        }
+
+        .modal-row { margin-bottom: 16px; }
+        .modal-row label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+
+        .modal-row .amount {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--primary);
+            text-align: center;
+            letter-spacing: -1px;
+        }
+
+        .modal-row input[type="number"] {
+            width: 100%;
+            padding: 13px;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            box-sizing: border-box;
+            color: #111827;
+        }
+
+        .modal-row input[type="number"]:focus { box-shadow: 0 0 0 3px rgba(25,163,55,0.15); }
+
+        .modal-result {
+            background: #f0f4f9;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            margin: 14px 0;
+        }
+
+        .modal-result .change {
+            font-size: 32px;
+            font-weight: 800;
+            color: #dc2626;
+            letter-spacing: -1px;
+        }
+
+        .modal-result p { font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .modal-buttons button { flex: 1; }
+        .btn-pagar { background: var(--primary) !important; color: white !important; font-size: 15px !important; font-weight: 700 !important; }
+        .modal-buttons .btn-cancelar { background: #f3f4f6 !important; color: #374151 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+        /* Search modal */
+        #modalBusqueda .modal-content { max-width: 520px; max-height: 80vh; overflow-y: auto; padding: 24px; }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .search-result-item:hover { border-color: var(--primary); background: #f0fdf4; }
+
+        .search-result-item img {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Waiting sales modal */
+        #modalVentasEspera .modal-content { max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 24px; }
+
+        .venta-espera-item {
+            padding: 14px 16px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            background: #f9fafb;
+        }
+
+        .venta-espera-item:hover { border-color: var(--primary); background: #f0fdf4; }
+
+        .venta-espera-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .venta-espera-user { font-size: 13px; font-weight: 700; color: #111827; }
+        .venta-espera-fecha { font-size: 11.5px; color: #6b7280; }
+        .venta-espera-productos { font-size: 12.5px; color: #6b7280; margin-bottom: 8px; }
+        .venta-espera-total { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
     </style>
 </head>
 <body>
+
 <div id="toastContainer" class="toast-container"></div>
 
-    <div class="header-venta">
-        <button class="btn-regresar" onclick="window.location.href='/menu.html'">Menú Principal</button>
-        <h2>Terminal de Venta</h2>
-        <div id="user-info">Atiende: ...</div>
-    </div>
-    
-    <div id="panel-arriba">
-        <input type="text" id="txtClave" placeholder="Escanear Código de Barras o escribir nombre..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
-        <button onclick="agregarProducto()">➕ Agregar Producto</button>
-    </div>
+<div class="pos-layout">
 
-    <table>
-        <thead>
-            <tr>
-                <th>Foto</th>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Existencias</th>
-                <th>Cantidad</th>
-                <th>Precio Unit.</th>
-                <th>Promoción</th>
-                <th>Subtotal</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody id="cuerpoTabla"></tbody>
-    </table>
-
-    <div class="total-box">
-        <h2 id="lblTotal">Total: $0.00</h2>
-        <p id="lblVentaId">Venta ID: -1</p>
-    </div>
-
-    <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-        <button onclick="abrirModalPago()" style="background: #28a745; font-weight: bold; padding: 15px 30px;">✅ COBRAR</button>
-        <button onclick="confirmarCancelacion()" style="background: #dc3545; padding: 15px;">❌ Cancelar</button>
-    </div>
-    
-    <!-- Botones de ventas en espera -->
-    <div style="margin-top:15px; display:flex; gap:10px; justify-content:flex-start;">
-        <button onclick="ponerEnEspera()" class="btn-espera" style="font-weight: bold; padding: 15px 25px;">⏳ PONER EN ESPERA</button>
-        <button onclick="abrirVentasEnEspera()" class="btn-ver-espera" style="font-weight: bold; padding: 15px 25px;">📋 VER VENTAS EN ESPERA</button>
-    </div>
-
-    <!-- Modal de Pago -->
-    <div id="modalPago" class="modal-overlay">
-        <div class="modal-content">
-            <h3>💰 Cobrar Venta</h3>
-            <div class="modal-row">
-                <label>Total a Cobrar:</label>
-                <div id="modalTotal" class="amount">$0.00</div>
-            </div>
-            <div class="modal-row">
-                <label>Con cuanto te pagan:</label>
-                <input type="number" id="txtPago" placeholder="$0.00" step="0.01" min="0">
-            </div>
-            <div class="modal-result">
-                <div>Cambio a devolver:</div>
-                <div id="modalCambio" class="change">$0.00</div>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-cancelar" onclick="cerrarModalPago()">Cancelar</button>
-                <button class="btn-pagar" onclick="confirmarPago()">✅ Confirmar Pago</button>
-            </div>
+    <!-- HEADER -->
+    <div class="pos-header">
+        <div class="pos-header-left">
+            <button class="pos-back-btn" onclick="window.location.href='/menu.html'">← Menú</button>
+            <span class="pos-title">Terminal de Venta</span>
+        </div>
+        <div class="pos-header-right">
+            <span id="user-info" style="font-size:13px;color:rgba(255,255,255,0.5)"></span>
         </div>
     </div>
 
-    <!-- Modal de búsqueda de productos -->
-    <div id="modalBusqueda" class="modal-overlay">
-        <div class="modal-content">
-            <h3>🔍 Seleccionar Producto</h3>
-            <div id="resultadosBusqueda" style="margin-top: 15px;"></div>
-            <div class="modal-buttons">
-                <button class="btn-cancelar" onclick="cerrarModalBusqueda()">Cancelar</button>
-            </div>
+    <!-- SCAN BAR -->
+    <div class="scan-bar" id="panel-arriba">
+        <input type="text" id="txtClave" placeholder="Escanear código de barras o escribir nombre del producto..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
+        <button class="btn-add" onclick="agregarProducto()">+ Agregar</button>
+    </div>
+
+    <!-- CART TABLE -->
+    <div class="cart-area">
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Foto</th>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Stock</th>
+                    <th>Cant.</th>
+                    <th>Precio Unit.</th>
+                    <th>Promoción</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoTabla"></tbody>
+        </table>
+    </div>
+
+    <!-- TOTAL BAR -->
+    <div class="total-bar">
+        <div class="total-info">
+            <div id="lblTotal">Total: $0.00</div>
+            <div id="lblVentaId">Venta ID: -1</div>
+        </div>
+        <div class="total-actions">
+            <button class="btn-espera" onclick="ponerEnEspera()">⏳ En Espera</button>
+            <button class="btn-ver-espera" onclick="abrirVentasEnEspera()">📋 Ver Esperas</button>
+            <button class="btn-cancelar-venta" onclick="confirmarCancelacion()">✕ Cancelar</button>
+            <button class="btn-cobrar" onclick="abrirModalPago()">✓ COBRAR</button>
         </div>
     </div>
-    
-    <!-- Modal de ventas en espera -->
-    <div id="modalVentasEspera" class="modal-overlay">
-        <div class="modal-content">
-            <h3>📋 Ventas en Espera</h3>
-            <div id="listaVentasEspera" style="margin-top: 15px;"></div>
-            <div class="modal-buttons">
-                <button class="btn-cancelar" onclick="cerrarModalVentasEspera()">Cerrar</button>
-            </div>
+</div>
+
+<!-- Modal de Pago -->
+<div id="modalPago" class="modal-overlay">
+    <div class="modal-content">
+        <h3>💰 Cobrar Venta</h3>
+        <div class="modal-row">
+            <label>Total a Cobrar</label>
+            <div id="modalTotal" class="amount">$0.00</div>
+        </div>
+        <div class="modal-row">
+            <label>¿Con cuánto te pagan?</label>
+            <input type="number" id="txtPago" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="modal-result">
+            <p>Cambio a Devolver</p>
+            <div id="modalCambio" class="change">$0.00</div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalPago()">Cancelar</button>
+            <button class="btn btn-primary btn-pagar" onclick="confirmarPago()">✓ Confirmar Pago</button>
         </div>
     </div>
+</div>
+
+<!-- Modal de búsqueda de productos -->
+<div id="modalBusqueda" class="modal-overlay">
+    <div class="modal-content">
+        <h3>🔍 Seleccionar Producto</h3>
+        <div id="resultadosBusqueda" style="margin-top:8px;"></div>
+        <div class="modal-buttons" style="margin-top:16px;">
+            <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalBusqueda()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de ventas en espera -->
+<div id="modalVentasEspera" class="modal-overlay">
+    <div class="modal-content">
+        <h3>📋 Ventas en Espera</h3>
+        <div id="listaVentasEspera" style="margin-top:8px;"></div>
+        <div class="modal-buttons" style="margin-top:16px;">
+            <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalVentasEspera()">Cerrar</button>
+        </div>
+    </div>
+</div>
 
 <script>
          const _idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
@@ -171,35 +584,24 @@
          const txtClave = document.getElementById('txtClave');
          const cuerpoTabla = document.getElementById('cuerpoTabla');
          let carritoIdCounter = 0;
-        
-        // Función para mostrar toast notifications
+
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
-            const icons = {
-                success: '✓',
-                error: '✕',
-                info: 'ℹ',
-                warning: '⚠'
-            };
-            
+            const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
             toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
             container.appendChild(toast);
-            
             setTimeout(() => {
                 toast.classList.add('fade-out');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
-        
-        // Fin de funciones de toast
-        
+
         function mostrarSugerencias(productos) {
             const container = document.getElementById('resultadosBusqueda');
             container.innerHTML = '';
-            
+
             productos.forEach(p => {
                 let fotoHtml;
                 if (p.fotoProducto) {
@@ -207,11 +609,11 @@
                 } else {
                     fotoHtml = `<div style="width: 40px; height: 40px; border-radius: 6px; background: #f1f1f1; display: flex; align-items: center; justify-content: center;">📦</div>`;
                 }
-                
+
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
                 div.onclick = () => seleccionarProductoBusqueda(p);
-                
+
                 div.innerHTML = `
                     ${fotoHtml}
                     <div style="flex: 1;">
@@ -225,23 +627,21 @@
                 `;
                 container.appendChild(div);
             });
-            
+
             document.getElementById('modalBusqueda').classList.add('active');
         }
-        
+
         function cerrarModalBusqueda() {
             document.getElementById('modalBusqueda').classList.remove('active');
             txtClave.focus();
         }
 
         function seleccionarProductoBusqueda(producto) {
-            console.log('Producto seleccionado:', producto);
             document.getElementById('modalBusqueda').classList.remove('active');
             agregarProductoDesdeBusqueda(producto);
         }
 
         async function agregarProductoDesdeBusqueda(producto) {
-            console.log('Agregando producto desde búsqueda:', producto);
             if (procesando) return;
             procesando = true;
 
@@ -253,7 +653,6 @@
                         body: JSON.stringify({ codigo: producto.codigoBarras || producto.codigo_barras, idVentaActual: -1, userId: parseInt(currentUserId), idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                     });
                     const resultVenta = await resVenta.json();
-                    console.log('Resultado crear venta:', resultVenta);
                     if (resultVenta.success) {
                         currentVentaId = resultVenta.data.idVenta;
                         document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
@@ -263,7 +662,6 @@
                 const item = listaCarrito.find(x => x.idProducto === producto.id_producto || x.idProducto === producto.idProducto);
                 if (item) {
                     item.cantidad++;
-                    console.log('Producto ya existe, cantidad:', item.cantidad);
                 } else {
                     listaCarrito.unshift({
                         carritoId: ++carritoIdCounter,
@@ -278,14 +676,12 @@
                         promocionAplicada: null,
                         esPromo: false
                     });
-                    console.log('Producto agregado al carrito:', listaCarrito);
                 }
 
                 await aplicarPromociones();
                 dibujarCarrito();
                 txtClave.value = '';
             } catch (e) {
-                console.error('Error:', e);
                 showToast("Error al agregar producto", "error");
             } finally { procesando = false; txtClave.focus(); }
         }
@@ -303,12 +699,12 @@
                     body: JSON.stringify({ codigo, idVentaActual: currentVentaId, userId: parseInt(currentUserId), idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                 });
                 const result = await response.json();
-                
+
                 if (result.success) {
                     const p = result.data;
                     currentVentaId = p.idVenta;
                     document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
-                    
+
                     const item = listaCarrito.find(x => x.idProducto === p.idProducto);
                     if (item) {
                         item.cantidad++;
@@ -338,7 +734,7 @@
                         body: JSON.stringify({ busqueda: codigo, idSucursal: parseInt(localStorage.getItem('idSucursal') || '1') })
                     });
                     const searchResult = await searchResponse.json();
-                    
+
                     if (searchResult.success && searchResult.tipo === 'sugerencias') {
                         mostrarSugerencias(searchResult.sugerencias);
                     } else {
@@ -350,42 +746,35 @@
 
 async function aplicarPromociones() {
              const nuevosItems = [];
-            
+
              try {
                  const responsePromos = await fetch(`/api/promociones/activas/todas?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
                  const todasLasPromos = await responsePromos.json();
-                
-                 // Crear una copia del carrito con cantidades disponibles
+
                  let carritoCopia = listaCarrito.map(item => ({
                      ...item,
                      cantidadDisponible: item.cantidad
                  }));
-                
-                 // Separar promociones: simples (1 producto) vs mixtas (varios productos)
+
                  const promosSimples = todasLasPromos.filter(p => (p.productos || []).length === 1);
                  const promosMixtas = todasLasPromos.filter(p => (p.productos || []).length > 1);
-                
-                 // Procesar promociones simples primero
+
                  for (const promo of promosSimples) {
                      if (promo.tipo !== 'buy_x_get_y' || !promo.precio_especial) continue;
-                    
+
                      const idProductoPromo = (promo.productos || [])[0];
                      const itemsMismoProducto = carritoCopia.filter(item => item.idProducto === idProductoPromo);
-                    
+
                      if (itemsMismoProducto.length === 0) continue;
-                    
+
                      let totalDisponible = 0;
-                     itemsMismoProducto.forEach(item => {
-                         totalDisponible += item.cantidadDisponible;
-                     });
-                    
+                     itemsMismoProducto.forEach(item => { totalDisponible += item.cantidadDisponible; });
+
                      const cantidadRequerida = Math.floor(promo.cantidad_requerida);
                      const precioPromo = promo.precio_especial / cantidadRequerida;
-                    
                      const gruposPromo = Math.floor(totalDisponible / cantidadRequerida);
-                    
+
                      if (gruposPromo > 0) {
-                         // Agregar grupos de promoción
                          for (let i = 0; i < gruposPromo; i++) {
                              nuevosItems.push({
                                  carritoId: ++carritoIdCounter,
@@ -401,8 +790,7 @@ async function aplicarPromociones() {
                                  esPromo: true
                              });
                          }
-                        
-                         // Restar cantidad usada en promo
+
                          let restantePorRestar = gruposPromo * cantidadRequerida;
                          for (const item of itemsMismoProducto) {
                              if (restantePorRestar <= 0) break;
@@ -412,29 +800,23 @@ async function aplicarPromociones() {
                          }
                      }
                  }
-                
-                 // Procesar promociones mixtas
+
                  for (const promo of promosMixtas) {
                      if (promo.tipo !== 'buy_x_get_y' || !promo.precio_especial) continue;
-                    
+
                      const productosRequeridos = promo.productos || [];
                      const cantidadRequerida = Math.floor(promo.cantidad_requerida);
                      const cantidadPorProducto = Math.floor(cantidadRequerida / productosRequeridos.length);
                      const precioUnitarioPromo = promo.precio_especial / cantidadRequerida;
-                    
-                     // Verificar si hay suficiente de cada producto
+
                      let gruposPosibles = Infinity;
                      for (const idProd of productosRequeridos) {
                          const item = carritoCopia.find(i => i.idProducto === idProd && i.cantidadDisponible >= cantidadPorProducto);
-                         if (!item) {
-                             gruposPosibles = 0;
-                             break;
-                         }
+                         if (!item) { gruposPosibles = 0; break; }
                          gruposPosibles = Math.min(gruposPosibles, Math.floor(item.cantidadDisponible / cantidadPorProducto));
                      }
-                    
+
                      if (gruposPosibles > 0) {
-                         // Agregar grupos mixtos
                          for (let i = 0; i < gruposPosibles; i++) {
                              for (const idProd of productosRequeridos) {
                                  const item = carritoCopia.find(it => it.idProducto === idProd);
@@ -452,7 +834,6 @@ async function aplicarPromociones() {
                                          promocionAplicada: promo.nombre,
                                          esPromo: true
                                      });
-                                     // Reducir cantidad disponible
                                      const idx = carritoCopia.indexOf(item);
                                      carritoCopia[idx].cantidadDisponible -= cantidadPorProducto;
                                  }
@@ -460,8 +841,7 @@ async function aplicarPromociones() {
                          }
                      }
                  }
-                
-                 // Agregar items restantes al precio original
+
                  carritoCopia.forEach(item => {
                      if (item.cantidadDisponible > 0) {
                          nuevosItems.push({
@@ -479,9 +859,8 @@ async function aplicarPromociones() {
                          });
                      }
                  });
-            
+
              } catch (error) {
-                 console.error('Error aplicando promociones:', error);
                  listaCarrito.forEach(item => {
                      nuevosItems.push({
                          carritoId: ++carritoIdCounter,
@@ -498,7 +877,7 @@ async function aplicarPromociones() {
                      });
                  });
              }
-            
+
              listaCarrito = nuevosItems;
          }
 
@@ -508,14 +887,14 @@ async function aplicarPromociones() {
             listaCarrito.forEach((prod, index) => {
                 const subtotal = prod.precio * prod.cantidad;
                 sumaTotal += subtotal;
-                
+
                 let fotoHtml;
                 if (prod.fotoProducto) {
                     fotoHtml = `<img src="data:image/jpeg;base64,${prod.fotoProducto}" class="product-foto" alt="Foto">`;
                 } else {
                     fotoHtml = `<div class="no-foto">📦</div>`;
                 }
-                
+
                 const promocionHtml = prod.promocionAplicada ? `<span class="promocion-badge">${prod.promocionAplicada}</span>` : '';
 
                 const stock = prod.stockActual;
@@ -524,54 +903,49 @@ async function aplicarPromociones() {
                 cuerpoTabla.innerHTML += `
                     <tr>
                         <td>${fotoHtml}</td>
-                        <td>${prod.codigo}</td>
-                        <td>${prod.nombre}</td>
+                        <td style="color:#6b7280;font-size:12px">${prod.codigo}</td>
+                        <td style="font-weight:600">${prod.nombre}</td>
                         <td style="font-weight: bold; color: ${stockColor};">${stockText}</td>
                         <td><span class="badge-cantidad" ondblclick="editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
-                        <td>${prod.precio.toFixed(2)}</td>
+                        <td>$${prod.precio.toFixed(2)}</td>
                         <td>${promocionHtml}</td>
-                        <td>${subtotal.toFixed(2)}</td>
-                        <td><button onclick="eliminarItem(${prod.carritoId})" style="background:red;">Eliminar</button></td>
+                        <td style="font-weight:700">$${subtotal.toFixed(2)}</td>
+                        <td><button class="btn-eliminar-item" onclick="eliminarItem(${prod.carritoId})">✕ Quitar</button></td>
                     </tr>`;
             });
             totalVenta = sumaTotal;
-            document.getElementById('lblTotal').textContent = `Total: ${sumaTotal.toFixed(2)}`;
+            document.getElementById('lblTotal').textContent = `Total: $${sumaTotal.toFixed(2)}`;
         }
 
         function abrirModalPago() {
             if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
 
-            document.getElementById('modalTotal').textContent = `${totalVenta.toFixed(2)}`;
+            document.getElementById('modalTotal').textContent = `$${totalVenta.toFixed(2)}`;
             document.getElementById('modalCambio').textContent = "$0.00";
             document.getElementById('txtPago').value = totalVenta.toFixed(2);
             document.getElementById('modalPago').classList.add('active');
             document.getElementById('txtPago').focus();
             document.getElementById('txtPago').select();
         }
-        
+
         function cerrarModalPago() {
             document.getElementById('modalPago').classList.remove('active');
         }
-        
+
         document.getElementById('txtPago').addEventListener('input', function() {
             let pago = parseFloat(this.value) || 0;
-            // Redondear a 2 decimales para evitar números largos
             pago = Math.round(pago * 100) / 100;
-            // Actualizar el valor del input si es necesario
-            if (parseFloat(this.value) !== pago) {
-                this.value = pago.toFixed(2);
-            }
+            if (parseFloat(this.value) !== pago) { this.value = pago.toFixed(2); }
             const cambio = Math.max(0, pago - totalVenta);
             document.getElementById('modalCambio').textContent = `$${cambio.toFixed(2)}`;
         });
-        
+
         document.getElementById('txtPago').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') confirmarPago();
         });
-        
+
         function confirmarPago() {
             const pago = parseFloat(document.getElementById('txtPago').value) || 0;
-            // Usar tolerancia para comparación de punto flotante
             const tolerancia = 0.01;
             if (pago < totalVenta - tolerancia) {
                 showToast("El pago es insuficiente", "warning");
@@ -628,31 +1002,29 @@ async function aplicarPromociones() {
             }
         }
 
-function eliminarItem(carritoId) {
+        function eliminarItem(carritoId) {
              const index = listaCarrito.findIndex(p => p.carritoId === carritoId);
              if (index !== -1) {
                  listaCarrito.splice(index, 1);
                  aplicarPromociones().then(() => dibujarCarrito());
              }
          }
+
         function confirmarCancelacion() { if (confirm("¿Limpiar venta?")) limpiarPantallaVenta(); }
         document.getElementById('user-info').textContent = `Atiende: ${localStorage.getItem('nombreUsuario') || 'Cajero'}`;
-        
-        // ========== FUNCIONES PARA VENTAS EN ESPERA ==========
-        
-        // Poner la venta actual en espera
+
         async function ponerEnEspera() {
             if (listaCarrito.length === 0) {
                 showToast("El carrito está vacío. Agrega productos primero.", "warning");
                 return;
             }
-            
+
             const totalCarrito = listaCarrito.reduce((acc, p) => acc + (p.precio * p.cantidad), 0);
-            
+
             if (!confirm(`¿Poner esta venta en espera por ${totalCarrito.toFixed(2)}?`)) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/venta/guardar-espera', {
                     method: 'POST',
@@ -671,12 +1043,11 @@ function eliminarItem(carritoId) {
                         }))
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showToast("Venta guardada en espera correctamente", "success");
-                    // Limpiar el carrito y el ID de venta
                     listaCarrito = [];
                     carritoIdCounter = 0;
                     currentVentaId = -1;
@@ -687,124 +1058,95 @@ function eliminarItem(carritoId) {
                     showToast("Error al guardar: " + (result.message || "Error desconocido"), "error");
                 }
             } catch (e) {
-                console.error("Error:", e);
                 showToast("Error de conexión al guardar la venta en espera", "error");
             }
         }
-        
-        // Abrir modal de ventas en espera
+
         async function abrirVentasEnEspera() {
-            console.log("Cargando ventas en espera...");
             try {
                 const response = await fetch(`/api/venta/lista-espera?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
-                console.log("Response status:", response.status);
                 const result = await response.json();
-                console.log("Result:", result);
-                
+
                 const container = document.getElementById('listaVentasEspera');
-                
+
                 if (result.success && result.ventas && result.ventas.length > 0) {
-                    console.log("Ventas encontradas:", result.ventas.length);
                     container.innerHTML = '';
-                    
+
                     result.ventas.forEach(venta => {
-                        console.log("Venta:", venta);
                         const div = document.createElement('div');
                         div.className = 'venta-espera-item';
-                        
-                        // Formatear la fecha
+
                         const fecha = new Date(venta.fecha);
                         const fechaFormateada = fecha.toLocaleString('es-MX', {
                             day: '2-digit', month: '2-digit', year: 'numeric',
                             hour: '2-digit', minute: '2-digit'
                         });
-                        
-                        // Obtener nombres de productos
+
                         const nombresProductos = venta.detalles.map(d => `${d.nombre} (x${d.cantidad})`).join(', ');
-                        
+
                         div.innerHTML = `
                             <div class="venta-espera-header">
                                 <span class="venta-espera-user">👤 ${venta.nombreUsuario || 'Usuario #' + venta.idUsuario}</span>
                                 <span class="venta-espera-fecha">${fechaFormateada}</span>
                             </div>
                             <div class="venta-espera-productos">📦 ${nombresProductos}</div>
-                            <div class="venta-espera-total">Total: ${venta.total.toFixed(2)}</div>
+                            <div class="venta-espera-total">$${venta.total.toFixed(2)}</div>
                         `;
-                        
+
                         div.onclick = () => recuperarVentaEnEspera(venta.id);
                         container.appendChild(div);
                     });
                 } else {
-                    console.log("No hay ventas o respuesta sin éxito:", result);
-                    container.innerHTML = '<p style="text-align: center; color: #666;">No hay ventas en espera</p>';
+                    container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay ventas en espera</p>';
                 }
-                
+
                 document.getElementById('modalVentasEspera').classList.add('active');
-                
+
             } catch (e) {
-                console.error("Error:", e);
                 showToast("Error al cargar las ventas en espera", "error");
             }
         }
-        
-        // Cerrar modal de ventas en espera
+
         function cerrarModalVentasEspera() {
             document.getElementById('modalVentasEspera').classList.remove('active');
             txtClave.focus();
         }
-        
-        // Recuperar una venta en espera
+
         async function recuperarVentaEnEspera(idVenta) {
-            console.log("Recuperando venta con ID:", idVenta);
             try {
                 const response = await fetch(`/api/venta/obtener-espera/${idVenta}`);
                 const result = await response.json();
-                console.log("Resultado de obtener-espera:", result);
-                
+
                 if (result.success && result.venta) {
                     const venta = result.venta;
-                    console.log("Venta recuperada:", venta);
-                    console.log("Detalles:", venta.detalles);
-                    
-                    // Confirmar antes de recuperar
-                    if (!confirm(`¿Recuperar esta venta por ${venta.total.toFixed(2)}?`)) {
+
+                    if (!confirm(`¿Recuperar esta venta por $${venta.total.toFixed(2)}?`)) {
                         return;
                     }
-                    
-// Convertir detalles al formato del carrito - asegurar que cantidad sea número
+
                      listaCarrito = venta.detalles.map(d => ({
                          carritoId: ++carritoIdCounter,
                          idProducto: d.idProducto,
                          codigo: d.codigo,
                          nombre: d.nombre,
-                         precioOriginal: d.precio, // Usar el precio guardado como original
+                         precioOriginal: d.precio,
                          precio: d.precio,
-                         cantidad: Number(d.cantidad),  // Convertir a número
+                         cantidad: Number(d.cantidad),
                          fotoProducto: d.fotoProducto,
                          promocionAplicada: null,
                          esPromo: false
                      }));
-                    
-                    console.log("Carrito convertido:", listaCarrito);
-                    
-                    // Limpiar ID de venta actual (se creará uno nuevo al agregar productos)
+
                     currentVentaId = -1;
-                    
-                    // Dibujar el carrito
                     dibujarCarrito();
-                    
-                    // Cerrar modal
                     cerrarModalVentasEspera();
-                    
-                    // Eliminar la venta de la base de datos
+
                     await fetch(`/api/venta/eliminar-espera/${idVenta}`, { method: 'DELETE' });
-                    
                     showToast("Venta recuperada del espera", "success");
                 } else {
                     showToast("Error al recuperar la venta: " + (result.message || "Error desconocido"), "error");
                 }
             } catch (e) {
-                console.error("Error:", e);
                 showToast("Error de conexión al recuperar la venta", "error");
             }
         }

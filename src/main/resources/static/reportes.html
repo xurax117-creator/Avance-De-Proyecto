@@ -3,129 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <title>Reportes - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background-color: #f8f9fa; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .filtros { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background: #e9ecef; transition: 0.3s; }
-        .tab-btn.active { background: #19A337; color: white; }
-        
-        .resumen-total { 
-            background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; 
-            border-left: 5px solid #19A337; font-size: 1.2em; font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .resumen-total {
+            background: white;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            box-shadow: var(--shadow-sm);
         }
 
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
-        th { background: #f1f1f1; }
-        .btn-consultar { background: #19A337; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        
-        .btn-detalles { background: #007bff; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-        .btn-detalles:hover { background: #0056b3; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { 
-            background: white; margin: 50px auto; padding: 20px; width: 320px; border-radius: 4px; 
-            font-family: 'Courier New', Courier, monospace; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        .resumen-total span {
+            color: var(--primary);
+            font-size: 20px;
         }
-        .ticket-header { text-align: center; border-bottom: 1px dashed #000; margin-bottom: 10px; padding-bottom: 10px; }
-        .ticket-table { width: 100%; font-size: 13px; border-collapse: collapse; }
-        .ticket-table th, .ticket-table td { border: none; padding: 4px 0; }
-        .ticket-total { text-align: right; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 16px; }
-        .btn-cerrar { width: 100%; background: #dc3545; color: white; border: none; padding: 10px; margin-top: 20px; border-radius: 4px; cursor: pointer; font-family: sans-serif; }
-        
-        .paginacion { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 15px; background: white; border-radius: 8px; }
-        .paginacion button { padding: 8px 12px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; }
-        .paginacion button:hover { background: #19A337; color: white; border-color: #19A337; }
-        .paginacion button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .paginacion span { font-weight: bold; color: #333; }
-        
+
         .buscador-productos {
-            display: none; background: white; padding: 12px 15px; border-radius: 8px;
-            margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            align-items: center; gap: 12px;
+            display: none;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            align-items: center;
+            gap: 12px;
         }
-        .buscador-productos label { font-weight: bold; white-space: nowrap; }
-        .buscador-productos input {
-            padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;
-            font-size: 14px; width: 300px; outline: none;
-        }
-        .buscador-productos input:focus { border-color: #19A337; box-shadow: 0 0 0 2px rgba(25,163,55,0.15); }
-        .buscador-productos .btn-limpiar {
-            background: none; border: 1px solid #ccc; border-radius: 5px;
-            padding: 7px 12px; cursor: pointer; color: #666; font-size: 13px;
-        }
-        .buscador-productos .btn-limpiar:hover { background: #f0f0f0; }
 
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .buscador-productos.visible { display: flex; }
+        .buscador-productos label { font-weight: 600; font-size: 13px; white-space: nowrap; color: #374151; }
+
+        .buscador-productos input {
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            width: 280px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .buscador-productos input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(25,163,55,0.10); }
+
+        .btn-limpiar {
+            background: none;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            padding: 7px 12px;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.15s;
+        }
+
+        .btn-limpiar:hover { background: #f3f4f6; color: #374151; }
+
+        .btn-detalles {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: filter 0.15s;
+        }
+
+        .btn-detalles:hover { filter: brightness(0.92); }
+
+        /* Ticket modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,15,30,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 40px 16px;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 0 auto;
+            padding: 24px;
+            width: 320px;
+            border-radius: 14px;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .ticket-header {
+            text-align: center;
+            border-bottom: 1px dashed #374151;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+        }
+
+        .ticket-header h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .ticket-table { width: 100%; font-size: 12.5px; border-collapse: collapse; }
+        .ticket-table th, .ticket-table td { border: none; padding: 4px 0; }
+
+        .ticket-total {
+            text-align: right;
+            border-top: 1px dashed #374151;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .btn-cerrar {
+            width: 100%;
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-cerrar:hover { background: #334155; }
+
+        /* Filters row */
+        .report-filters {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-field { display: flex; flex-direction: column; gap: 5px; }
+        .filter-field label { font-size: 11.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; }
+        .filter-field input { padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; }
+        .filter-field input:focus { border-color: var(--primary); }
+
+        .btn-consultar {
+            padding: 9px 22px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            transition: filter 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-consultar:hover { filter: brightness(0.9); }
     </style>
 </head>
 <body>
+
 <div id="toastContainer" class="toast-container"></div>
 
-<div class="header">
-    <button onclick="window.location.href='/menu.html'" style="background:#6c757d; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Volver</button>
-    <h2>Panel de Reportes</h2>
-    <div id="user-info"></div>
-</div>
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>📊</span> Reportes</h1>
+            <div class="header-actions">
+                <span id="user-info" class="text-muted text-sm"></span>
+            </div>
+        </header>
+        <div class="content-scroll">
 
-<div class="filtros">
-    <div>
-        <label>Desde:</label><br>
-        <input type="date" id="fechaInicio"><br>
-        <input type="time" id="horaInicio" value="00:00">
+            <!-- Date Filters -->
+            <div class="report-filters">
+                <div class="filter-field">
+                    <label>Desde</label>
+                    <input type="date" id="fechaInicio">
+                    <input type="time" id="horaInicio" value="00:00" style="margin-top:4px">
+                </div>
+                <div class="filter-field">
+                    <label>Hasta</label>
+                    <input type="date" id="fechaFin">
+                    <input type="time" id="horaFin" value="23:59" style="margin-top:4px">
+                </div>
+                <button class="btn-consultar" onclick="cargarReporte()">🔍 Consultar</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tab-bar mb-4">
+                <button class="tab-btn active" onclick="cambiarTab(this, 'ventas')">Ventas Diarias</button>
+                <button class="tab-btn" onclick="cambiarTab(this, 'productos')">Top Productos</button>
+                <button class="tab-btn" onclick="cambiarTab(this, 'cajeros')">Por Cajero</button>
+                <button class="tab-btn" onclick="cambiarTab(this, 'inventario')">Valor Inventario</button>
+            </div>
+
+            <!-- Product search (products tab only) -->
+            <div id="buscadorProductos" class="buscador-productos">
+                <label>Buscar producto:</label>
+                <input type="text" id="inputBusqueda" placeholder="Nombre o código de barras..." oninput="onBusquedaInput()">
+                <button class="btn-limpiar" onclick="limpiarBusqueda()">✕ Limpiar</button>
+            </div>
+
+            <!-- Summary -->
+            <div id="resumenVentas" class="resumen-total">
+                Total en el periodo: <span id="sumaTotalPeriodo">$0.00</span>
+            </div>
+
+            <!-- Data table -->
+            <div class="card">
+                <div class="table-wrap" id="contenedorTabla">
+                    <table>
+                        <thead id="theadReporte"></thead>
+                        <tbody id="tbodyReporte"></tbody>
+                    </table>
+                </div>
+                <div class="pagination-bar" id="paginacion"></div>
+            </div>
+
+        </div>
     </div>
-    <div>
-        <label>Hasta:</label><br>
-        <input type="date" id="fechaFin"><br>
-        <input type="time" id="horaFin" value="23:59">
-    </div>
-    <button class="btn-consultar" onclick="cargarReporte()">🔍 Consultar</button>
 </div>
 
-<div class="tabs">
-    <button class="tab-btn active" onclick="cambiarTab(this, 'ventas')">Ventas Diarias</button>
-    <button class="tab-btn" onclick="cambiarTab(this, 'productos')">Top Productos</button>
-    <button class="tab-btn" onclick="cambiarTab(this, 'cajeros')">Ventas por Cajero</button>
-    <button class="tab-btn" onclick="cambiarTab(this, 'inventario')">Valor de Inventario</button>
-</div>
-
-<div id="buscadorProductos" class="buscador-productos">
-    <label>Buscar producto:</label>
-    <input type="text" id="inputBusqueda" placeholder="Nombre o código de barras..." oninput="onBusquedaInput()">
-    <button class="btn-limpiar" onclick="limpiarBusqueda()">✕ Limpiar</button>
-</div>
-
-<div id="resumenVentas" class="resumen-total">
-    Total en el periodo: <span id="sumaTotalPeriodo">$0.00</span>
-</div>
-
-<div id="contenedorTabla">
-    <table>
-        <thead id="theadReporte"></thead>
-        <tbody id="tbodyReporte"></tbody>
-    </table>
-</div>
-
-<div id="paginacion" class="paginacion"></div>
-
+<!-- Modal Ticket -->
 <div id="modalTicket" class="modal">
     <div class="modal-content">
         <div class="ticket-header">
-            <h2 style="margin:0">MRKdito</h2>
-            <p style="margin:5px 0">Folio: <span id="t-folio"></span></p>
-            <p style="font-size: 11px" id="t-fecha"></p>
+            <h2>MRKdito</h2>
+            <p style="margin:4px 0;font-size:13px">Folio: <span id="t-folio"></span></p>
+            <p style="font-size:11px;color:#6b7280" id="t-fecha"></p>
         </div>
         <table class="ticket-table">
             <thead>
@@ -137,13 +268,12 @@
             </thead>
             <tbody id="t-cuerpo"></tbody>
         </table>
-        <div class="ticket-total">
-            TOTAL: $<span id="t-total"></span>
-        </div>
+        <div class="ticket-total">TOTAL: $<span id="t-total"></span></div>
         <button class="btn-cerrar" onclick="cerrarModal()">CERRAR</button>
     </div>
 </div>
 
+<script src="/sidebar.js"></script>
 <script>
     const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
     if (!idSucursal || !localStorage.getItem('userId')) {
@@ -157,22 +287,13 @@
     let infoPaginacion = { totalPaginas: 1, totalRegistros: 0 };
     let busquedaTimeout = null;
 
-    // Función para mostrar toast notifications
     function showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
-        const icons = {
-            success: '✓',
-            error: '✕',
-            info: 'ℹ',
-            warning: '⚠'
-        };
-        
+        const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
         toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
         container.appendChild(toast);
-        
         setTimeout(() => {
             toast.classList.add('fade-out');
             setTimeout(() => toast.remove(), 300);
@@ -189,7 +310,12 @@
         tabActual = tipo;
         paginaActual = 1;
         document.getElementById('inputBusqueda').value = '';
-        document.getElementById('buscadorProductos').style.display = tipo === 'productos' ? 'flex' : 'none';
+        const buscador = document.getElementById('buscadorProductos');
+        if (tipo === 'productos') {
+            buscador.style.display = 'flex';
+        } else {
+            buscador.style.display = 'none';
+        }
         cargarReporte();
     }
 
@@ -246,11 +372,10 @@
 
         let acumulado = 0;
         let datosMostrar = data;
-        
+
         infoPaginacion = {};
         let totalGeneralPagina = 0;
-        
-        // Manejar caso de inventario (retorna objeto en lugar de array)
+
         if (tabActual === 'inventario' && data && data.totalCompra !== undefined) {
             thead.innerHTML = "<tr><th>Concepto</th><th>Valor Total</th></tr>";
             tbody.innerHTML = `<tr><td>Valor de compra (inversión)</td><td>$${Number(data.totalCompra).toFixed(2)}</td></tr>`;
@@ -271,25 +396,21 @@
                 datosMostrar = data.slice(0, -1);
             }
         }
-        
+
         let totalMostrar = totalGeneralPagina;
         if (totalMostrar === 0 && datosMostrar.length > 0) {
             datosMostrar.forEach(v => acumulado += v.total);
             totalMostrar = acumulado;
         }
-        
-        // Solo actualizar sumaSpan si no es inventario (ya se actualizó arriba)
+
         if (tabActual !== 'inventario') {
             sumaSpan.textContent = "$" + totalMostrar.toFixed(2);
         }
-        
-        if (tabActual === 'inventario') {
-            // Ya se dibujó la tabla en el bloque anterior
-            return;
-        }
-        
+
+        if (tabActual === 'inventario') return;
+
         if (datosMostrar.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay datos</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;padding:30px;color:#9ca3af'>No hay datos para el período seleccionado</td></tr>";
             paginacionDiv.innerHTML = "";
             return;
         }
@@ -297,7 +418,6 @@
         if (tabActual === 'ventas') {
             thead.innerHTML = "<tr><th>No. Venta</th><th>Fecha</th><th>Cajero</th><th>Total</th><th>Acciones</th></tr>";
             datosMostrar.forEach(v => {
-                // La hora ya está guardada en hora de México (UTC-6), solo la mostramos
                 const fechaDate = new Date(v.fecha);
                 const fechaFormateada = fechaDate.toLocaleString('es-MX', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -306,11 +426,11 @@
                 });
                 tbody.innerHTML += `
                     <tr>
-                        <td>${v.numeroVenta}</td>
+                        <td><strong>#${v.numeroVenta}</strong></td>
                         <td>${fechaFormateada}</td>
                         <td>${v.nombre}</td>
-                        <td>${v.total.toFixed(2)}</td>
-                        <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta})">Detalles</button></td>
+                        <td style="font-weight:700">$${v.total.toFixed(2)}</td>
+                        <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta})">Ver detalle</button></td>
                     </tr>`;
             });
             dibujarPaginacion();
@@ -318,14 +438,14 @@
             thead.innerHTML = "<tr><th>Producto</th><th>Cant. Vendida</th><th>Total</th></tr>";
             datosMostrar.forEach(p => {
                 acumulado += p.total;
-                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${Number(p.cantidad).toFixed(3)}</td><td>${Number(p.total).toFixed(2)}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${p.nombre}</td><td>${Number(p.cantidad).toFixed(3)}</td><td style="font-weight:700">$${Number(p.total).toFixed(2)}</td></tr>`;
             });
             dibujarPaginacion();
         } else if (tabActual === 'cajeros') {
             thead.innerHTML = "<tr><th>Cajero</th><th>Ventas Realizadas</th><th>Total Recaudado</th></tr>";
             datosMostrar.forEach(c => {
                 acumulado += c.total;
-                tbody.innerHTML += `<tr><td>${c.nombre}</td><td>${c.numVentas}</td><td>${c.total.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${c.nombre}</td><td><strong>${c.numVentas}</strong></td><td style="font-weight:700">$${c.total.toFixed(2)}</td></tr>`;
             });
             paginacionDiv.innerHTML = "";
         }
@@ -337,11 +457,11 @@
             paginacionDiv.innerHTML = "";
             return;
         }
-        
+
         const titulo = tabActual === 'ventas' ? 'ventas' : 'productos';
-        let html = `<button onclick="cambiarPagina(-1)" ${paginaActual === 1 ? 'disabled' : ''}>◀ Anterior</button>`;
+        let html = `<button onclick="cambiarPagina(-1)" ${paginaActual === 1 ? 'disabled' : ''}>« Anterior</button>`;
         html += `<span>Página ${paginaActual} de ${infoPaginacion.totalPaginas} (${infoPaginacion.totalRegistros} ${titulo})</span>`;
-        html += `<button onclick="cambiarPagina(1)" ${paginaActual >= infoPaginacion.totalPaginas ? 'disabled' : ''}>Siguiente ▶</button>`;
+        html += `<button onclick="cambiarPagina(1)" ${paginaActual >= infoPaginacion.totalPaginas ? 'disabled' : ''}>Siguiente »</button>`;
         paginacionDiv.innerHTML = html;
     }
 
@@ -390,11 +510,11 @@
             const productos = await resp.json();
             const tbody = document.getElementById('t-cuerpo');
             tbody.innerHTML = '';
-            
+
             for (let i = 0; i < productos.length; i++) {
                 const p = productos[i];
                 if (!p.producto) continue;
-                
+
                 const tr = document.createElement('tr');
                 const tdCant = document.createElement('td');
                 tdCant.textContent = Number(p.cantidad).toFixed(3);
@@ -408,7 +528,7 @@
                 tr.appendChild(tdSub);
                 tbody.appendChild(tr);
             }
-            
+
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
             document.getElementById('t-fecha').textContent = fecha;
             document.getElementById('t-total').textContent = total.toFixed(2);
@@ -419,6 +539,10 @@
     function cerrarModal() {
         document.getElementById('modalTicket').style.display = 'none';
     }
+
+    window.onclick = function(e) {
+        if (e.target === document.getElementById('modalTicket')) cerrarModal();
+    };
 
     cargarReporte();
     document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Cajero');

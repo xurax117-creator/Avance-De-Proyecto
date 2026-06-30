@@ -3,136 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <title>Proveedores - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        :root {
-            --primary: #19A337;
-            --danger: #dc3545;
-            --dark: #343a40;
-            --light: #f4f7f6;
+        .proveedor-desactivado { opacity: 0.55; }
+        .proveedor-desactivado td { text-decoration: line-through; color: #9ca3af; }
+
+        .btn-desactivar, .btn-activar, .btn-eliminar {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: filter 0.15s;
+            margin-right: 3px;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--light); margin: 20px; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h2 { margin: 0; color: var(--dark); }
 
-        .filtros { display: flex; gap: 15px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; align-items: flex-end; border: 1px solid #eee; }
-        .filtros div { display: flex; flex-direction: column; gap: 5px; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-        input:focus { border-color: var(--primary); outline: none; }
+        .btn-desactivar { background: #fef3c7; color: #92400e; }
+        .btn-activar    { background: #dcfce7; color: #15803d; }
+        .btn-eliminar   { background: #fee2e2; color: #b91c1c; }
+        .btn-desactivar:hover, .btn-activar:hover, .btn-eliminar:hover { filter: brightness(0.92); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background-color: #f8f9fa; color: #666; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #fcfcfc; cursor: pointer; }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,15,30,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 32px 16px;
+        }
 
-        .proveedor-desactivado { opacity: 0.6; background-color: #f5f5f5; }
-        .proveedor-desactivado td { text-decoration: line-through; color: #999; }
+        .modal-content {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 28px;
+            animation: modalIn 0.2s ease;
+        }
 
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-nuevo { background: var(--primary); color: white; }
-        .btn-nuevo:hover { background: #158a2e; }
-        .btn-volver { background: #6c757d; color: white; margin-right: 10px; }
-        .btn-volver:hover { background: #5a6268; }
-        .btn-eliminar { background: var(--danger); color: white; padding: 6px 12px; font-size: 12px; }
-        .btn-eliminar:hover { background: #c82333; }
-        .btn-desactivar { background: #ffc107; color: #333; padding: 6px 12px; font-size: 12px; }
-        .btn-desactivar:hover { background: #e0a800; }
-        .btn-activar { background: var(--primary); color: white; padding: 6px 12px; font-size: 12px; }
-        .btn-activar:hover { background: #158a2e; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
-        .modal-content { background: white; margin: 5% auto; padding: 30px; width: 450px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
-        label { font-size: 13px; font-weight: 600; color: #555; }
-        .modal-footer { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-content h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 20px;
+        }
 
-        .info-pagina { color: #666; font-size: 14px; margin-bottom: 15px; }
-        
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .modal-form .form-group { margin-bottom: 14px; }
+        .modal-form .form-group label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+        .modal-form .form-group input { width: 100%; padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; box-sizing: border-box; transition: border-color 0.15s, box-shadow 0.15s; }
+        .modal-form .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(25,163,55,0.10); }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
+
 <div id="toastContainer" class="toast-container"></div>
 
-<div class="card">
-    <div class="header">
-        <h2>🚚 Gestión de Proveedores</h2>
-        <div>
-            <button class="btn btn-volver" onclick="window.location.href='/menu.html'">Volver</button>
-            <button class="btn btn-nuevo" onclick="abrirModal()">+ Nuevo Proveedor</button>
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>🚚</span> Proveedores</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="abrirModal()">+ Nuevo Proveedor</button>
+            </div>
+        </header>
+        <div class="content-scroll">
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="form-group">
+                    <label class="form-label">Buscar Proveedor</label>
+                    <input type="text" class="form-control" id="txtBusqueda" onkeypress="if(event.key==='Enter') cargarProveedores()" placeholder="Buscar por nombre...">
+                </div>
+                <div class="form-group" style="min-width:auto">
+                    <label class="form-label">&nbsp;</label>
+                    <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;font-weight:500;color:#374151;white-space:nowrap">
+                        <input type="checkbox" id="chkMostrarDesactivados" onchange="cargarProveedores()" style="width:auto">
+                        Mostrar desactivados
+                    </label>
+                </div>
+                <div class="form-group" style="min-width:auto">
+                    <label class="form-label">&nbsp;</label>
+                    <button class="btn btn-secondary" onclick="cargarProveedores()">🔍 Buscar</button>
+                </div>
+            </div>
+
+            <!-- Table card -->
+            <div class="card">
+                <div class="card-header">
+                    <span id="infoPagina" class="text-muted text-sm">Total de proveedores: 0</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Contacto</th>
+                                <th>Teléfono</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaProveedores"></tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
-
-    <div class="filtros">
-        <div>
-            <label>Buscar Proveedor</label>
-            <input type="text" id="txtBusqueda" onkeypress="if(event.key === 'Enter') cargarProveedores()" placeholder="Buscar por nombre...">
-        </div>
-        <div>
-            <label>
-                <input type="checkbox" id="chkMostrarDesactivados" onchange="cargarProveedores()"> 
-                Mostrar proveedores desactivados
-            </label>
-        </div>
-    </div>
-
-    <div class="info-pagina" id="infoPagina">
-        Total de proveedores: 0
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Contacto</th>
-                <th>Teléfono</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="listaProveedores">
-        </tbody>
-    </table>
 </div>
 
+<!-- Modal Proveedor -->
 <div id="modalProveedor" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitulo" style="margin-top:0">Proveedor</h3>
+        <h3 id="modalTitulo">Proveedor</h3>
         <input type="hidden" id="p_id">
-        
-        <div class="form-grid">
-            <div>
+        <div class="modal-form">
+            <div class="form-group">
                 <label>Nombre del Proveedor</label>
                 <input type="text" id="p_nombre" placeholder="Nombre del proveedor...">
             </div>
-            <div>
+            <div class="form-group">
                 <label>Persona de Contacto</label>
                 <input type="text" id="p_contacto" placeholder="Nombre del contacto...">
             </div>
-            <div>
+            <div class="form-group">
                 <label>Teléfono</label>
                 <input type="text" id="p_telefono" placeholder="Teléfono...">
             </div>
         </div>
-
         <div class="modal-footer">
-            <button class="btn" style="background:#eee" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn btn-nuevo" onclick="guardar()">Guardar Proveedor</button>
+            <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button class="btn btn-primary" onclick="guardar()">Guardar Proveedor</button>
         </div>
     </div>
 </div>
 
+<script src="/sidebar.js"></script>
 <script>
     const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
     if (!idSucursal || !localStorage.getItem('userId')) {
@@ -142,22 +171,13 @@
 
     let todosLosProveedores = [];
 
-    // Función para mostrar toast notifications
     function showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
-        const icons = {
-            success: '✓',
-            error: '✕',
-            info: 'ℹ',
-            warning: '⚠'
-        };
-        
+        const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
         toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
         container.appendChild(toast);
-        
         setTimeout(() => {
             toast.classList.add('fade-out');
             setTimeout(() => toast.remove(), 300);
@@ -168,27 +188,21 @@
         try {
             const mostrarDesactivados = document.getElementById('chkMostrarDesactivados').checked;
             const filtro = document.getElementById('txtBusqueda').value;
-            
+
             const resp = await fetch(`/api/inventario/todos-proveedores?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
             let data = await resp.json();
-            
-            // Filtrar por búsqueda
+
             if (filtro) {
                 data = data.filter(p => p.nombre.toLowerCase().includes(filtro.toLowerCase()));
             }
-            
+
             if (!mostrarDesactivados) {
                 data = data.filter(p => p.activo);
             }
-            
-            // Ordenar alfabéticamente
+
             data.sort((a, b) => a.nombre.localeCompare(b.nombre));
-            
-            // Asignar números secuenciales
-            data.forEach((p, index) => {
-                p.numero = index + 1;
-            });
-            
+            data.forEach((p, index) => { p.numero = index + 1; });
+
             todosLosProveedores = data;
             dibujarTabla();
         } catch (e) { console.error("Error cargando proveedores", e); }
@@ -206,21 +220,21 @@
 
             tr.ondblclick = () => abrirModal(p);
 
-            const estado = p.activo ? 
-                '<span style="color: #28a745; font-weight: bold;">Activo</span>' : 
-                '<span style="color: #dc3545; font-weight: bold;">Desactivado</span>';
-            
-            const btnAccion = p.activo ? 
-                `<button class="btn-desactivar" onclick="desactivarProveedor(${p.id})" title="Desactivar">⛔</button>
+            const estado = p.activo ?
+                '<span class="badge badge-success">Activo</span>' :
+                '<span class="badge badge-danger">Inactivo</span>';
+
+            const btnAccion = p.activo ?
+                `<button class="btn-desactivar" onclick="desactivarProveedor(${p.id})" title="Desactivar">⛔ Desactivar</button>
                  <button class="btn-eliminar" onclick="eliminarProveedor(${p.id})" title="Eliminar">🗑️</button>` :
-                `<button class="btn-activar" onclick="activarProveedor(${p.id})" title="Activar">✅</button>
+                `<button class="btn-activar" onclick="activarProveedor(${p.id})" title="Activar">✅ Activar</button>
                  <button class="btn-eliminar" onclick="eliminarProveedor(${p.id})" title="Eliminar">🗑️</button>`;
 
             tr.innerHTML = `
-                <td>${p.numero}</td>
-                <td>${p.nombre}</td>
-                <td>${p.contacto || '---'}</td>
-                <td>${p.telefono || '---'}</td>
+                <td style="color:#9ca3af;font-size:12px">${p.numero}</td>
+                <td style="font-weight:600">${p.nombre}</td>
+                <td>${p.contacto || '—'}</td>
+                <td>${p.telefono || '—'}</td>
                 <td>${estado}</td>
                 <td>${btnAccion}</td>
             `;
@@ -234,7 +248,6 @@
         document.getElementById('p_nombre').value = p ? p.nombre : "";
         document.getElementById('p_contacto').value = p ? (p.contacto || "") : "";
         document.getElementById('p_telefono').value = p ? (p.telefono || "") : "";
-        
         document.getElementById('modalProveedor').style.display = 'block';
     }
 
@@ -251,7 +264,7 @@
             sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 
-        if(!data.nombre) {
+        if (!data.nombre) {
             showToast("El nombre del proveedor es obligatorio", "warning");
             return;
         }
@@ -259,11 +272,11 @@
         try {
             const resp = await fetch('/api/inventario/guardar-proveedor', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             const res = await resp.json();
-            if(res.success) {
+            if (res.success) {
                 cerrarModal();
                 cargarProveedores();
                 showToast("Proveedor guardado correctamente", "success");
@@ -274,14 +287,9 @@
     }
 
     async function eliminarProveedor(id) {
-        if (!confirm('¿Estás seguro de eliminar este proveedor?')) {
-            return;
-        }
-        
+        if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
         try {
-            const resp = await fetch(`/api/inventario/eliminar-proveedor/${id}`, {
-                method: 'POST'
-            });
+            const resp = await fetch(`/api/inventario/eliminar-proveedor/${id}`, { method: 'POST' });
             const res = await resp.json();
             if (res.success) {
                 showToast(res.message, "success");
@@ -293,14 +301,9 @@
     }
 
     async function desactivarProveedor(id) {
-        if (!confirm('¿Desactivar este proveedor?')) {
-            return;
-        }
-        
+        if (!confirm('¿Desactivar este proveedor?')) return;
         try {
-            const resp = await fetch(`/api/inventario/eliminar-proveedor/${id}`, {
-                method: 'POST'
-            });
+            const resp = await fetch(`/api/inventario/eliminar-proveedor/${id}`, { method: 'POST' });
             const res = await resp.json();
             if (res.success) {
                 showToast(res.message, "success");
@@ -313,9 +316,7 @@
 
     async function activarProveedor(id) {
         try {
-            const resp = await fetch(`/api/inventario/activar-proveedor/${id}`, {
-                method: 'POST'
-            });
+            const resp = await fetch(`/api/inventario/activar-proveedor/${id}`, { method: 'POST' });
             const res = await resp.json();
             if (res.success) {
                 showToast(res.message, "success");
@@ -326,15 +327,11 @@
         } catch (e) { showToast("Error de conexión", "error"); }
     }
 
-    // Cerrar modal al hacer clic fuera
     window.onclick = function(event) {
         const modal = document.getElementById('modalProveedor');
-        if (event.target == modal) {
-            cerrarModal();
-        }
-    }
+        if (event.target == modal) cerrarModal();
+    };
 
-    // Cargar proveedores al iniciar
     cargarProveedores();
 </script>
 

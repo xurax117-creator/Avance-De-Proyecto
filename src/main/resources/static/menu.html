@@ -2,195 +2,349 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Menú Principal - MRKdito POS</title>
+    <title>Dashboard - MRKdito POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        :root { --primary: #19A337; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background-color: #f4f4f4;
-            margin: 0;
+            background: #0b1120;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        h1 { color: #333; margin-bottom: 5px; }
 
-        .user-card {
-            background-color: #fff;
-            display: inline-block;
-            padding: 12px 30px;
-            border-radius: 50px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 40px;
-            border: 1px solid #e0e0e0;
+        .top-bar {
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        #user-display {
-            color: #2c3e50;
-            font-size: 1.1em;
-            font-weight: 600;
-            margin: 0;
+
+        .top-bar img {
+            height: 36px;
+            filter: brightness(0) invert(1) opacity(0.9);
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-pill {
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .rol-badge {
-            background-color: var(--primary);
-            color: white;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .sucursal-badge {
-            background-color: #f0f0f0;
-            color: #555;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            border: 1px solid #ddd;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 40px;
+            padding: 6px 16px 6px 6px;
         }
 
-        .menu-container {
-            max-width: 1000px;
-            margin: 0 auto;
+        .user-pill-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary);
             display: flex;
+            align-items: center;
             justify-content: center;
-            flex-wrap: wrap;
-            gap: 25px;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
         }
-        .menu-item {
-            padding: 30px;
-            width: 220px;
-            background-color: #fff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-radius: 15px;
+
+        .user-pill-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .branch-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 40px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.65);
+        }
+
+        .branch-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .btn-logout {
+            background: rgba(220,38,38,0.15);
+            border: 1px solid rgba(220,38,38,0.2);
+            color: #f87171;
+            padding: 7px 16px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+
+        .btn-logout:hover { background: rgba(220,38,38,0.25); }
+
+        .dashboard-body {
+            flex: 1;
+            padding: 36px 32px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .dash-greeting {
+            margin-bottom: 36px;
+        }
+
+        .dash-greeting h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .dash-greeting p {
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .mod-card {
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.07);
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-decoration: none;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-decoration: none;
-            color: #333;
-            border: 1px solid transparent;
+            align-items: flex-start;
+            gap: 14px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .menu-item:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.12);
+
+        .mod-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .mod-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
             border-color: var(--primary);
+            background: rgba(255,255,255,0.07);
         }
-        .menu-item h3 {
-            margin: 15px 0 8px 0;
+
+        .mod-card:hover::before { opacity: 0.07; }
+
+        .mod-icon {
+            font-size: 2.2em;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mod-info { position: relative; z-index: 1; }
+
+        .mod-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .mod-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.5;
+        }
+
+        .mod-arrow {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: rgba(255,255,255,0.15);
+            transition: color 0.2s, transform 0.2s;
+            z-index: 1;
+        }
+
+        .mod-card:hover .mod-arrow {
             color: var(--primary);
-            font-size: 1.3em;
+            transform: translateY(-50%) translateX(4px);
         }
-        .menu-item p {
-            margin: 0;
-            font-size: 0.9em;
-            color: #666;
-            line-height: 1.4;
+
+        .mod-card.danger {
+            border-color: rgba(220,38,38,0.2);
         }
-        .icon { font-size: 3em; }
-        .logout { border-bottom: 4px solid #dc3545; }
-        .logout:hover { border-color: #dc3545; background-color: #fff5f5; }
-        .logout h3 { color: #dc3545; }
+
+        .mod-card.danger:hover {
+            border-color: #dc2626;
+            background: rgba(220,38,38,0.06);
+        }
+
+        .mod-card.danger .mod-title { color: #f87171; }
+        .mod-card.danger .mod-arrow { color: rgba(248,113,113,0.3); }
+        .mod-card.danger:hover .mod-arrow { color: #f87171; }
+        .mod-card.danger::before { background: linear-gradient(135deg, #dc2626 0%, transparent 50%); }
     </style>
 </head>
 <body>
 
-    <h1>Bienvenido al MRKdito POS</h1>
-
-    <div class="user-card">
-        <p id="user-display">
-            👤 <span id="txtNombre">Cargando...</span>
-            <span id="txtRol" class="rol-badge">...</span>
-            <span id="txtSucursal" class="sucursal-badge">...</span>
-        </p>
+    <div class="top-bar">
+        <img src="/logo MRKdito.png" alt="MRKdito POS">
+        <div class="top-bar-right">
+            <div class="branch-pill">
+                <span class="branch-dot"></span>
+                <span id="txtSucursal">Sucursal</span>
+            </div>
+            <div class="user-pill">
+                <div class="user-pill-avatar" id="userInitials">?</div>
+                <span class="user-pill-text" id="txtNombre">Usuario</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Salir</button>
+        </div>
     </div>
 
-    <div class="menu-container">
-        <a href="/venta.html" class="menu-item">
-            <span class="icon">🛒</span>
-            <h3>Ventas</h3>
-            <p>Realizar cobros y transacciones.</p>
-        </a>
+    <div class="dashboard-body">
+        <div class="dash-greeting">
+            <h1>¡Hola, <span id="txtNombreGreet">operador</span>! 👋</h1>
+            <p>¿Qué vas a hacer hoy? Selecciona un módulo para comenzar.</p>
+        </div>
 
-        <a href="/inventario.html" class="menu-item">
-            <span class="icon">📦</span>
-            <h3>Inventario</h3>
-            <p>Administrar stock de productos.</p>
-        </a>
+        <div class="modules-grid">
+            <a href="/venta.html" class="mod-card">
+                <span class="mod-icon">🛒</span>
+                <div class="mod-info">
+                    <p class="mod-title">Punto de Venta</p>
+                    <p class="mod-desc">Cobros y transacciones rápidas.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="/entrada-inventario.html" class="menu-item">
-            <span class="icon">📥</span>
-            <h3>Entrada Inventario</h3>
-            <p>Registrar pedidos y entradas.</p>
-        </a>
+            <a href="/inventario.html" class="mod-card">
+                <span class="mod-icon">📦</span>
+                <div class="mod-info">
+                    <p class="mod-title">Inventario</p>
+                    <p class="mod-desc">Administrar stock y productos.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="/reportes.html" class="menu-item">
-            <span class="icon">📈</span>
-            <h3>Reportes</h3>
-            <p>Análisis de ventas del negocio.</p>
-        </a>
+            <a href="/entrada-inventario.html" class="mod-card">
+                <span class="mod-icon">📥</span>
+                <div class="mod-info">
+                    <p class="mod-title">Entradas</p>
+                    <p class="mod-desc">Registrar pedidos y entradas.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="/promociones.html" class="menu-item">
-            <span class="icon">🏷️</span>
-            <h3>Promociones</h3>
-            <p>Gestionar ofertas y descuentos.</p>
-        </a>
+            <a href="/reportes.html" class="mod-card">
+                <span class="mod-icon">📊</span>
+                <div class="mod-info">
+                    <p class="mod-title">Reportes</p>
+                    <p class="mod-desc">Análisis de ventas del negocio.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="/usuarios.html" class="menu-item">
-            <span class="icon">👥</span>
-            <h3>Usuarios</h3>
-            <p>Gestionar usuarios del sistema.</p>
-        </a>
+            <a href="/promociones.html" class="mod-card">
+                <span class="mod-icon">🏷️</span>
+                <div class="mod-info">
+                    <p class="mod-title">Promociones</p>
+                    <p class="mod-desc">Ofertas y descuentos especiales.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="/proveedores.html" class="menu-item">
-            <span class="icon">🚚</span>
-            <h3>Proveedores</h3>
-            <p>Gestionar proveedores del negocio.</p>
-        </a>
+            <a href="/usuarios.html" class="mod-card">
+                <span class="mod-icon">👥</span>
+                <div class="mod-info">
+                    <p class="mod-title">Usuarios</p>
+                    <p class="mod-desc">Gestionar accesos al sistema.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
 
-        <a href="javascript:void(0)" onclick="logout()" class="menu-item logout">
-            <span class="icon">🚪</span>
-            <h3>Salir</h3>
-            <p>Finalizar sesión actual.</p>
-        </a>
+            <a href="/proveedores.html" class="mod-card">
+                <span class="mod-icon">🚚</span>
+                <div class="mod-info">
+                    <p class="mod-title">Proveedores</p>
+                    <p class="mod-desc">Contactos y proveedores.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </a>
+
+            <div class="mod-card danger" onclick="logout()" style="cursor:pointer">
+                <span class="mod-icon">🚪</span>
+                <div class="mod-info">
+                    <p class="mod-title">Cerrar Sesión</p>
+                    <p class="mod-desc">Salir del sistema actual.</p>
+                </div>
+                <span class="mod-arrow">›</span>
+            </div>
+        </div>
     </div>
 
     <script>
-        const userId       = localStorage.getItem('userId');
-        const nombre       = localStorage.getItem('nombreUsuario');
-        const rol          = localStorage.getItem('rolUsuario');
-        const idSucursal   = localStorage.getItem('idSucursal');
-        const nombreSuc    = localStorage.getItem('nombreSucursal');
-        const colorSuc     = localStorage.getItem('colorSucursal') || '#19A337';
+        const userId     = localStorage.getItem('userId');
+        const nombre     = localStorage.getItem('nombreUsuario');
+        const rol        = localStorage.getItem('rolUsuario');
+        const idSucursal = localStorage.getItem('idSucursal');
+        const nombreSuc  = localStorage.getItem('nombreSucursal');
+        const colorSuc   = localStorage.getItem('colorSucursal') || '#19A337';
 
         if (!userId || !nombre || !idSucursal) {
             window.location.href = '/sucursal.html';
         } else {
-            document.getElementById('txtNombre').textContent = nombre;
-            document.getElementById('txtRol').textContent = rol;
-            document.getElementById('txtSucursal').textContent = '🏪 ' + (nombreSuc || 'Sucursal');
-
-            // Aplicar color de sucursal
             document.documentElement.style.setProperty('--primary', colorSuc);
-            document.getElementById('txtRol').style.backgroundColor = colorSuc;
+
+            const shortName = nombre.split(' ')[0];
+            document.getElementById('txtNombre').textContent = shortName;
+            document.getElementById('txtNombreGreet').textContent = shortName;
+            document.getElementById('txtSucursal').textContent = nombreSuc || 'Sucursal';
+
+            const initials = nombre.trim().split(/\s+/).slice(0, 2).map(n => n[0] || '').join('').toUpperCase() || '?';
+            document.getElementById('userInitials').textContent = initials;
         }
 
         function logout() {
-            if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
+            if (confirm("¿Cerrar sesión?")) {
                 localStorage.clear();
                 window.location.href = '/sucursal.html';
             }
         }
 
         window.history.pushState(null, null, window.location.href);
-        window.onpopstate = function () {
-            window.history.go(1);
-        };
+        window.onpopstate = function () { window.history.go(1); };
     </script>
 </body>
 </html>

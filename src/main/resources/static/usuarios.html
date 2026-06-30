@@ -1,376 +1,399 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"> <title>Gestión de Usuarios - MRKdito POS</title>
+    <meta charset="UTF-8">
+    <title>Usuarios - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn-regresar { background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 14px; }
-        h1 { color: #333; margin: 0; }
-        
-        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end; }
-        button { cursor: pointer; background: #19A337; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 14px; transition: 0.3s; }
-        button:hover { background: #148a2a; }
-        .btn-nuevo { background: #007bff; }
-        .btn-nuevo:hover { background: #0056b3; }
-        
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background-color: #f1f1f1; font-weight: bold; }
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .badge-activo { background: #d4edda; color: #155724; }
-        .badge-inactivo { background: #f8d7da; color: #721c24; }
-        .badge-rol { background: #19A337; color: white; }
-        .btn-editar { background: #007bff; padding: 8px 15px; font-size: 12px; }
-        .btn-eliminar { background: #dc3545; padding: 8px 15px; font-size: 12px; }
-        .btn-switch { padding: 5px 10px; font-size: 11px; margin-left: 5px; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .user-foto {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .btn-editar, .btn-eliminar, .btn-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: filter 0.15s;
+            margin-right: 3px;
+        }
+
+        .btn-editar  { background: #dbeafe; color: #1d4ed8; }
+        .btn-eliminar { background: #fee2e2; color: #b91c1c; }
+        .btn-editar:hover  { filter: brightness(0.92); }
+        .btn-eliminar:hover { filter: brightness(0.92); }
+        .btn-switch { font-size: 11px; }
+
+        /* Modal — uses .modal-overlay + .active pattern */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,15,30,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 500px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top: 0; color: #333; text-align: center; border-bottom: 2px solid #19A337; padding-bottom: 10px; }
-        .form-group { margin: 15px 0; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #19A337; }
-        .form-buttons { display: flex; gap: 10px; margin-top: 25px; }
-        .form-buttons button { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
-        .btn-guardar { background: #19A337; color: white; }
-        .btn-cancelar { background: #6c757d; color: white; }
-        
-        .empty-message { text-align: center; padding: 50px; color: #666; }
-        
-        .user-foto { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #19A337; }
-        .user-foto-grande { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #19A337; margin: 0 auto 15px; display: block; }
-        .foto-preview { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; margin: 10px auto; display: block; }
-        .foto-upload-container { text-align: center; margin: 15px 0; }
-        .foto-upload-label { display: inline-block; cursor: pointer; padding: 10px 20px; background: #f1f1f1; border-radius: 6px; border: 2px dashed #19A337; }
-        .foto-upload-label:hover { background: #e9ecef; }
+
+        .modal-content {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 28px;
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-content h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            text-align: center;
+            margin: 0 0 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .form-group { margin: 14px 0; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; }
+        .form-group input, .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(25,163,55,0.10); }
+
+        .foto-upload-container { text-align: center; margin: 16px 0; }
+        .foto-preview { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb; display: block; margin: 0 auto 10px; }
+        .foto-upload-label { display: inline-block; cursor: pointer; padding: 7px 16px; background: #f3f4f6; border-radius: 8px; border: 2px dashed var(--primary); font-size: 12.5px; font-weight: 500; color: #374151; transition: background 0.15s; }
+        .foto-upload-label:hover { background: #e5e7eb; }
         #fileFoto { display: none; }
-        
-        /* Toast Notifications */
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; display: flex; align-items: center; gap: 10px; min-width: 280px; }
-        .toast.success { background: #28a745; }
-        .toast.error { background: #dc3545; }
-        .toast.info { background: #17a2b8; }
-        .toast.warning { background: #ffc107; color: #333; }
-        .toast.fade-out { animation: fadeOut 0.3s ease-out forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        .form-buttons { display: flex; gap: 10px; margin-top: 22px; }
+        .form-buttons button { flex: 1; padding: 11px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; font-weight: 600; transition: filter 0.15s; }
+        .btn-guardar { background: var(--primary); color: white; }
+        .btn-guardar:hover { filter: brightness(0.9); }
+        .btn-cancelar { background: #f3f4f6; color: #374151; }
+        .btn-cancelar:hover { background: #e5e7eb; }
     </style>
 </head>
 <body>
+
 <div id="toastContainer" class="toast-container"></div>
 
-    <div class="header">
-        <button class="btn-regresar" onclick="window.location.href='/menu.html'">← Menú Principal</button>
-        <h1>👥 Gestión de Usuarios</h1>
-        <div id="user-info" style="color: #666;">Cargando...</div>
-    </div>
-
-    <div class="toolbar">
-        <button class="btn-nuevo" onclick="abrirModalNuevo()">➕ Nuevo Usuario</button>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Foto</th>
-                <th>ID</th>
-                <th>Nombre Completo</th>
-                <th>Alias</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="cuerpoTabla">
-            <tr><td colspan="7" class="empty-message">Cargando usuarios...</td></tr>
-        </tbody>
-    </table>
-
-    <div id="modalUsuario" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="modalTitulo">➕ Nuevo Usuario</h3>
-            <form id="formUsuario" onsubmit="guardarUsuario(event)">
-                <input type="hidden" id="txtId">
-                
-                <div class="foto-upload-container">
-                    <img id="imgFotoPreview" class="foto-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
-                    <label class="foto-upload-label" for="fileFoto">
-                        📷 Seleccionar Foto
-                    </label>
-                    <input type="file" id="fileFoto" accept="image/*" onchange="previsualizarFoto(event)">
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>👥</span> Usuarios</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="abrirModalNuevo()">+ Nuevo Usuario</button>
+            </div>
+        </header>
+        <div class="content-scroll">
+            <div class="card">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>ID</th>
+                                <th>Nombre Completo</th>
+                                <th>Alias</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTabla">
+                            <tr><td colspan="7" style="text-align:center;padding:40px;color:#9ca3af">Cargando usuarios...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-                
-                <div class="form-group">
-                    <label for="txtNombreCompleto">Nombre Completo:</label>
-                    <input type="text" id="txtNombreCompleto" required placeholder="Ingresa el nombre completo">
-                </div>
-                <div class="form-group">
-                    <label for="txtAlias">Alias:</label>
-                    <input type="text" id="txtAlias" required placeholder="Ingresa un alias único">
-                </div>
-                <div class="form-group">
-                    <label for="txtPassword">Contraseña:</label>
-                    <input type="password" id="txtPassword" required placeholder="Ingresa la contraseña">
-                </div>
-                <div class="form-group">
-                    <label for="txtRol">Rol:</label>
-                    <select id="txtRol" required>
-                        <option value="">Seleccionar rol...</option>
-                        <option value="Administrador">Administrador</option>
-                        <option value="Gerente">Gerente</option>
-                        <option value="Cajero">Cajero</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="txtActivo" checked> Usuario Activo
-                    </label>
-                </div>
-                <div class="form-buttons">
-                    <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-                    <button type="submit" class="btn-guardar">💾 Guardar</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        let usuarios = [];
-        const modoEdicion = { esEdicion: false, idActual: null };
-        let fotoBase64 = null;
-        
-        // Función para mostrar toast notifications
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icons = {
-                success: '✓',
-                error: '✕',
-                info: 'ℹ',
-                warning: '⚠'
-            };
-            
-            toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('fade-out');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+<!-- Modal Usuario -->
+<div id="modalUsuario" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modalTitulo">Nuevo Usuario</h3>
+        <form id="formUsuario" onsubmit="guardarUsuario(event)">
+            <input type="hidden" id="txtId">
 
-        const userId = localStorage.getItem('userId');
-        const rol = localStorage.getItem('rolUsuario');
-        const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
-        if (!userId || !rol || !idSucursal) {
-            window.location.href = '/sucursal.html';
-        } else {
-            document.getElementById('user-info').textContent = `Admin: ${localStorage.getItem('nombreUsuario') || 'Usuario'} (${rol})`;
-            const colorSuc = localStorage.getItem('colorSucursal') || '#19A337';
-            document.documentElement.style.setProperty('--primary', colorSuc);
-        }
+            <div class="foto-upload-container">
+                <img id="imgFotoPreview" class="foto-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E">
+                <label class="foto-upload-label" for="fileFoto">📷 Seleccionar Foto</label>
+                <input type="file" id="fileFoto" accept="image/*" onchange="previsualizarFoto(event)">
+            </div>
 
-        window.onload = () => { cargarUsuarios(); };
+            <div class="form-group">
+                <label for="txtNombreCompleto">Nombre Completo</label>
+                <input type="text" id="txtNombreCompleto" required placeholder="Nombre completo...">
+            </div>
+            <div class="form-group">
+                <label for="txtAlias">Alias</label>
+                <input type="text" id="txtAlias" required placeholder="Alias único...">
+            </div>
+            <div class="form-group">
+                <label for="txtPassword">Contraseña</label>
+                <input type="password" id="txtPassword" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label for="txtRol">Rol</label>
+                <select id="txtRol" required>
+                    <option value="">Seleccionar rol...</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Gerente">Gerente</option>
+                    <option value="Cajero">Cajero</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px">
+                    <input type="checkbox" id="txtActivo" checked style="width:auto"> Usuario Activo
+                </label>
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                <button type="submit" class="btn-guardar">💾 Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        async function cargarUsuarios() {
-            try {
-                const response = await fetch(`/api/usuario/listar?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
-                const result = await response.json();
-                if (result.success) {
-                    usuarios = result.data;
-                    dibujarTabla();
-                } else {
-                    showToast(result.message, "warning");
-                }
-            } catch (e) {
-                console.error(e);
-                showToast("Error al cargar usuarios", "error");
-            }
-        }
+<script src="/sidebar.js"></script>
+<script>
+    let usuarios = [];
+    const modoEdicion = { esEdicion: false, idActual: null };
+    let fotoBase64 = null;
 
-        function dibujarTabla() {
-            const cuerpo = document.getElementById('cuerpoTabla');
-            if (usuarios.length === 0) {
-                cuerpo.innerHTML = '<tr><td colspan="7" class="empty-message">No hay usuarios registrados.</td></tr>';
-                return;
-            }
-            cuerpo.innerHTML = usuarios.map(u => {
-                const fotoSrc = u.fotoPerfil 
-                    ? `data:image/jpeg;base64,${u.fotoPerfil}`
-                    : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
-                return `
-                    <tr>
-                        <td><img src="${fotoSrc}" class="user-foto" alt="Foto"></td>
-                        <td>${u.idUsuario}</td>
-                        <td>${u.nombreCompleto}</td>
-                        <td>${u.alias}</td>
-                        <td><span class="badge badge-rol">${u.rol}</span></td>
-                        <td>
-                            <span class="badge ${u.activo ? 'badge-activo' : 'badge-inactivo'}">
-                                ${u.activo ? 'Activo' : 'Inactivo'}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn-editar" onclick="abrirModalEditar(${u.idUsuario})">✏️ Editar</button>
-                            <button class="btn-eliminar" onclick="eliminarUsuario(${u.idUsuario})">🗑️ Eliminar</button>
-                            <button class="btn-switch" style="background:${u.activo ? '#dc3545' : '#28a745'}" 
-                                    onclick="toggleEstado(${u.idUsuario}, ${u.activo})">
-                                ${u.activo ? 'Desactivar' : 'Activar'}
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+        toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 
-        function previsualizarFoto(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                fotoBase64 = e.target.result.split(',')[1];
-                document.getElementById('imgFotoPreview').src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
+    const userId = localStorage.getItem('userId');
+    const rol = localStorage.getItem('rolUsuario');
+    const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+    if (!userId || !rol || !idSucursal) {
+        window.location.href = '/sucursal.html';
+    } else {
+        const colorSuc = localStorage.getItem('colorSucursal') || '#19A337';
+        document.documentElement.style.setProperty('--primary', colorSuc);
+    }
 
-        function abrirModalNuevo() {
-            modoEdicion.esEdicion = false;
-            modoEdicion.idActual = null;
-            fotoBase64 = null;
-            document.getElementById('modalTitulo').textContent = '➕ Nuevo Usuario';
-            document.getElementById('formUsuario').reset();
-            document.getElementById('txtActivo').checked = true;
-            document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
-            document.getElementById('fileFoto').value = '';
-            document.getElementById('modalUsuario').classList.add('active');
-        }
+    window.onload = () => { cargarUsuarios(); };
 
-        function abrirModalEditar(id) {
-            const u = usuarios.find(x => x.idUsuario === id);
-            if (!u) return;
-            
-            modoEdicion.esEdicion = true;
-            modoEdicion.idActual = id;
-            fotoBase64 = null;
-            document.getElementById('modalTitulo').textContent = '✏️ Editar Usuario';
-            document.getElementById('txtId').value = u.idUsuario;
-            document.getElementById('txtNombreCompleto').value = u.nombreCompleto;
-            document.getElementById('txtAlias').value = u.alias;
-            document.getElementById('txtPassword').value = '';
-            document.getElementById('txtRol').value = u.rol;
-            document.getElementById('txtActivo').checked = u.activo;
-            document.getElementById('fileFoto').value = '';
-            
-            if (u.fotoPerfil) {
-                document.getElementById('imgFotoPreview').src = `data:image/jpeg;base64,${u.fotoPerfil}`;
+    async function cargarUsuarios() {
+        try {
+            const response = await fetch(`/api/usuario/listar?sucursal=${parseInt(localStorage.getItem('idSucursal') || '1')}`);
+            const result = await response.json();
+            if (result.success) {
+                usuarios = result.data;
+                dibujarTabla();
             } else {
-                document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
+                showToast(result.message, "warning");
             }
-            
-            document.getElementById('modalUsuario').classList.add('active');
+        } catch (e) {
+            showToast("Error al cargar usuarios", "error");
+        }
+    }
+
+    function dibujarTabla() {
+        const cuerpo = document.getElementById('cuerpoTabla');
+        if (usuarios.length === 0) {
+            cuerpo.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#9ca3af">No hay usuarios registrados.</td></tr>';
+            return;
+        }
+        cuerpo.innerHTML = usuarios.map(u => {
+            const fotoSrc = u.fotoPerfil
+                ? `data:image/jpeg;base64,${u.fotoPerfil}`
+                : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
+            return `
+                <tr>
+                    <td><img src="${fotoSrc}" class="user-foto" alt="Foto"></td>
+                    <td style="color:#9ca3af;font-size:12px">${u.idUsuario}</td>
+                    <td style="font-weight:600">${u.nombreCompleto}</td>
+                    <td>${u.alias}</td>
+                    <td><span class="badge badge-primary">${u.rol}</span></td>
+                    <td>
+                        <span class="badge ${u.activo ? 'badge-success' : 'badge-danger'}">
+                            ${u.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-editar" onclick="abrirModalEditar(${u.idUsuario})">✏️ Editar</button>
+                        <button class="btn-eliminar" onclick="eliminarUsuario(${u.idUsuario})">🗑️</button>
+                        <button class="btn-switch" style="background:${u.activo ? '#fee2e2' : '#dcfce7'};color:${u.activo ? '#b91c1c' : '#15803d'}"
+                                onclick="toggleEstado(${u.idUsuario}, ${u.activo})">
+                            ${u.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function previsualizarFoto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            fotoBase64 = e.target.result.split(',')[1];
+            document.getElementById('imgFotoPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function abrirModalNuevo() {
+        modoEdicion.esEdicion = false;
+        modoEdicion.idActual = null;
+        fotoBase64 = null;
+        document.getElementById('modalTitulo').textContent = 'Nuevo Usuario';
+        document.getElementById('formUsuario').reset();
+        document.getElementById('txtActivo').checked = true;
+        document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
+        document.getElementById('fileFoto').value = '';
+        document.getElementById('modalUsuario').classList.add('active');
+    }
+
+    function abrirModalEditar(id) {
+        const u = usuarios.find(x => x.idUsuario === id);
+        if (!u) return;
+
+        modoEdicion.esEdicion = true;
+        modoEdicion.idActual = id;
+        fotoBase64 = null;
+        document.getElementById('modalTitulo').textContent = 'Editar Usuario';
+        document.getElementById('txtId').value = u.idUsuario;
+        document.getElementById('txtNombreCompleto').value = u.nombreCompleto;
+        document.getElementById('txtAlias').value = u.alias;
+        document.getElementById('txtPassword').value = '';
+        document.getElementById('txtRol').value = u.rol;
+        document.getElementById('txtActivo').checked = u.activo;
+        document.getElementById('fileFoto').value = '';
+
+        if (u.fotoPerfil) {
+            document.getElementById('imgFotoPreview').src = `data:image/jpeg;base64,${u.fotoPerfil}`;
+        } else {
+            document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
         }
 
-        function cerrarModal() {
-            document.getElementById('modalUsuario').classList.remove('active');
+        document.getElementById('modalUsuario').classList.add('active');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalUsuario').classList.remove('active');
+    }
+
+    async function guardarUsuario(e) {
+        e.preventDefault();
+
+        const datos = {
+            nombreCompleto: document.getElementById('txtNombreCompleto').value.trim(),
+            alias: document.getElementById('txtAlias').value.trim(),
+            contraseña: document.getElementById('txtPassword').value.trim(),
+            rol: document.getElementById('txtRol').value,
+            activo: document.getElementById('txtActivo').checked,
+            fotoPerfil: fotoBase64,
+            idSucursal: parseInt(localStorage.getItem('idSucursal') || '1')
+        };
+
+        if (!datos.nombreCompleto || !datos.alias || !datos.contraseña || !datos.rol) {
+            showToast("Todos los campos son requeridos.", "warning");
+            return;
         }
 
-        async function guardarUsuario(e) {
-            e.preventDefault();
-            
-            const datos = {
-                nombreCompleto: document.getElementById('txtNombreCompleto').value.trim(),
-                alias: document.getElementById('txtAlias').value.trim(),
-                contraseña: document.getElementById('txtPassword').value.trim(),
-                rol: document.getElementById('txtRol').value,
-                activo: document.getElementById('txtActivo').checked,
-                fotoPerfil: fotoBase64,
-                idSucursal: parseInt(localStorage.getItem('idSucursal') || '1')
-            };
+        const url = modoEdicion.esEdicion ? '/api/usuario/actualizar' : '/api/usuario/crear';
+        if (modoEdicion.esEdicion) { datos.id = modoEdicion.idActual; }
 
-            if (!datos.nombreCompleto || !datos.alias || !datos.contraseña || !datos.rol) {
-                showToast("Todos los campos son requeridos.", "warning");
-                return;
+        try {
+            const response = await fetch(url, {
+                method: modoEdicion.esEdicion ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, "success");
+                cerrarModal();
+                cargarUsuarios();
+            } else {
+                showToast(result.message, "error");
             }
-
-            const url = modoEdicion.esEdicion 
-                ? '/api/usuario/actualizar' 
-                : '/api/usuario/crear';
-            
-            if (modoEdicion.esEdicion) {
-                datos.id = modoEdicion.idActual;
-            }
-
-            try {
-                const response = await fetch(url, {
-                    method: modoEdicion.esEdicion ? 'PUT' : 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(datos)
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showToast(result.message, "success");
-                    cerrarModal();
-                    cargarUsuarios();
-                } else {
-                    showToast(result.message, "error");
-                }
-            } catch (e) {
-                showToast("Error al guardar usuario", "error");
-            }
+        } catch (e) {
+            showToast("Error al guardar usuario", "error");
         }
+    }
 
-        async function eliminarUsuario(id) {
-            if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
-            
-            try {
-                const response = await fetch(`/api/usuario/eliminar/${id}`, { method: 'DELETE' });
-                const result = await response.json();
-                if (result.success) {
-                    showToast(result.message, "success");
-                    cargarUsuarios();
-                } else {
-                    showToast(result.message, "error");
-                }
-            } catch (e) {
-                showToast("Error al eliminar usuario", "error");
+    async function eliminarUsuario(id) {
+        if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
+
+        try {
+            const response = await fetch(`/api/usuario/eliminar/${id}`, { method: 'DELETE' });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, "success");
+                cargarUsuarios();
+            } else {
+                showToast(result.message, "error");
             }
+        } catch (e) {
+            showToast("Error al eliminar usuario", "error");
         }
+    }
 
-        async function toggleEstado(id, estadoActual) {
-            const nuevoEstado = !estadoActual;
-            const mensaje = nuevoEstado ? "¿Activar este usuario?" : "¿Desactivar este usuario?";
-            
-            if (!confirm(mensaje)) return;
-            
-            try {
-                const response = await fetch(`/api/usuario/estado/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ activo: nuevoEstado })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showToast(result.message, "success");
-                    cargarUsuarios();
-                } else {
-                    showToast(result.message, "error");
-                }
-            } catch (e) {
-                showToast("Error al cambiar estado", "error");
+    async function toggleEstado(id, estadoActual) {
+        const nuevoEstado = !estadoActual;
+        const mensaje = nuevoEstado ? "¿Activar este usuario?" : "¿Desactivar este usuario?";
+        if (!confirm(mensaje)) return;
+
+        try {
+            const response = await fetch(`/api/usuario/estado/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ activo: nuevoEstado })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, "success");
+                cargarUsuarios();
+            } else {
+                showToast(result.message, "error");
             }
+        } catch (e) {
+            showToast("Error al cambiar estado", "error");
         }
+    }
 
-        document.getElementById('modalUsuario').addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) cerrarModal();
-        });
-    </script>
+    document.getElementById('modalUsuario').addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-overlay')) cerrarModal();
+    });
+</script>
+
 </body>
 </html>
