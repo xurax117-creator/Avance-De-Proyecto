@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Punto de Venta - MRKdito</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/estilos.css">
@@ -10,7 +11,7 @@
         html, body {
             height: 100%;
             overflow: hidden;
-            background: #0f172a;
+            background: #080c10;
         }
 
         .pos-layout {
@@ -21,7 +22,7 @@
 
         /* ── HEADER ── */
         .pos-header {
-            background: #1e293b;
+            background: #161b22;
             border-bottom: 1px solid rgba(255,255,255,0.06);
             padding: 0 20px;
             height: 54px;
@@ -91,7 +92,7 @@
 
         /* ── SCAN BAR ── */
         .scan-bar {
-            background: #1e293b;
+            background: #161b22;
             padding: 12px 20px;
             display: grid;
             grid-template-columns: 1fr auto;
@@ -138,7 +139,7 @@
         .cart-area {
             flex: 1;
             overflow-y: auto;
-            background: #f0f4f9;
+            background: #0d1117;
         }
 
         .cart-table {
@@ -148,47 +149,49 @@
         }
 
         .cart-table thead th {
-            background: #1e293b;
-            color: rgba(255,255,255,0.55);
+            background: #080c10;
+            color: rgba(255,255,255,0.45);
             font-size: 10.5px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.7px;
             padding: 10px 14px;
-            border-bottom: none;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
             position: sticky;
             top: 0;
             z-index: 10;
         }
 
         .cart-table tbody td {
-            padding: 11px 14px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 13px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.09);
             font-size: 13.5px;
-            background: white;
+            background: #0d1117;
+            color: #e6edf3;
             vertical-align: middle;
         }
 
-        .cart-table tbody tr:hover td { background: #f9fafb; }
+        .cart-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+        .cart-table tbody tr:hover td { background: rgba(25,163,55,0.07); border-bottom-color: rgba(25,163,55,0.2); }
 
         .product-foto {
             width: 46px;
             height: 46px;
             border-radius: 9px;
             object-fit: cover;
-            border: 1px solid #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
         .no-foto {
             width: 46px;
             height: 46px;
             border-radius: 9px;
-            background: #f3f4f6;
+            background: rgba(255,255,255,0.06);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
         .badge-cantidad {
@@ -206,20 +209,20 @@
         .badge-cantidad:hover { filter: brightness(0.9); }
 
         .promocion-badge {
-            background: #fef3c7;
-            color: #92400e;
+            background: rgba(217,119,6,0.18);
+            color: #fbbf24;
             padding: 3px 8px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 700;
-            border: 1px solid #fde68a;
+            border: 1px solid rgba(217,119,6,0.25);
         }
 
         .btn-eliminar-item {
             padding: 5px 12px;
-            background: #fee2e2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
+            background: rgba(220,38,38,0.15);
+            color: #f87171;
+            border: 1px solid rgba(220,38,38,0.25);
             border-radius: 7px;
             cursor: pointer;
             font-size: 12px;
@@ -228,11 +231,11 @@
             transition: background 0.15s;
         }
 
-        .btn-eliminar-item:hover { background: #fecaca; }
+        .btn-eliminar-item:hover { background: rgba(220,38,38,0.25); }
 
         /* ── TOTAL BAR ── */
         .total-bar {
-            background: #1e293b;
+            background: #161b22;
             padding: 14px 20px;
             display: flex;
             align-items: center;
@@ -343,9 +346,10 @@
         .modal-overlay.active { display: flex; }
 
         .modal-content {
-            background: white;
+            background: #161b22;
+            border: 1px solid rgba(255,255,255,0.09);
             border-radius: 16px;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.6);
             width: 100%;
             max-width: 440px;
             padding: 28px;
@@ -361,12 +365,12 @@
             margin: 0 0 20px;
             font-size: 17px;
             font-weight: 700;
-            color: #111827;
+            color: #e6edf3;
             text-align: center;
         }
 
         .modal-row { margin-bottom: 16px; }
-        .modal-row label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+        .modal-row label { display: block; font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
 
         .modal-row .amount {
             font-size: 30px;
@@ -387,13 +391,14 @@
             font-family: 'Inter', sans-serif;
             outline: none;
             box-sizing: border-box;
-            color: #111827;
+            color: #e6edf3;
+            background: rgba(255,255,255,0.05);
         }
 
         .modal-row input[type="number"]:focus { box-shadow: 0 0 0 3px rgba(25,163,55,0.15); }
 
         .modal-result {
-            background: #f0f4f9;
+            background: rgba(255,255,255,0.05);
             border-radius: 10px;
             padding: 14px;
             text-align: center;
@@ -407,7 +412,7 @@
             letter-spacing: -1px;
         }
 
-        .modal-result p { font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .modal-result p { font-size: 12px; color: #8b949e; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 
         .modal-buttons {
             display: flex;
@@ -417,31 +422,74 @@
 
         .modal-buttons button { flex: 1; }
         .btn-pagar { background: var(--primary) !important; color: white !important; font-size: 15px !important; font-weight: 700 !important; }
-        .modal-buttons .btn-cancelar { background: #f3f4f6 !important; color: #374151 !important; font-size: 14px !important; font-weight: 600 !important; }
+        .modal-buttons .btn-cancelar { background: rgba(255,255,255,0.08) !important; color: #e6edf3 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+        /* Payment method selector */
+        .pago-metodo-selector { display: flex; gap: 8px; margin-top: 6px; }
+        .btn-metodo {
+            flex: 1; padding: 10px 8px;
+            border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-metodo.active { border-color: var(--primary); background: rgba(25,163,55,0.12); color: #4ade80; }
+        .btn-metodo:hover:not(.active) { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+        .metodo-seccion { margin-top: 0; }
+        .tarjeta-confirm { background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2); border-radius: 10px; padding: 18px; text-align: center; margin: 14px 0; }
+        .tarjeta-confirm p { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 6px; }
+        .tarjeta-confirm .confirm-text { font-size: 22px; font-weight: 700; color: #60a5fa; }
+        .mixto-resto { font-size: 12px; color: #8b949e; text-align: right; margin-top: 4px; }
 
         /* Search modal */
-        #modalBusqueda .modal-content { max-width: 520px; max-height: 80vh; overflow-y: auto; padding: 24px; }
+        #modalBusqueda .modal-content { max-width: 520px; }
 
         .search-result-item {
             display: flex;
             align-items: center;
             gap: 14px;
-            padding: 12px 14px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 10px;
-            margin-bottom: 8px;
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0;
+            margin-bottom: 0;
             cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
+            transition: background 0.15s;
+            background: transparent;
         }
 
-        .search-result-item:hover { border-color: var(--primary); background: #f0fdf4; }
+        .search-result-item:first-child { border-top: 1px solid rgba(255,255,255,0.08); }
+        .search-result-item:nth-child(even) { background: rgba(255,255,255,0.03); }
+        .search-result-item:hover { background: rgba(25,163,55,0.1); border-bottom-color: rgba(25,163,55,0.25); }
+
+        #modalBusqueda .modal-content {
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #modalBusqueda .modal-content h3 {
+            padding: 20px 24px 16px;
+            margin: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            position: sticky;
+            top: 0;
+            background: #161b22;
+            z-index: 1;
+        }
+
+        #resultadosBusqueda {
+            max-height: calc(80vh - 64px);
+            overflow-y: auto;
+        }
 
         .search-result-item img {
             width: 44px;
             height: 44px;
             border-radius: 8px;
             object-fit: cover;
-            border: 1px solid #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
         /* Waiting sales modal */
@@ -449,21 +497,71 @@
 
         .venta-espera-item {
             padding: 14px 16px;
-            border: 1.5px solid #e5e7eb;
+            border: 1.5px solid rgba(255,255,255,0.08);
             border-radius: 10px;
             margin-bottom: 10px;
             cursor: pointer;
             transition: border-color 0.15s, background 0.15s;
-            background: #f9fafb;
+            background: rgba(255,255,255,0.03);
         }
 
-        .venta-espera-item:hover { border-color: var(--primary); background: #f0fdf4; }
+        .venta-espera-item:hover { border-color: var(--primary); background: rgba(25,163,55,0.08); }
 
         .venta-espera-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .venta-espera-user { font-size: 13px; font-weight: 700; color: #111827; }
-        .venta-espera-fecha { font-size: 11.5px; color: #6b7280; }
-        .venta-espera-productos { font-size: 12.5px; color: #6b7280; margin-bottom: 8px; }
+        .venta-espera-user { font-size: 13px; font-weight: 700; color: #e6edf3; }
+        .venta-espera-fecha { font-size: 11.5px; color: #8b949e; }
+        .venta-espera-productos { font-size: 12.5px; color: #8b949e; margin-bottom: 8px; }
         .venta-espera-total { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+
+        /* Cart / search CSS classes (replaces inline styles) */
+        .cart-col-code    { color: #6b7280; font-size: 12px; }
+        .cart-col-name    { font-weight: 600; }
+        .cart-col-subtotal{ font-weight: 700; }
+        .stock-normal     { font-weight: 700; color: #8b949e; }
+        .stock-bajo       { font-weight: 700; color: #f87171; }
+        .search-item-name { font-weight: 600; color: #ffffff; }
+        .search-item-price{ font-size: 18px; font-weight: 700; color: #4ade80; }
+        .search-item-stock      { font-size: 12px; color: #8b949e; }
+        .search-item-stock-bajo { font-size: 12px; color: #f87171; }
+
+        /* Light mode overrides */
+        [data-theme="light"] html,
+        [data-theme="light"] body { background: #f0f2f5; }
+        [data-theme="light"] .pos-header { background: #ffffff; border-bottom-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .pos-back-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); color: rgba(0,0,0,0.55); }
+        [data-theme="light"] .pos-back-btn:hover { background: rgba(0,0,0,0.10); color: #111827; }
+        [data-theme="light"] .pos-title { color: #111827; }
+        [data-theme="light"] #user-info { color: rgba(0,0,0,0.45); }
+        [data-theme="light"] .scan-bar { background: #ffffff; border-bottom-color: rgba(0,0,0,0.06); }
+        [data-theme="light"] #txtClave { background: #f9fafb; border-color: rgba(0,0,0,0.12); color: #111827; }
+        [data-theme="light"] #txtClave::placeholder { color: rgba(0,0,0,0.30); }
+        [data-theme="light"] .cart-area { background: #f0f2f5; }
+        [data-theme="light"] .cart-table thead th { background: #e8ecf0; color: rgba(0,0,0,0.45); border-bottom-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .cart-table tbody td { background: #ffffff; color: #111827; border-bottom-color: rgba(0,0,0,0.06); }
+        [data-theme="light"] .cart-table tbody tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+        [data-theme="light"] .cart-table tbody tr:hover td { background: rgba(25,163,55,0.06); }
+        [data-theme="light"] .product-foto { border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .no-foto { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .total-bar { background: #ffffff; border-top-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] #lblTotal { color: #111827; }
+        [data-theme="light"] #lblVentaId { color: rgba(0,0,0,0.35); }
+        [data-theme="light"] .modal-row input[type="number"] { background: #fff; color: #111827; border-color: var(--primary); }
+        [data-theme="light"] .modal-result { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] .btn-metodo { border-color: rgba(0,0,0,0.12); background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.50); }
+        [data-theme="light"] .btn-metodo:hover:not(.active) { border-color: rgba(0,0,0,0.22); background: rgba(0,0,0,0.08); color: #111827; }
+        [data-theme="light"] .btn-metodo.active { color: #15803d; }
+        [data-theme="light"] .modal-buttons .btn-cancelar { background: rgba(0,0,0,0.06) !important; color: #374151 !important; }
+        [data-theme="light"] .search-result-item { border-bottom-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .search-result-item:first-child { border-top-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .search-result-item:nth-child(even) { background: rgba(0,0,0,0.025); }
+        [data-theme="light"] #modalBusqueda .modal-content h3 { background: #ffffff; border-bottom-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .venta-espera-item { border-color: rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); }
+        [data-theme="light"] .venta-espera-user { color: #111827; }
+        [data-theme="light"] .cart-col-code  { color: #9ca3af; }
+        [data-theme="light"] .search-item-name  { color: #111827; }
+        [data-theme="light"] .search-item-price { color: #16a34a; }
+        [data-theme="light"] .stock-normal { color: #9ca3af; }
+        [data-theme="light"] .tarjeta-confirm { background: rgba(37,99,235,0.07); border-color: rgba(37,99,235,0.14); }
     </style>
 </head>
 <body>
@@ -480,6 +578,7 @@
         </div>
         <div class="pos-header-right">
             <span id="user-info" style="font-size:13px;color:rgba(255,255,255,0.5)"></span>
+            <button class="pos-back-btn" id="pos-theme-btn" onclick="posToggleTheme()" title="Cambiar tema">☀️</button>
         </div>
     </div>
 
@@ -533,13 +632,50 @@
             <div id="modalTotal" class="amount">$0.00</div>
         </div>
         <div class="modal-row">
-            <label>¿Con cuánto te pagan?</label>
-            <input type="number" id="txtPago" placeholder="0.00" step="0.01" min="0">
+            <label>Método de Pago</label>
+            <div class="pago-metodo-selector">
+                <button id="btn-metodo-efectivo" class="btn-metodo active" onclick="seleccionarMetodo('efectivo')">💵 Efectivo</button>
+                <button id="btn-metodo-tarjeta"  class="btn-metodo"        onclick="seleccionarMetodo('tarjeta')">💳 Tarjeta</button>
+                <button id="btn-metodo-mixto"    class="btn-metodo"        onclick="seleccionarMetodo('mixto')">⚡ Mixto</button>
+            </div>
         </div>
-        <div class="modal-result">
-            <p>Cambio a Devolver</p>
-            <div id="modalCambio" class="change">$0.00</div>
+
+        <!-- Sección Efectivo -->
+        <div id="seccion-efectivo" class="metodo-seccion">
+            <div class="modal-row">
+                <label>¿Con cuánto te pagan?</label>
+                <input type="number" id="txtPago" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="modal-result">
+                <p>Cambio a Devolver</p>
+                <div id="modalCambio" class="change">$0.00</div>
+            </div>
         </div>
+
+        <!-- Sección Tarjeta -->
+        <div id="seccion-tarjeta" class="metodo-seccion" style="display:none">
+            <div class="tarjeta-confirm">
+                <p>Pago con tarjeta</p>
+                <div class="confirm-text">💳 Listo para cobrar</div>
+            </div>
+        </div>
+
+        <!-- Sección Mixto -->
+        <div id="seccion-mixto" class="metodo-seccion" style="display:none">
+            <div class="modal-row">
+                <label>Monto en Efectivo</label>
+                <input type="number" id="txtPagoEfectivo" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="modal-row" style="margin-top:10px">
+                <label>Monto en Tarjeta</label>
+                <input type="number" id="txtPagoTarjeta" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="modal-result" style="margin-top:12px">
+                <p>Cambio a Devolver (efectivo)</p>
+                <div id="modalCambioMixto" class="change">$0.00</div>
+            </div>
+        </div>
+
         <div class="modal-buttons">
             <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalPago()">Cancelar</button>
             <button class="btn btn-primary btn-pagar" onclick="confirmarPago()">✓ Confirmar Pago</button>
@@ -551,7 +687,7 @@
 <div id="modalBusqueda" class="modal-overlay">
     <div class="modal-content">
         <h3>🔍 Seleccionar Producto</h3>
-        <div id="resultadosBusqueda" style="margin-top:8px;"></div>
+        <div id="resultadosBusqueda"></div>
         <div class="modal-buttons" style="margin-top:16px;">
             <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalBusqueda()">Cerrar</button>
         </div>
@@ -570,11 +706,28 @@
 </div>
 
 <script>
+         // Apply theme before render to prevent flash
+         (function(){ const t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+
          const _idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
          if (!_idSucursal || !localStorage.getItem('userId')) {
              window.location.href = '/sucursal.html';
          }
          document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
+         function posToggleTheme() {
+             const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+             const next = cur === 'dark' ? 'light' : 'dark';
+             document.documentElement.setAttribute('data-theme', next);
+             localStorage.setItem('theme', next);
+             document.getElementById('pos-theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+         }
+         // Set correct icon on load
+         document.addEventListener('DOMContentLoaded', function() {
+             const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+             const btn = document.getElementById('pos-theme-btn');
+             if (btn) btn.textContent = cur === 'dark' ? '☀️' : '🌙';
+         });
 
          let listaCarrito = [];
          let currentVentaId = -1;
@@ -617,12 +770,12 @@
                 div.innerHTML = `
                     ${fotoHtml}
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: #333;">${p.nombre}</div>
-                        <div style="font-size: 12px; color: #666;">Código: ${p.codigoBarras || p.codigo_barras || 'N/A'}</div>
+                        <div class="search-item-name">${p.nombre}</div>
+                        <div style="font-size: 12px; color: #8b949e;">Código: ${p.codigoBarras || p.codigo_barras || 'N/A'}</div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold; color: #19A337;">${p.precioVenta.toFixed(2)}</div>
-                        <div style="font-size: 12px; color: ${p.stockActual <= 5 ? '#dc3545' : '#666'};">Stock: ${p.stockActual}</div>
+                        <div class="search-item-price">$${p.precioVenta.toFixed(2)}</div>
+                        <div class="${p.stockActual <= 5 ? 'search-item-stock-bajo' : 'search-item-stock'}">Stock: ${p.stockActual}</div>
                     </div>
                 `;
                 container.appendChild(div);
@@ -898,18 +1051,18 @@ async function aplicarPromociones() {
                 const promocionHtml = prod.promocionAplicada ? `<span class="promocion-badge">${prod.promocionAplicada}</span>` : '';
 
                 const stock = prod.stockActual;
-                const stockColor = stock != null && stock <= 5 ? '#dc3545' : '#333';
+                const stockClass = stock != null && stock <= 5 ? 'stock-bajo' : 'stock-normal';
                 const stockText = stock != null ? stock : '—';
                 cuerpoTabla.innerHTML += `
                     <tr>
                         <td>${fotoHtml}</td>
-                        <td style="color:#6b7280;font-size:12px">${prod.codigo}</td>
-                        <td style="font-weight:600">${prod.nombre}</td>
-                        <td style="font-weight: bold; color: ${stockColor};">${stockText}</td>
+                        <td class="cart-col-code">${prod.codigo}</td>
+                        <td class="cart-col-name">${prod.nombre}</td>
+                        <td class="${stockClass}">${stockText}</td>
                         <td><span class="badge-cantidad" ondblclick="editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
                         <td>$${prod.precio.toFixed(2)}</td>
                         <td>${promocionHtml}</td>
-                        <td style="font-weight:700">$${subtotal.toFixed(2)}</td>
+                        <td class="cart-col-subtotal">$${subtotal.toFixed(2)}</td>
                         <td><button class="btn-eliminar-item" onclick="eliminarItem(${prod.carritoId})">✕ Quitar</button></td>
                     </tr>`;
             });
@@ -917,45 +1070,78 @@ async function aplicarPromociones() {
             document.getElementById('lblTotal').textContent = `Total: $${sumaTotal.toFixed(2)}`;
         }
 
+        let metodoSeleccionado = 'efectivo';
+
+        function seleccionarMetodo(metodo) {
+            metodoSeleccionado = metodo;
+            ['efectivo', 'tarjeta', 'mixto'].forEach(m => {
+                document.getElementById('btn-metodo-' + m).classList.toggle('active', m === metodo);
+                document.getElementById('seccion-' + m).style.display = m === metodo ? '' : 'none';
+            });
+            if (metodo === 'efectivo') {
+                document.getElementById('txtPago').value = totalVenta.toFixed(2);
+                calcularCambioEfectivo();
+                setTimeout(() => { const el = document.getElementById('txtPago'); el.focus(); el.select(); }, 50);
+            } else if (metodo === 'mixto') {
+                document.getElementById('txtPagoEfectivo').value = '';
+                document.getElementById('txtPagoTarjeta').value = '';
+                document.getElementById('modalCambioMixto').textContent = "$0.00";
+                setTimeout(() => document.getElementById('txtPagoEfectivo').focus(), 50);
+            }
+        }
+
+        function calcularCambioEfectivo() {
+            const pago = parseFloat(document.getElementById('txtPago').value) || 0;
+            const cambio = Math.max(0, pago - totalVenta);
+            document.getElementById('modalCambio').textContent = `$${cambio.toFixed(2)}`;
+        }
+
+        function calcularCambioMixto() {
+            const ef = parseFloat(document.getElementById('txtPagoEfectivo').value) || 0;
+            const tj = parseFloat(document.getElementById('txtPagoTarjeta').value) || 0;
+            const cambio = Math.max(0, ef + tj - totalVenta);
+            document.getElementById('modalCambioMixto').textContent = `$${cambio.toFixed(2)}`;
+        }
+
         function abrirModalPago() {
             if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
-
             document.getElementById('modalTotal').textContent = `$${totalVenta.toFixed(2)}`;
-            document.getElementById('modalCambio').textContent = "$0.00";
-            document.getElementById('txtPago').value = totalVenta.toFixed(2);
+            seleccionarMetodo('efectivo');
             document.getElementById('modalPago').classList.add('active');
-            document.getElementById('txtPago').focus();
-            document.getElementById('txtPago').select();
         }
 
         function cerrarModalPago() {
             document.getElementById('modalPago').classList.remove('active');
         }
 
-        document.getElementById('txtPago').addEventListener('input', function() {
-            let pago = parseFloat(this.value) || 0;
-            pago = Math.round(pago * 100) / 100;
-            if (parseFloat(this.value) !== pago) { this.value = pago.toFixed(2); }
-            const cambio = Math.max(0, pago - totalVenta);
-            document.getElementById('modalCambio').textContent = `$${cambio.toFixed(2)}`;
-        });
-
-        document.getElementById('txtPago').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') confirmarPago();
-        });
+        document.getElementById('txtPago').addEventListener('input', calcularCambioEfectivo);
+        document.getElementById('txtPago').addEventListener('keypress', function(e) { if (e.key === 'Enter') confirmarPago(); });
+        document.getElementById('txtPagoEfectivo').addEventListener('input', calcularCambioMixto);
+        document.getElementById('txtPagoEfectivo').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('txtPagoTarjeta').focus(); });
+        document.getElementById('txtPagoTarjeta').addEventListener('input', calcularCambioMixto);
+        document.getElementById('txtPagoTarjeta').addEventListener('keypress', function(e) { if (e.key === 'Enter') confirmarPago(); });
 
         function confirmarPago() {
-            const pago = parseFloat(document.getElementById('txtPago').value) || 0;
             const tolerancia = 0.01;
-            if (pago < totalVenta - tolerancia) {
-                showToast("El pago es insuficiente", "warning");
-                return;
+            if (metodoSeleccionado === 'efectivo') {
+                const pago = parseFloat(document.getElementById('txtPago').value) || 0;
+                if (pago < totalVenta - tolerancia) { showToast("El pago es insuficiente", "warning"); return; }
+                cerrarModalPago();
+                finalizarVenta(totalVenta, 0);
+            } else if (metodoSeleccionado === 'tarjeta') {
+                cerrarModalPago();
+                finalizarVenta(0, totalVenta);
+            } else {
+                const ef = parseFloat(document.getElementById('txtPagoEfectivo').value) || 0;
+                const tj = parseFloat(document.getElementById('txtPagoTarjeta').value) || 0;
+                if (ef < 0 || tj < 0) { showToast("Los montos no pueden ser negativos", "warning"); return; }
+                if (ef + tj < totalVenta - tolerancia) { showToast("El monto total es insuficiente", "warning"); return; }
+                cerrarModalPago();
+                finalizarVenta(ef, tj);
             }
-            cerrarModalPago();
-            finalizarVenta();
         }
 
-        async function finalizarVenta() {
+        async function finalizarVenta(montoEfectivo, montoTarjeta) {
             if (listaCarrito.length === 0) { showToast("El carrito está vacío", "warning"); return; }
 
             const requestBody = {
@@ -963,7 +1149,9 @@ async function aplicarPromociones() {
                 idVenta: currentVentaId,
                 totalFinal: totalVenta,
                 idSucursal: parseInt(localStorage.getItem('idSucursal') || '1'),
-                listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio }))
+                listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio })),
+                montoEfectivo: montoEfectivo,
+                montoTarjeta: montoTarjeta
             };
 
             try {

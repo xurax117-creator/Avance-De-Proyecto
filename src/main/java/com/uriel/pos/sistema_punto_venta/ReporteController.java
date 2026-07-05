@@ -15,9 +15,16 @@ public class ReporteController {
             @RequestParam(defaultValue = "23:59") String horaFin,
             @RequestParam(defaultValue = "1") int pagina,
             @RequestParam(defaultValue = "50") int tamano,
-            @RequestParam(defaultValue = "1") int sucursal) {
+            @RequestParam(defaultValue = "1") int sucursal,
+            @RequestParam(defaultValue = "") String categoria) {
         ReporteDAO dao = new ReporteDAO();
-        return dao.obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamano, sucursal);
+        return dao.obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamano, sucursal, categoria);
+    }
+
+    @GetMapping("/categorias")
+    public List<String> getCategorias(@RequestParam(defaultValue = "1") int sucursal) {
+        ReporteDAO dao = new ReporteDAO();
+        return dao.obtenerCategorias(sucursal);
     }
 
     @GetMapping("/detalle/{id}")

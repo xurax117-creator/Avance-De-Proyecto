@@ -18,9 +18,9 @@
             letter-spacing: 0.4px;
         }
 
-        .tipo-buy_x_get_y     { background: #dbeafe; color: #1d4ed8; }
-        .tipo-percent_off     { background: #fff7ed; color: #c2410c; }
-        .tipo-fixed_discount  { background: #ecfdf5; color: #047857; }
+        .tipo-buy_x_get_y     { background: rgba(37,99,235,0.15);  color: #60a5fa; }
+        .tipo-percent_off     { background: rgba(194,65,12,0.15);  color: #fb923c; }
+        .tipo-fixed_discount  { background: rgba(4,120,87,0.15);   color: #34d399; }
 
         .btn-editar, .btn-eliminar {
             display: inline-flex;
@@ -37,9 +37,9 @@
             margin-right: 3px;
         }
 
-        .btn-editar  { background: #fef3c7; color: #92400e; }
-        .btn-eliminar { background: #fee2e2; color: #b91c1c; }
-        .btn-editar:hover, .btn-eliminar:hover { filter: brightness(0.9); }
+        .btn-editar  { background: rgba(217,119,6,0.15);  color: #fbbf24; }
+        .btn-eliminar { background: rgba(220,38,38,0.15); color: #f87171; }
+        .btn-editar:hover, .btn-eliminar:hover { filter: brightness(1.1); }
 
         .modal {
             display: none;
@@ -53,9 +53,10 @@
         }
 
         .modal-content {
-            background: white;
+            background: #161b22;
+            border: 1px solid rgba(255,255,255,0.09);
             border-radius: 14px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
             width: 100%;
             max-width: 620px;
             margin: 0 auto;
@@ -71,7 +72,7 @@
         .modal-content h3 {
             font-size: 17px;
             font-weight: 700;
-            color: #111827;
+            color: #e6edf3;
             margin: 0 0 22px;
         }
 
@@ -83,7 +84,7 @@
 
         .full { grid-column: span 2; }
 
-        .help-text { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+        .help-text { font-size: 11px; color: #8b949e; margin-top: 4px; }
 
         .modal-footer {
             margin-top: 22px;
@@ -101,8 +102,8 @@
             min-height: 38px;
             margin-top: 10px;
             padding: 8px;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
+            background: rgba(25,163,55,0.07);
+            border: 1px solid rgba(25,163,55,0.2);
             border-radius: 8px;
             display: flex;
             flex-wrap: wrap;
@@ -138,31 +139,34 @@
             margin-top: 8px;
             max-height: 160px;
             overflow-y: auto;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
-            background: white;
+            background: #0d1117;
             display: none;
         }
 
         #lista_resultados > div {
             padding: 9px 12px;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 13px;
+            color: #e6edf3;
         }
 
         #lista_resultados > div:last-child { border-bottom: none; }
-        #lista_resultados > div:hover { background: #f9fafb; }
+        #lista_resultados > div:hover { background: rgba(255,255,255,0.04); }
 
         .modal-form .form-group { margin-bottom: 0; }
-        .modal-form .form-group label { display: block; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+        .modal-form .form-group label { display: block; font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
         .modal-form .form-group input,
         .modal-form .form-group select {
             width: 100%;
             padding: 9px 12px;
-            border: 1.5px solid #e5e7eb;
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.09);
+            color: #e6edf3;
             border-radius: 8px;
             font-size: 14px;
             font-family: 'Inter', sans-serif;
@@ -182,7 +186,7 @@
             gap: 8px;
             font-size: 14px;
             font-weight: 500;
-            color: #374151;
+            color: #e6edf3;
             cursor: pointer;
             padding: 8px 0;
         }
@@ -191,6 +195,18 @@
             width: auto;
             cursor: pointer;
         }
+
+        /* Light mode overrides */
+        [data-theme="light"] .promo-active-label { color: #111827; }
+        [data-theme="light"] #resultados_busqueda { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] #lista_resultados > div { color: #111827; border-bottom-color: rgba(0,0,0,0.05); }
+        [data-theme="light"] #lista_resultados > div:hover { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] #productos_seleccionados { background: rgba(25,163,55,0.06); border-color: rgba(25,163,55,0.18); }
+        [data-theme="light"] .btn-editar  { background: rgba(217,119,6,0.12);  color: #b45309; }
+        [data-theme="light"] .btn-eliminar { background: rgba(220,38,38,0.12); color: #dc2626; }
+        [data-theme="light"] .tipo-buy_x_get_y    { background: rgba(37,99,235,0.10);  color: #2563eb; }
+        [data-theme="light"] .tipo-percent_off    { background: rgba(194,65,12,0.10);  color: #c2410c; }
+        [data-theme="light"] .tipo-fixed_discount { background: rgba(4,120,87,0.10);   color: #047857; }
     </style>
 </head>
 <body>

@@ -5,44 +5,63 @@ import java.util.*;
 
 public class ReporteDAO {
 
-    public List<Map<String, Object>> obtenerVentas(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina, int sucursal) {
+    public List<Map<String, Object>> obtenerVentas(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina, int sucursal, String categoria) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String fechaHoraInicio = inicio + " " + horaInicio + ":00";
         String fechaHoraFin    = fin    + " " + horaFin    + ":59";
 
+        boolean filtrarCat = categoria != null && !categoria.isBlank();
+        String catSubquery = filtrarCat
+            ? " AND v.id_venta IN (SELECT DISTINCT dv2.id_venta FROM detalle_venta dv2 JOIN productos p2 ON dv2.id_producto = p2.id_producto WHERE p2.categoria = ?)"
+            : "";
+
         try (Connection c = new Conexion().conectar()) {
             int totalRegistros = 0;
-            try (PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) as total FROM ventas WHERE fecha BETWEEN ? AND ? AND id_sucursal = ?")) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "SELECT COUNT(*) as total FROM ventas v WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, sucursal);
+                if (filtrarCat) ps.setString(4, categoria);
                 try (ResultSet rs = ps.executeQuery()) { if (rs.next()) totalRegistros = rs.getInt("total"); }
             }
 
-            double totalGeneral = 0;
-            try (PreparedStatement ps = c.prepareStatement("SELECT COALESCE(SUM(total), 0) as total_general FROM ventas WHERE fecha BETWEEN ? AND ? AND id_sucursal = ?")) {
+            double totalGeneral = 0, totalEfectivo = 0, totalTarjeta = 0;
+            try (PreparedStatement ps = c.prepareStatement(
+                    "SELECT COALESCE(SUM(total),0) as tg, COALESCE(SUM(monto_efectivo),0) as ef, COALESCE(SUM(monto_tarjeta),0) as tj FROM ventas v WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, sucursal);
-                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) totalGeneral = rs.getDouble("total_general"); }
+                if (filtrarCat) ps.setString(4, categoria);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        totalGeneral  = rs.getDouble("tg");
+                        totalEfectivo = rs.getDouble("ef");
+                        totalTarjeta  = rs.getDouble("tj");
+                    }
+                }
             }
 
-            String sql = "SELECT id_venta, fecha, nombre, total, numero_venta FROM (" +
-                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, " +
+            String sql = "SELECT id_venta, fecha, nombre, total, monto_efectivo, monto_tarjeta, numero_venta FROM (" +
+                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, v.monto_efectivo, v.monto_tarjeta, " +
                          "ROW_NUMBER() OVER (ORDER BY v.id_venta DESC) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
-                         "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?) sub " +
+                         "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery + ") sub " +
                          "ORDER BY id_venta DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setString(1, fechaHoraInicio);
                 ps.setString(2, fechaHoraFin);
                 ps.setInt(3, sucursal);
-                ps.setInt(4, tamanoPagina);
-                ps.setInt(5, (pagina - 1) * tamanoPagina);
+                int idx = 4;
+                if (filtrarCat) ps.setString(idx++, categoria);
+                ps.setInt(idx++, tamanoPagina);
+                ps.setInt(idx,   (pagina - 1) * tamanoPagina);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("idVenta",     rs.getInt("id_venta"));
-                        map.put("numeroVenta", rs.getInt("numero_venta"));
-                        map.put("fecha",       rs.getString("fecha"));
-                        map.put("nombre",      rs.getString("nombre"));
-                        map.put("total",       rs.getDouble("total"));
+                        map.put("idVenta",       rs.getInt("id_venta"));
+                        map.put("numeroVenta",   rs.getInt("numero_venta"));
+                        map.put("fecha",         rs.getString("fecha"));
+                        map.put("nombre",        rs.getString("nombre"));
+                        map.put("total",         rs.getDouble("total"));
+                        map.put("montoEfectivo", rs.getDouble("monto_efectivo"));
+                        map.put("montoTarjeta",  rs.getDouble("monto_tarjeta"));
                         lista.add(map);
                     }
                 }
@@ -51,6 +70,8 @@ public class ReporteDAO {
             Map<String, Object> pagInfo = new HashMap<>();
             pagInfo.put("totalRegistros", totalRegistros);
             pagInfo.put("totalGeneral",   totalGeneral);
+            pagInfo.put("totalEfectivo",  totalEfectivo);
+            pagInfo.put("totalTarjeta",   totalTarjeta);
             pagInfo.put("paginaActual",   pagina);
             pagInfo.put("tamanoPagina",   tamanoPagina);
             pagInfo.put("totalPaginas",   Math.max(1, (int) Math.ceil((double) totalRegistros / tamanoPagina)));
@@ -59,8 +80,26 @@ public class ReporteDAO {
         return lista;
     }
 
+    public List<Map<String, Object>> obtenerVentas(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina, int sucursal) {
+        return obtenerVentas(inicio, horaInicio, fin, horaFin, pagina, tamanoPagina, sucursal, "");
+    }
+
     public List<Map<String, Object>> obtenerVentas(String inicio, String fin) {
-        return obtenerVentas(inicio, "00:00", fin, "23:59", 1, 1000, 1);
+        return obtenerVentas(inicio, "00:00", fin, "23:59", 1, 1000, 1, "");
+    }
+
+    public List<String> obtenerCategorias(int sucursal) {
+        List<String> cats = new ArrayList<>();
+        String sql = "SELECT DISTINCT COALESCE(NULLIF(TRIM(categoria), ''), 'General') as cat " +
+                     "FROM productos WHERE id_sucursal = ? ORDER BY cat";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, sucursal);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) cats.add(rs.getString("cat"));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return cats;
     }
 
     public List<Map<String, Object>> obtenerDetalleVenta(int idVenta) {

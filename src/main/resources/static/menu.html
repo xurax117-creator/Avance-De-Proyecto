@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - MRKdito POS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/estilos.css">
     <style>
         body {
-            background: #0b1120;
+            background: #080c10;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -24,8 +25,12 @@
         }
 
         .top-bar img {
-            height: 36px;
-            filter: brightness(0) invert(1) opacity(0.9);
+            height: 64px;
+            display: block;
+            background: white;
+            padding: 9px 22px;
+            border-radius: 14px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.4);
         }
 
         .top-bar-right {
@@ -214,12 +219,32 @@
         .mod-card.danger .mod-arrow { color: rgba(248,113,113,0.3); }
         .mod-card.danger:hover .mod-arrow { color: #f87171; }
         .mod-card.danger::before { background: linear-gradient(135deg, #dc2626 0%, transparent 50%); }
+
+        /* Light mode overrides */
+        [data-theme="light"] body { background: #f0f2f5; }
+        [data-theme="light"] .top-bar { background: #ffffff; border-bottom: 1px solid rgba(0,0,0,0.07); }
+        [data-theme="light"] .user-pill { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .user-pill-text { color: #111827; }
+        [data-theme="light"] .branch-pill { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); color: rgba(0,0,0,0.55); }
+        [data-theme="light"] .dash-greeting h1 { color: #111827; }
+        [data-theme="light"] .dash-greeting p  { color: rgba(0,0,0,0.45); }
+        [data-theme="light"] .mod-card { background: #ffffff; border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .mod-card:hover { background: rgba(0,0,0,0.03); box-shadow: 0 16px 40px rgba(0,0,0,0.10); }
+        [data-theme="light"] .mod-title { color: #111827; }
+        [data-theme="light"] .mod-desc  { color: rgba(0,0,0,0.45); }
+        [data-theme="light"] .mod-arrow { color: rgba(0,0,0,0.15); }
+        [data-theme="light"] .mod-card:hover .mod-arrow { color: var(--primary); }
+        [data-theme="light"] .mod-card.danger .mod-title { color: #dc2626; }
+        [data-theme="light"] .mod-card.danger { border-color: rgba(220,38,38,0.15); }
+        [data-theme="light"] .mod-card.danger:hover { background: rgba(220,38,38,0.04); }
+        [data-theme="light"] .btn-theme { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.10); color: #374151; }
+        [data-theme="light"] .btn-theme:hover { background: rgba(0,0,0,0.10); }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <img src="/logo MRKdito.png" alt="MRKdito POS">
+        <img src="/mrkdito logo sin fondo real.png" alt="MRKdito POS">
         <div class="top-bar-right">
             <div class="branch-pill">
                 <span class="branch-dot"></span>
@@ -229,6 +254,7 @@
                 <div class="user-pill-avatar" id="userInitials">?</div>
                 <span class="user-pill-text" id="txtNombre">Usuario</span>
             </div>
+            <button id="menu-theme-btn" class="btn-logout btn-theme" onclick="menuToggleTheme()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);color:rgba(255,255,255,0.7);">☀️ Modo Claro</button>
             <button class="btn-logout" onclick="logout()">🚪 Salir</button>
         </div>
     </div>
@@ -240,7 +266,7 @@
         </div>
 
         <div class="modules-grid">
-            <a href="/venta.html" class="mod-card">
+            <a href="/venta.html" class="mod-card" data-roles="Administrador,Gerente,Cajero">
                 <span class="mod-icon">🛒</span>
                 <div class="mod-info">
                     <p class="mod-title">Punto de Venta</p>
@@ -249,7 +275,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/inventario.html" class="mod-card">
+            <a href="/inventario.html" class="mod-card" data-roles="Administrador,Gerente">
                 <span class="mod-icon">📦</span>
                 <div class="mod-info">
                     <p class="mod-title">Inventario</p>
@@ -258,7 +284,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/entrada-inventario.html" class="mod-card">
+            <a href="/entrada-inventario.html" class="mod-card" data-roles="Administrador,Gerente,Cajero">
                 <span class="mod-icon">📥</span>
                 <div class="mod-info">
                     <p class="mod-title">Entradas</p>
@@ -267,7 +293,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/reportes.html" class="mod-card">
+            <a href="/reportes.html" class="mod-card" data-roles="Administrador,Gerente">
                 <span class="mod-icon">📊</span>
                 <div class="mod-info">
                     <p class="mod-title">Reportes</p>
@@ -276,7 +302,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/promociones.html" class="mod-card">
+            <a href="/promociones.html" class="mod-card" data-roles="Administrador,Gerente">
                 <span class="mod-icon">🏷️</span>
                 <div class="mod-info">
                     <p class="mod-title">Promociones</p>
@@ -285,7 +311,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/usuarios.html" class="mod-card">
+            <a href="/usuarios.html" class="mod-card" data-roles="Administrador">
                 <span class="mod-icon">👥</span>
                 <div class="mod-info">
                     <p class="mod-title">Usuarios</p>
@@ -294,7 +320,7 @@
                 <span class="mod-arrow">›</span>
             </a>
 
-            <a href="/proveedores.html" class="mod-card">
+            <a href="/proveedores.html" class="mod-card" data-roles="Administrador,Gerente">
                 <span class="mod-icon">🚚</span>
                 <div class="mod-info">
                     <p class="mod-title">Proveedores</p>
@@ -315,6 +341,9 @@
     </div>
 
     <script>
+        // Apply theme immediately
+        (function(){ const t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+
         const userId     = localStorage.getItem('userId');
         const nombre     = localStorage.getItem('nombreUsuario');
         const rol        = localStorage.getItem('rolUsuario');
@@ -334,7 +363,30 @@
 
             const initials = nombre.trim().split(/\s+/).slice(0, 2).map(n => n[0] || '').join('').toUpperCase() || '?';
             document.getElementById('userInitials').textContent = initials;
+
+            // Ocultar cards no permitidas para este rol
+            document.querySelectorAll('[data-roles]').forEach(el => {
+                const permitidos = el.getAttribute('data-roles').split(',');
+                if (!permitidos.includes(rol)) el.style.display = 'none';
+            });
         }
+
+        function menuToggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            menuUpdateThemeBtn();
+        }
+
+        function menuUpdateThemeBtn() {
+            const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            const btn = document.getElementById('menu-theme-btn');
+            if (!btn) return;
+            btn.textContent = cur === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Oscuro';
+        }
+
+        document.addEventListener('DOMContentLoaded', menuUpdateThemeBtn);
 
         function logout() {
             if (confirm("¿Cerrar sesión?")) {

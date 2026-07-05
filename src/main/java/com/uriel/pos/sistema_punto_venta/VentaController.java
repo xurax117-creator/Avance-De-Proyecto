@@ -24,6 +24,8 @@ public class VentaController {
         public double totalFinal;
         public int idSucursal;
         public List<DetalleVentaRequest> listaCarrito;
+        public double montoEfectivo;
+        public double montoTarjeta;
     }
 
     public static class VentaEnEsperaRequest {
@@ -88,7 +90,9 @@ public class VentaController {
             System.out.println("Items en carrito: " + request.listaCarrito.size());
 
             int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
-            oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal, sucursal);
+            double tarjeta = Math.min(Math.max(request.montoTarjeta, 0), request.totalFinal);
+            double efectivo = request.totalFinal - tarjeta;
+            oper.finalizarTransaccion(request.idVenta, request.listaCarrito, request.totalFinal, sucursal, efectivo, tarjeta);
             response.put("success", true);
             System.out.println("Venta finalizada exitosamente");
         } catch (Exception e) {

@@ -32,7 +32,7 @@ public class Venta {
                         rs.getInt("id_producto"),
                         rs.getString("nombre"),
                         rs.getDouble("precio_venta"),
-                        rs.getInt("existencias_act"),
+                        rs.getDouble("existencias_act"),
                         fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null,
                         rs.getString("codigo_barras")
                     );
@@ -77,7 +77,7 @@ public class Venta {
                         rs.getInt("id_producto"),
                         rs.getString("nombre"),
                         rs.getDouble("precio_venta"),
-                        rs.getInt("existencias_act"),
+                        rs.getDouble("existencias_act"),
                         fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null,
                         rs.getString("codigo_barras")
                     ));
@@ -87,7 +87,7 @@ public class Venta {
         return lista;
     }
 
-    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal, int idSucursal) throws SQLException {
+    public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal, int idSucursal, double montoEfectivo, double montoTarjeta) throws SQLException {
         Connection c = null;
         try {
             c = new Conexion().conectar();
@@ -107,9 +107,11 @@ public class Venta {
                 }
             }
 
-            try (PreparedStatement stmtTotal = c.prepareStatement("UPDATE ventas SET total = ? WHERE id_venta = ?")) {
+            try (PreparedStatement stmtTotal = c.prepareStatement("UPDATE ventas SET total = ?, monto_efectivo = ?, monto_tarjeta = ? WHERE id_venta = ?")) {
                 stmtTotal.setDouble(1, totalFinal);
-                stmtTotal.setInt(2, ventaId);
+                stmtTotal.setDouble(2, montoEfectivo);
+                stmtTotal.setDouble(3, montoTarjeta);
+                stmtTotal.setInt(4, ventaId);
                 stmtTotal.executeUpdate();
             }
 
@@ -280,11 +282,11 @@ class ProductoData {
     public int idProducto;
     public String nombre;
     public double precioVenta;
-    public int stockActual;
+    public double stockActual;
     public String fotoProducto;
     public String codigoBarras;
 
-    public ProductoData(int idProducto, String nombre, double precioVenta, int stockActual, String fotoProducto, String codigoBarras) {
+    public ProductoData(int idProducto, String nombre, double precioVenta, double stockActual, String fotoProducto, String codigoBarras) {
         this.idProducto = idProducto;
         this.nombre = nombre;
         this.precioVenta = precioVenta;

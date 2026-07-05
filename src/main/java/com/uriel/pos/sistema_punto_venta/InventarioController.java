@@ -30,7 +30,7 @@ public class InventarioController {
                     p.put("id_proveedor", rs.getInt("id_proveedor"));
                     p.put("precio_compra", rs.getDouble("precio_compra"));
                     p.put("precio_venta", rs.getDouble("precio_venta"));
-                    p.put("existencias_act", rs.getInt("existencias_act"));
+                    p.put("existencias_act", rs.getDouble("existencias_act"));
                     p.put("existencias_min", rs.getInt("existencias_min"));
                     p.put("activo", rs.getBoolean("activo"));
                     byte[] fotoBytes = rs.getBytes("foto_producto_blob");
@@ -78,7 +78,7 @@ public class InventarioController {
             }
             ps.setDouble(5, Double.parseDouble(p.get("precio_compra").toString()));
             ps.setDouble(6, Double.parseDouble(p.get("precio_venta").toString()));
-            ps.setInt(7, Integer.parseInt(p.get("existencias_act").toString()));
+            ps.setDouble(7, Double.parseDouble(p.get("existencias_act").toString()));
             ps.setInt(8, Integer.parseInt(p.get("existencias_min").toString()));
             if (esUpdate) {
                 if (fotoBytes != null) { ps.setBytes(9, fotoBytes); ps.setInt(10, Integer.parseInt(p.get("id_producto").toString())); }
@@ -235,35 +235,35 @@ public class InventarioController {
     public Map<String, Object> registrarEntrada(@RequestBody Map<String, Object> datos) {
         Map<String, Object> res = new HashMap<>();
         try (Connection c = new Conexion().conectar()) {
-            int idProducto = Integer.parseInt(datos.get("id_producto").toString());
-            int cantidad   = Integer.parseInt(datos.get("cantidad").toString());
-            String nota    = datos.get("nota") != null ? datos.get("nota").toString() : "";
-            int idUsuario  = Integer.parseInt(datos.get("id_usuario").toString());
-            int sucursal   = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
-            Double precioCompra = datos.get("precio_compra") != null && !datos.get("precio_compra").toString().isEmpty()
-                ? Double.parseDouble(datos.get("precio_compra").toString()) : null;
+            int idProducto    = Integer.parseInt(datos.get("id_producto").toString());
+            double cantidad   = Double.parseDouble(datos.get("cantidad").toString());
+            String nota       = datos.get("nota") != null ? datos.get("nota").toString() : "";
+            int idUsuario     = Integer.parseInt(datos.get("id_usuario").toString());
+            int sucursal      = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
+            Double precioVenta = datos.get("precio_venta") != null && !datos.get("precio_venta").toString().isEmpty()
+                ? Double.parseDouble(datos.get("precio_venta").toString()) : null;
 
-            int existActual = 0;
+            double existActual = 0;
             try (PreparedStatement psGet = c.prepareStatement("SELECT existencias_act FROM productos WHERE id_producto = ?")) {
                 psGet.setInt(1, idProducto);
                 try (ResultSet rs = psGet.executeQuery()) {
-                    if (rs.next()) existActual = rs.getInt("existencias_act");
+                    if (rs.next()) existActual = rs.getDouble("existencias_act");
                 }
             }
 
             String sqlUpdate = "UPDATE productos SET existencias_act = existencias_act + ?" +
-                               (precioCompra != null ? ", precio_compra = ?" : "") +
+                               (precioVenta != null ? ", precio_venta = ?" : "") +
                                " WHERE id_producto = ?";
             try (PreparedStatement psUpdate = c.prepareStatement(sqlUpdate)) {
-                psUpdate.setInt(1, cantidad);
-                if (precioCompra != null) { psUpdate.setDouble(2, precioCompra); psUpdate.setInt(3, idProducto); }
-                else                      { psUpdate.setInt(2, idProducto); }
+                psUpdate.setDouble(1, cantidad);
+                if (precioVenta != null) { psUpdate.setDouble(2, precioVenta); psUpdate.setInt(3, idProducto); }
+                else                     { psUpdate.setInt(2, idProducto); }
                 psUpdate.executeUpdate();
             }
 
             String sqlInsert = "INSERT INTO entradas_inventario (id_producto, cantidad, nota, id_usuario, fecha_entrada, id_sucursal) VALUES (?, ?, ?, ?, CONVERT_TZ(NOW(), '+02:00', '-04:00'), ?)";
             try (PreparedStatement psInsert = c.prepareStatement(sqlInsert)) {
-                psInsert.setInt(1, idProducto); psInsert.setInt(2, cantidad);
+                psInsert.setInt(1, idProducto); psInsert.setDouble(2, cantidad);
                 psInsert.setString(3, nota);    psInsert.setInt(4, idUsuario);
                 psInsert.setInt(5, sucursal);
                 psInsert.executeUpdate();
@@ -271,6 +271,65 @@ public class InventarioController {
 
             res.put("success", true);
             res.put("nueva_existencia", existActual + cantidad);
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.put("success", false);
+            res.put("message", e.getMessage());
+        }
+        return res;
+    }
+
+    @GetMapping("/reporte-entradas")
+    public Map<String, Object> reporteEntradas(
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin,
+            @RequestParam(defaultValue = "1") int sucursal,
+            @RequestParam(defaultValue = "") String filtro) {
+        Map<String, Object> res = new HashMap<>();
+        List<Map<String, Object>> lista = new ArrayList<>();
+        boolean tieneFiltro = !filtro.isEmpty();
+
+        String sql = "SELECT e.id_entrada, e.fecha_entrada, p.nombre AS nombre_producto, " +
+                     "p.codigo_barras, prov.nombre AS nombre_proveedor, e.cantidad, " +
+                     "u.nombre_completo AS nombre_usuario, e.nota " +
+                     "FROM entradas_inventario e " +
+                     "LEFT JOIN productos p ON e.id_producto = p.id_producto " +
+                     "LEFT JOIN proveedores prov ON p.id_proveedor = prov.id_proveedor " +
+                     "LEFT JOIN usuarios u ON e.id_usuario = u.id_usuario " +
+                     "WHERE e.id_sucursal = ? AND DATE(e.fecha_entrada) BETWEEN ? AND ?" +
+                     (tieneFiltro ? " AND (p.nombre LIKE ? OR p.codigo_barras LIKE ?)" : "") +
+                     " ORDER BY e.fecha_entrada DESC";
+
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            int idx = 1;
+            stmt.setInt(idx++, sucursal);
+            stmt.setString(idx++, fechaInicio);
+            stmt.setString(idx++, fechaFin);
+            if (tieneFiltro) {
+                stmt.setString(idx++, "%" + filtro + "%");
+                stmt.setString(idx, "%" + filtro + "%");
+            }
+            double totalCantidad = 0;
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> e = new HashMap<>();
+                    e.put("id_entrada",        rs.getInt("id_entrada"));
+                    e.put("fecha_entrada",      rs.getTimestamp("fecha_entrada").toString());
+                    e.put("nombre_producto",    rs.getString("nombre_producto"));
+                    e.put("codigo_barras",      rs.getString("codigo_barras"));
+                    e.put("nombre_proveedor",   rs.getString("nombre_proveedor"));
+                    e.put("cantidad",           rs.getDouble("cantidad"));
+                    e.put("nombre_usuario",     rs.getString("nombre_usuario"));
+                    e.put("nota",               rs.getString("nota"));
+                    totalCantidad += rs.getDouble("cantidad");
+                    lista.add(e);
+                }
+            }
+            res.put("success", true);
+            res.put("entradas", lista);
+            res.put("totalEntradas", lista.size());
+            res.put("totalCantidad", totalCantidad);
         } catch (Exception e) {
             e.printStackTrace();
             res.put("success", false);
@@ -296,7 +355,7 @@ public class InventarioController {
                     e.put("id_entrada",      rs.getInt("id_entrada"));
                     e.put("id_producto",     rs.getInt("id_producto"));
                     e.put("nombre_producto", rs.getString("nombre_producto"));
-                    e.put("cantidad",        rs.getInt("cantidad"));
+                    e.put("cantidad",        rs.getDouble("cantidad"));
                     e.put("nota",            rs.getString("nota"));
                     e.put("nombre_usuario",  rs.getString("nombre_usuario"));
                     e.put("fecha_entrada",   rs.getTimestamp("fecha_entrada").toString());
@@ -356,7 +415,7 @@ public class InventarioController {
                         p.put("id_proveedor",    rs.getInt("id_proveedor"));
                         p.put("precio_compra",   rs.getDouble("precio_compra"));
                         p.put("precio_venta",    rs.getDouble("precio_venta"));
-                        p.put("existencias_act", rs.getInt("existencias_act"));
+                        p.put("existencias_act", rs.getDouble("existencias_act"));
                         p.put("existencias_min", rs.getInt("existencias_min"));
                         p.put("activo",          rs.getBoolean("activo"));
                         byte[] fotoBytes = rs.getBytes("foto_producto_blob");
@@ -396,7 +455,7 @@ public class InventarioController {
                     p.put("codigo_barras",  rs.getString("codigo_barras"));
                     p.put("nombre",         rs.getString("nombre"));
                     p.put("precio_venta",   rs.getDouble("precio_venta"));
-                    p.put("existencias_act",rs.getInt("existencias_act"));
+                    p.put("existencias_act",rs.getDouble("existencias_act"));
                     p.put("activo",         rs.getBoolean("activo"));
                     byte[] fotoBytes = rs.getBytes("foto_producto_blob");
                     p.put("foto_producto", fotoBytes != null ? Base64.getEncoder().encodeToString(fotoBytes) : null);
