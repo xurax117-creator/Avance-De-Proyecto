@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Acceso - MRKdito POS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -313,8 +314,10 @@
             const idSucursal     = localStorage.getItem('idSucursal');
             const nombreSucursal = localStorage.getItem('nombreSucursal');
             const colorSucursal  = localStorage.getItem('colorSucursal');
+            const tema           = localStorage.getItem('theme');
 
             localStorage.clear();
+            if (tema) localStorage.setItem('theme', tema);
 
             if (!idSucursal) { window.location.href = '/sucursal.html'; return; }
 

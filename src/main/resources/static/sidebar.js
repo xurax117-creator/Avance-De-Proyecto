@@ -114,7 +114,9 @@
 
     window.mrk_logout = function () {
         if (confirm('¿Seguro que deseas cerrar sesión?')) {
+            const tema = localStorage.getItem('theme');
             localStorage.clear();
+            if (tema) localStorage.setItem('theme', tema);
             location.href = '/sucursal.html';
         }
     };

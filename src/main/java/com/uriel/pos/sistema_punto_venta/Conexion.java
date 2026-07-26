@@ -18,7 +18,7 @@ public class Conexion {
         String user;
         if (password == null) {
             // Entorno local — MYSQLPASSWORD no existe en esta máquina
-            url      = "jdbc:mysql://127.0.0.1:3306/railway?useSSL=false&serverTimezone=America/Mexico_City";
+            url      = "jdbc:mysql://127.0.0.1:3306/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Mexico_City";
             user     = "root";
             password = "1234";
         } else {

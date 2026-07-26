@@ -231,6 +231,11 @@
                             <input type="number" step="0.01" class="form-control" id="txtPrecioVenta" placeholder="Precio unitario...">
                         </div>
 
+                        <div class="form-group" id="campoPrecioCompra" style="display:none">
+                            <label class="form-label">Precio de Compra (opcional)</label>
+                            <input type="number" step="0.01" class="form-control" id="txtPrecioCompra" placeholder="Costo unitario...">
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Nota / Observación</label>
                             <textarea class="form-control" id="txtNota" rows="2" placeholder="Ej. Pedido #123..."></textarea>
@@ -275,6 +280,12 @@
         window.location.href = '/sucursal.html';
     }
     document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
+    const rolUsuario = localStorage.getItem('rolUsuario') || '';
+    const puedeVerPrecioCompra = rolUsuario === 'Administrador' || rolUsuario === 'Gerente';
+    if (puedeVerPrecioCompra) {
+        document.getElementById('campoPrecioCompra').style.display = '';
+    }
 
     let todosLosProductos = [];
     let productoSeleccionado = null;
@@ -416,6 +427,9 @@
         document.getElementById('stockActual').textContent = p.existencias_act;
         document.getElementById('txtCantidad').value = 1;
         document.getElementById('txtPrecioVenta').value = p.precio_venta || '';
+        if (puedeVerPrecioCompra) {
+            document.getElementById('txtPrecioCompra').value = p.precio_compra || '';
+        }
         document.getElementById('txtNota').value = '';
         calcularStock();
     }
@@ -453,6 +467,7 @@
             nota: document.getElementById('txtNota').value,
             id_usuario: userId,
             precio_venta: document.getElementById('txtPrecioVenta').value,
+            precio_compra: puedeVerPrecioCompra ? document.getElementById('txtPrecioCompra').value : '',
             sucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 

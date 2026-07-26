@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Punto de Venta - MRKdito</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +17,7 @@
 
         .pos-layout {
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
         }
@@ -562,6 +564,99 @@
         [data-theme="light"] .search-item-price { color: #16a34a; }
         [data-theme="light"] .stock-normal { color: #9ca3af; }
         [data-theme="light"] .tarjeta-confirm { background: rgba(37,99,235,0.07); border-color: rgba(37,99,235,0.14); }
+
+        /* ── iOS safe area ── */
+        .total-bar {
+            padding-bottom: calc(14px + env(safe-area-inset-bottom));
+        }
+
+        /* ── MOBILE ── */
+        @media (max-width: 640px) {
+
+            /* Header compacto */
+            .pos-header { padding: 0 10px; height: 46px; }
+            .pos-back-btn { padding: 5px 10px; font-size: 12px; gap: 4px; }
+            .pos-title { font-size: 13px; }
+            #user-info { font-size: 11px; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .pos-branch-badge { display: none; }
+
+            /* Scan bar compacto */
+            .scan-bar { padding: 8px 10px; gap: 8px; }
+            #txtClave { padding: 10px 12px; font-size: 14px; }
+            .scan-bar .btn-add { padding: 10px 16px; font-size: 13px; }
+
+            /* Ocultar columnas no esenciales en móvil */
+            .cart-table thead th:nth-child(1),
+            .cart-table thead th:nth-child(2),
+            .cart-table thead th:nth-child(4),
+            .cart-table thead th:nth-child(7),
+            .cart-table tbody td:nth-child(1),
+            .cart-table tbody td:nth-child(2),
+            .cart-table tbody td:nth-child(4),
+            .cart-table tbody td:nth-child(7) { display: none; }
+
+            .cart-table thead th { padding: 8px 8px; font-size: 9.5px; }
+            .cart-table tbody td { padding: 10px 8px; font-size: 12.5px; }
+
+            /* Total bar: apilado verticalmente */
+            .total-bar {
+                flex-direction: column;
+                padding: 10px 12px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+                gap: 8px;
+            }
+
+            .total-info {
+                text-align: left !important;
+                width: 100%;
+                display: flex;
+                align-items: baseline;
+                gap: 12px;
+            }
+
+            #lblTotal { font-size: 22px; }
+            #lblVentaId { font-size: 11px; }
+
+            .total-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .btn-cobrar {
+                grid-column: span 2;
+                padding: 13px;
+                font-size: 15px;
+            }
+
+            .btn-cancelar-venta,
+            .btn-espera,
+            .btn-ver-espera {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            /* Modales full-width */
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-content {
+                max-width: 100% !important;
+                width: 100% !important;
+                border-radius: 20px 20px 0 0 !important;
+                padding: 20px 16px calc(20px + env(safe-area-inset-bottom)) !important;
+                margin: 0 !important;
+                max-height: 92dvh;
+                overflow-y: auto;
+            }
+
+            #resultadosBusqueda { max-height: 55dvh; }
+
+            .modal-row .amount { font-size: 26px; }
+            .modal-row input[type="number"] { font-size: 18px; padding: 11px; }
+            .modal-result .change { font-size: 28px; }
+
+            #modalVentasEspera .modal-content { max-height: 85dvh; }
+        }
     </style>
 </head>
 <body>
@@ -610,15 +705,15 @@
 
     <!-- TOTAL BAR -->
     <div class="total-bar">
-        <div class="total-info">
-            <div id="lblTotal">Total: $0.00</div>
-            <div id="lblVentaId">Venta ID: -1</div>
-        </div>
         <div class="total-actions">
             <button class="btn-espera" onclick="ponerEnEspera()">⏳ En Espera</button>
             <button class="btn-ver-espera" onclick="abrirVentasEnEspera()">📋 Ver Esperas</button>
             <button class="btn-cancelar-venta" onclick="confirmarCancelacion()">✕ Cancelar</button>
             <button class="btn-cobrar" onclick="abrirModalPago()">✓ COBRAR</button>
+        </div>
+        <div class="total-info" style="text-align:right">
+            <div id="lblTotal">Total: $0.00</div>
+            <div id="lblVentaId">Venta ID: -1</div>
         </div>
     </div>
 </div>

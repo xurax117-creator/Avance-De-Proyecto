@@ -242,6 +242,8 @@ public class InventarioController {
             int sucursal      = datos.get("sucursal") != null ? Integer.parseInt(datos.get("sucursal").toString()) : 1;
             Double precioVenta = datos.get("precio_venta") != null && !datos.get("precio_venta").toString().isEmpty()
                 ? Double.parseDouble(datos.get("precio_venta").toString()) : null;
+            Double precioCompra = datos.get("precio_compra") != null && !datos.get("precio_compra").toString().isEmpty()
+                ? Double.parseDouble(datos.get("precio_compra").toString()) : null;
 
             double existActual = 0;
             try (PreparedStatement psGet = c.prepareStatement("SELECT existencias_act FROM productos WHERE id_producto = ?")) {
@@ -252,12 +254,15 @@ public class InventarioController {
             }
 
             String sqlUpdate = "UPDATE productos SET existencias_act = existencias_act + ?" +
-                               (precioVenta != null ? ", precio_venta = ?" : "") +
+                               (precioVenta  != null ? ", precio_venta = ?"  : "") +
+                               (precioCompra != null ? ", precio_compra = ?" : "") +
                                " WHERE id_producto = ?";
             try (PreparedStatement psUpdate = c.prepareStatement(sqlUpdate)) {
-                psUpdate.setDouble(1, cantidad);
-                if (precioVenta != null) { psUpdate.setDouble(2, precioVenta); psUpdate.setInt(3, idProducto); }
-                else                     { psUpdate.setInt(2, idProducto); }
+                int idx = 1;
+                psUpdate.setDouble(idx++, cantidad);
+                if (precioVenta  != null) psUpdate.setDouble(idx++, precioVenta);
+                if (precioCompra != null) psUpdate.setDouble(idx++, precioCompra);
+                psUpdate.setInt(idx, idProducto);
                 psUpdate.executeUpdate();
             }
 
