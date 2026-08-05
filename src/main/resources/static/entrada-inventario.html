@@ -360,7 +360,7 @@
 
             tr.innerHTML = `
                 <td>${fotoHtml}</td>
-                <td style="color:#9ca3af;font-size:12px">${p.codigo_barras}</td>
+                <td style="color:#9ca3af;font-size:12px">${p.codigo_barras || '—'}</td>
                 <td style="font-weight:600">${p.nombre}</td>
                 <td><strong>${p.existencias_act}</strong></td>
             `;
@@ -396,7 +396,8 @@
         const idProveedor = document.getElementById('selProveedor').value;
 
         const filtrados = todosLosProductos.filter(p => {
-            const matchNombre = p.nombre.toLowerCase().includes(busqueda) || p.codigo_barras.includes(busqueda);
+            const codigo = p.codigo_barras || '';
+            const matchNombre = p.nombre.toLowerCase().includes(busqueda) || codigo.includes(busqueda);
             const matchProv = idProveedor === 'todos' || p.id_proveedor == idProveedor;
             return matchNombre && matchProv;
         });

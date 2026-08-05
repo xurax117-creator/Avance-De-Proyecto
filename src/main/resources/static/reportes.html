@@ -192,6 +192,24 @@
 
         .btn-consultar:hover { filter: brightness(0.9); }
 
+        .export-actions { margin-left: auto; display: flex; gap: 10px; align-self: flex-end; }
+
+        .btn-exportar {
+            padding: 9px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 13.5px;
+            transition: filter 0.15s, background 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-pdf { background: rgba(220,38,38,0.15); color: #f87171; border: 1px solid rgba(220,38,38,0.25); }
+        .btn-pdf:hover { background: rgba(220,38,38,0.25); }
+        .btn-excel { background: rgba(22,163,74,0.15); color: #4ade80; border: 1px solid rgba(22,163,74,0.25); }
+        .btn-excel:hover { background: rgba(22,163,74,0.25); }
+
         /* Light mode overrides */
         [data-theme="light"] .resumen-total { background: #ffffff; border-color: rgba(0,0,0,0.08); color: #111827; }
         [data-theme="light"] .buscador-productos { background: #ffffff; border-color: rgba(0,0,0,0.08); }
@@ -245,6 +263,10 @@
                     </select>
                 </div>
                 <button class="btn-consultar" onclick="cargarReporte()">🔍 Consultar</button>
+                <div class="export-actions">
+                    <button class="btn-exportar btn-pdf" onclick="exportarPDF()">📄 PDF</button>
+                    <button class="btn-exportar btn-excel" onclick="exportarExcel()">📊 Excel</button>
+                </div>
             </div>
 
             <!-- Tabs -->
@@ -314,6 +336,9 @@
 </div>
 
 <script src="/sidebar.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
     const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
     if (!idSucursal || !localStorage.getItem('userId')) {
@@ -631,6 +656,149 @@
             const data = await resp.json();
             dibujarTabla(data);
         } catch (e) { console.error("Error:", e); }
+    }
+
+    function construirUrlReporte(paraExportar) {
+        const fInicio = document.getElementById('fechaInicio').value;
+        const hInicio = document.getElementById('horaInicio').value;
+        const fFin = document.getElementById('fechaFin').value;
+        const hFin = document.getElementById('horaFin').value;
+        const suc = parseInt(localStorage.getItem('idSucursal') || '1');
+
+        let url;
+        if (tabActual === 'inventario') {
+            url = `/api/reportes/${tabActual}?sucursal=${suc}`;
+        } else if (tabActual === 'entradas') {
+            url = `/api/inventario/reporte-entradas?fechaInicio=${fInicio}&fechaFin=${fFin}&sucursal=${suc}`;
+            const filtro = document.getElementById('inputBusqueda').value.trim();
+            if (filtro) url += `&filtro=${encodeURIComponent(filtro)}`;
+        } else {
+            url = `/api/reportes/${tabActual}?inicio=${fInicio}&horaInicio=${hInicio}&fin=${fFin}&horaFin=${hFin}&sucursal=${suc}`;
+            if (tabActual === 'ventas' || tabActual === 'productos') {
+                url += paraExportar ? `&pagina=1&tamano=1000000` : `&pagina=${paginaActual}&tamano=${tamanoPagina}`;
+            }
+            if (tabActual === 'ventas') {
+                const cat = document.getElementById('selCategoria').value.trim();
+                if (cat) url += `&categoria=${encodeURIComponent(cat)}`;
+            }
+            if (tabActual === 'productos') {
+                const busqueda = document.getElementById('inputBusqueda').value.trim();
+                if (busqueda) url += `&busqueda=${encodeURIComponent(busqueda)}`;
+            }
+        }
+        return url;
+    }
+
+    async function obtenerDatosCompletos() {
+        const resp = await fetch(construirUrlReporte(true));
+        return await resp.json();
+    }
+
+    function construirFilasExportacion(data) {
+        let titulo = '', headers = [], rows = [];
+
+        if (tabActual === 'inventario') {
+            titulo = 'Valor de Inventario';
+            headers = ['Concepto', 'Valor Total'];
+            rows = [
+                ['Valor de compra (inversión)', '$' + Number(data.totalCompra).toFixed(2)],
+                ['Valor de venta (potencial)', '$' + Number(data.totalVenta).toFixed(2)]
+            ];
+        } else if (tabActual === 'entradas') {
+            titulo = 'Entradas de Inventario';
+            headers = ['Fecha', 'Producto', 'Código', 'Proveedor', 'Cantidad', 'Usuario', 'Nota'];
+            const entradas = (data && data.entradas) ? data.entradas : [];
+            rows = entradas.map(e => {
+                const fecha = new Date(e.fecha_entrada).toLocaleString('es-MX', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const cant = (e.cantidad % 1 === 0) ? e.cantidad : Number(e.cantidad).toFixed(3);
+                return [fecha, e.nombre_producto || '—', e.codigo_barras || '—', e.nombre_proveedor || '—', cant, e.nombre_usuario || '—', e.nota || '—'];
+            });
+        } else if (tabActual === 'ventas') {
+            titulo = 'Ventas Diarias';
+            headers = ['No. Venta', 'Fecha', 'Cajero', 'Total', 'Efectivo', 'Tarjeta'];
+            const pagInfo = data.length > 0 ? data[data.length - 1] : null;
+            const datos = pagInfo && pagInfo.totalRegistros !== undefined ? data.slice(0, -1) : data;
+            rows = datos.map(v => {
+                const fechaFormateada = new Date(v.fecha).toLocaleString('es-MX', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+                    timeZone: 'America/Mexico_City'
+                });
+                return [v.numeroVenta, fechaFormateada, v.nombre, Number(v.total).toFixed(2), Number(v.montoEfectivo || 0).toFixed(2), Number(v.montoTarjeta || 0).toFixed(2)];
+            });
+            if (pagInfo && pagInfo.totalGeneral !== undefined) {
+                rows.push(['', '', 'TOTAL', Number(pagInfo.totalGeneral).toFixed(2), Number(pagInfo.totalEfectivo || 0).toFixed(2), Number(pagInfo.totalTarjeta || 0).toFixed(2)]);
+            }
+        } else if (tabActual === 'productos') {
+            titulo = 'Top Productos';
+            headers = ['Producto', 'Cant. Vendida', 'Total'];
+            const pagInfo = data.length > 0 ? data[data.length - 1] : null;
+            const datos = pagInfo && pagInfo.totalRegistros !== undefined ? data.slice(0, -1) : data;
+            rows = datos.map(p => [p.nombre, Number(p.cantidad).toFixed(3), Number(p.total).toFixed(2)]);
+        } else if (tabActual === 'cajeros') {
+            titulo = 'Ventas por Cajero';
+            headers = ['Cajero', 'Ventas Realizadas', 'Total Recaudado'];
+            let suma = 0;
+            rows = data.map(c => { suma += Number(c.total) || 0; return [c.nombre, c.numVentas, Number(c.total).toFixed(2)]; });
+            if (rows.length > 0) rows.push(['TOTAL', '', suma.toFixed(2)]);
+        }
+
+        return { titulo, headers, rows };
+    }
+
+    async function exportarPDF() {
+        try {
+            showToast("Generando PDF...", "info");
+            const data = await obtenerDatosCompletos();
+            const { titulo, headers, rows } = construirFilasExportacion(data);
+            if (rows.length === 0) { showToast("No hay datos para exportar", "warning"); return; }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const fInicio = document.getElementById('fechaInicio').value;
+            const fFin = document.getElementById('fechaFin').value;
+
+            doc.setFontSize(16);
+            doc.text('MRKdito - ' + titulo, 14, 16);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Periodo: ${fInicio} a ${fFin}`, 14, 23);
+            doc.text(`Generado: ${new Date().toLocaleString('es-MX')}`, 14, 28);
+
+            doc.autoTable({
+                head: [headers],
+                body: rows,
+                startY: 34,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [25, 163, 55] }
+            });
+
+            doc.save(`reporte_${tabActual}_${fInicio}_a_${fFin}.pdf`);
+        } catch (e) {
+            console.error(e);
+            showToast("Error al generar el PDF", "error");
+        }
+    }
+
+    async function exportarExcel() {
+        try {
+            showToast("Generando Excel...", "info");
+            const data = await obtenerDatosCompletos();
+            const { titulo, headers, rows } = construirFilasExportacion(data);
+            if (rows.length === 0) { showToast("No hay datos para exportar", "warning"); return; }
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, titulo.substring(0, 31));
+
+            const fInicio = document.getElementById('fechaInicio').value;
+            const fFin = document.getElementById('fechaFin').value;
+            XLSX.writeFile(wb, `reporte_${tabActual}_${fInicio}_a_${fFin}.xlsx`);
+        } catch (e) {
+            console.error(e);
+            showToast("Error al generar el Excel", "error");
+        }
     }
 
     let ultimoNumeroVenta = 0;
