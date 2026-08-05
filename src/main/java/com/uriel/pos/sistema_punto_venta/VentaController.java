@@ -18,6 +18,14 @@ public class VentaController {
         public int idSucursal;
     }
 
+    public static class ProductoRapidoRequest {
+        public String nombre;
+        public double precio;
+        public int idVentaActual;
+        public int userId;
+        public int idSucursal;
+    }
+
     public static class FinalizarRequest {
         public int userId;
         public int idVenta;
@@ -73,6 +81,66 @@ public class VentaController {
             response.put("success", true);
             response.put("data", productoMap);
         } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+
+    @PostMapping("/producto-rapido")
+    public Map<String, Object> crearProductoRapido(@RequestBody ProductoRapidoRequest request) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (request.nombre == null || request.nombre.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "El nombre es obligatorio.");
+                return response;
+            }
+            if (request.precio <= 0) {
+                response.put("success", false);
+                response.put("message", "El precio debe ser mayor a 0.");
+                return response;
+            }
+
+            int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
+            int idProducto = oper.crearProductoTemporal(request.nombre.trim(), request.precio, sucursal);
+            if (idProducto == -1) {
+                response.put("success", false);
+                response.put("message", "Error al crear el producto temporal.");
+                return response;
+            }
+
+            int ventaId = request.idVentaActual;
+            if (ventaId == -1) {
+                ventaId = oper.crearVenta(request.userId, sucursal);
+            }
+
+            Map<String, Object> productoMap = new HashMap<>();
+            productoMap.put("idProducto", idProducto);
+            productoMap.put("nombre", request.nombre.trim());
+            productoMap.put("precio", request.precio);
+            productoMap.put("idVenta", ventaId);
+
+            response.put("success", true);
+            response.put("data", productoMap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+
+    @DeleteMapping("/producto-rapido/{id}")
+    public Map<String, Object> eliminarProductoRapido(@PathVariable int id) {
+        Venta oper = new Venta();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            oper.eliminarProductoTemporal(id);
+            response.put("success", true);
+        } catch (Exception e) {
+            e.printStackTrace();
             response.put("success", false);
             response.put("message", "Error en servidor.");
         }

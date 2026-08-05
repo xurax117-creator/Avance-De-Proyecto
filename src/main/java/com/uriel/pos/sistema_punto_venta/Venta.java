@@ -87,6 +87,36 @@ public class Venta {
         return lista;
     }
 
+    public int crearProductoTemporal(String nombre, double precio, int idSucursal) {
+        int idProducto = -1;
+        String sql = "INSERT INTO productos (nombre, categoria, precio_compra, precio_venta, existencias_act, existencias_min, id_sucursal, activo) " +
+                     "VALUES (?, 'Venta Rápida', 0, ?, 0, 0, ?, TRUE)";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, nombre);
+            stmt.setDouble(2, precio);
+            stmt.setInt(3, idSucursal);
+            stmt.executeUpdate();
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) idProducto = rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return idProducto;
+    }
+
+    // Borra un producto de Venta Rápida que nunca llegó a venderse (carrito cancelado o artículo quitado).
+    // Si ya fue vendido (referenciado en detalle_venta), el FK impide el borrado y se ignora silenciosamente.
+    public boolean eliminarProductoTemporal(int idProducto) {
+        String sql = "DELETE FROM productos WHERE id_producto = ? AND categoria = 'Venta Rápida'";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql)) {
+            stmt.setInt(1, idProducto);
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void finalizarTransaccion(int idVenta, List<DetalleVentaRequest> detalles, double totalFinal, int idSucursal, double montoEfectivo, double montoTarjeta) throws SQLException {
         Connection c = null;
         try {
@@ -129,6 +159,19 @@ public class Venta {
                     stmtStock.setDouble(1, detalle.cantidad);
                     stmtStock.setInt(2, detalle.idProducto);
                     stmtStock.executeUpdate();
+                }
+            }
+
+            // Los productos de "Venta Rápida" son temporales: se desactivan al concluir la venta
+            // para que no queden disponibles en búsquedas ni ventas futuras.
+            String idsProductos = detalles.stream()
+                    .map(d -> String.valueOf(d.idProducto))
+                    .distinct()
+                    .collect(Collectors.joining(","));
+            if (!idsProductos.isEmpty()) {
+                try (PreparedStatement stmtDesactivar = c.prepareStatement(
+                        "UPDATE productos SET activo = FALSE WHERE categoria = 'Venta Rápida' AND id_producto IN (" + idsProductos + ")")) {
+                    stmtDesactivar.executeUpdate();
                 }
             }
 

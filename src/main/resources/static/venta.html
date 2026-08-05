@@ -97,7 +97,7 @@
             background: #161b22;
             padding: 12px 20px;
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: 1fr auto auto;
             gap: 10px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
             flex-shrink: 0;
@@ -136,6 +136,22 @@
         }
 
         .scan-bar .btn-add:hover { filter: brightness(0.9); }
+
+        .btn-rapida {
+            padding: 11px 18px;
+            background: rgba(217,119,6,0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(217,119,6,0.25);
+            border-radius: 9px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-rapida:hover { background: rgba(217,119,6,0.25); }
 
         /* ── CART TABLE ── */
         .cart-area {
@@ -382,7 +398,8 @@
             letter-spacing: -1px;
         }
 
-        .modal-row input[type="number"] {
+        .modal-row input[type="number"],
+        .modal-row input[type="text"] {
             width: 100%;
             padding: 13px;
             font-size: 20px;
@@ -397,7 +414,10 @@
             background: rgba(255,255,255,0.05);
         }
 
-        .modal-row input[type="number"]:focus { box-shadow: 0 0 0 3px rgba(25,163,55,0.15); }
+        .modal-row input[type="text"] { text-align: left; font-size: 15px; }
+
+        .modal-row input[type="number"]:focus,
+        .modal-row input[type="text"]:focus { box-shadow: 0 0 0 3px rgba(25,163,55,0.15); }
 
         .modal-result {
             background: rgba(255,255,255,0.05);
@@ -547,7 +567,8 @@
         [data-theme="light"] .total-bar { background: #ffffff; border-top-color: rgba(0,0,0,0.07); }
         [data-theme="light"] #lblTotal { color: #111827; }
         [data-theme="light"] #lblVentaId { color: rgba(0,0,0,0.35); }
-        [data-theme="light"] .modal-row input[type="number"] { background: #fff; color: #111827; border-color: var(--primary); }
+        [data-theme="light"] .modal-row input[type="number"],
+        [data-theme="light"] .modal-row input[type="text"] { background: #fff; color: #111827; border-color: var(--primary); }
         [data-theme="light"] .modal-result { background: rgba(0,0,0,0.04); }
         [data-theme="light"] .btn-metodo { border-color: rgba(0,0,0,0.12); background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.50); }
         [data-theme="light"] .btn-metodo:hover:not(.active) { border-color: rgba(0,0,0,0.22); background: rgba(0,0,0,0.08); color: #111827; }
@@ -584,6 +605,7 @@
             .scan-bar { padding: 8px 10px; gap: 8px; }
             #txtClave { padding: 10px 12px; font-size: 14px; }
             .scan-bar .btn-add { padding: 10px 16px; font-size: 13px; }
+            .scan-bar .btn-rapida { padding: 10px 12px; font-size: 12px; }
 
             /* Ocultar columnas no esenciales en móvil */
             .cart-table thead th:nth-child(1),
@@ -681,6 +703,7 @@
     <div class="scan-bar" id="panel-arriba">
         <input type="text" id="txtClave" placeholder="Escanear código de barras o escribir nombre del producto..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
         <button class="btn-add" onclick="agregarProducto()">+ Agregar</button>
+        <button class="btn-rapida" onclick="abrirModalVentaRapida()">⚡ Rápida</button>
     </div>
 
     <!-- CART TABLE -->
@@ -789,6 +812,29 @@
     </div>
 </div>
 
+<!-- Modal de Venta Rápida -->
+<div id="modalVentaRapida" class="modal-overlay">
+    <div class="modal-content">
+        <h3>⚡ Venta Rápida</h3>
+        <div class="modal-row">
+            <label>Nombre del producto</label>
+            <input type="text" id="txtRapidaNombre" placeholder="Ej. Bolsa, producto sin código..." onkeypress="if(event.key === 'Enter') document.getElementById('txtRapidaPrecio').focus()">
+        </div>
+        <div class="modal-row">
+            <label>Precio</label>
+            <input type="number" id="txtRapidaPrecio" placeholder="0.00" step="0.01" min="0.01" onkeypress="if(event.key === 'Enter') document.getElementById('txtRapidaCantidad').focus()">
+        </div>
+        <div class="modal-row">
+            <label>Cantidad</label>
+            <input type="number" id="txtRapidaCantidad" value="1" min="1" step="1" onkeypress="if(event.key === 'Enter') confirmarVentaRapida()">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary btn-cancelar" onclick="cerrarModalVentaRapida()">Cancelar</button>
+            <button class="btn btn-primary btn-pagar" onclick="confirmarVentaRapida()">✓ Agregar al carrito</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal de ventas en espera -->
 <div id="modalVentasEspera" class="modal-overlay">
     <div class="modal-content">
@@ -832,6 +878,18 @@
          const txtClave = document.getElementById('txtClave');
          const cuerpoTabla = document.getElementById('cuerpoTabla');
          let carritoIdCounter = 0;
+
+         // Atajo: si oprimes "Borrar" (Backspace) fuera de un campo de texto y sin modales abiertos,
+         // selecciona automáticamente la barra de código sin necesidad de darle click.
+         document.addEventListener('keydown', function(e) {
+             if (e.key !== 'Backspace') return;
+             if (document.querySelector('.modal-overlay.active')) return;
+             const activo = document.activeElement;
+             const yaEscribiendo = activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA' || activo.isContentEditable);
+             if (yaEscribiendo) return;
+             e.preventDefault();
+             txtClave.focus();
+         });
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
@@ -992,6 +1050,74 @@
             } finally { procesando = false; txtClave.focus(); }
         }
 
+function abrirModalVentaRapida() {
+    document.getElementById('txtRapidaNombre').value = '';
+    document.getElementById('txtRapidaPrecio').value = '';
+    document.getElementById('txtRapidaCantidad').value = '1';
+    document.getElementById('modalVentaRapida').classList.add('active');
+    setTimeout(() => document.getElementById('txtRapidaNombre').focus(), 50);
+}
+
+function cerrarModalVentaRapida() {
+    document.getElementById('modalVentaRapida').classList.remove('active');
+    txtClave.focus();
+}
+
+async function confirmarVentaRapida() {
+    if (procesando) return;
+    const nombre = document.getElementById('txtRapidaNombre').value.trim();
+    const precio = parseFloat(document.getElementById('txtRapidaPrecio').value);
+    const cantidad = parseFloat(document.getElementById('txtRapidaCantidad').value) || 1;
+
+    if (!nombre) { showToast("Escribe un nombre para el producto", "warning"); return; }
+    if (!precio || precio <= 0) { showToast("El precio debe ser mayor a 0", "warning"); return; }
+    if (cantidad <= 0) { showToast("La cantidad debe ser mayor a 0", "warning"); return; }
+
+    procesando = true;
+    try {
+        const response = await fetch('/api/venta/producto-rapido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre, precio,
+                idVentaActual: currentVentaId,
+                userId: parseInt(currentUserId),
+                idSucursal: parseInt(localStorage.getItem('idSucursal') || '1')
+            })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            const p = result.data;
+            currentVentaId = p.idVenta;
+            document.getElementById('lblVentaId').textContent = `Venta ID: ${currentVentaId}`;
+
+            listaCarrito.unshift({
+                carritoId: ++carritoIdCounter,
+                idProducto: p.idProducto,
+                codigo: '',
+                nombre: p.nombre,
+                precioOriginal: p.precio,
+                precio: p.precio,
+                cantidad: cantidad,
+                stockActual: null,
+                fotoProducto: null,
+                promocionAplicada: null,
+                esPromo: false,
+                esTemporal: true
+            });
+
+            await aplicarPromociones();
+            dibujarCarrito();
+            cerrarModalVentaRapida();
+        } else {
+            showToast(result.message || "Error al crear el producto", "error");
+        }
+    } catch (e) {
+        showToast("Error de conexión", "error");
+    } finally { procesando = false; }
+}
+
 async function aplicarPromociones() {
              const nuevosItems = [];
 
@@ -1103,7 +1229,8 @@ async function aplicarPromociones() {
                              stockActual: item.stockActual,
                              fotoProducto: item.fotoProducto,
                              promocionAplicada: null,
-                             esPromo: false
+                             esPromo: false,
+                             esTemporal: item.esTemporal || false
                          });
                      }
                  });
@@ -1121,7 +1248,8 @@ async function aplicarPromociones() {
                          stockActual: item.stockActual,
                          fotoProducto: item.fotoProducto,
                          promocionAplicada: null,
-                         esPromo: false
+                         esPromo: false,
+                         esTemporal: item.esTemporal || false
                      });
                  });
              }
@@ -1143,7 +1271,9 @@ async function aplicarPromociones() {
                     fotoHtml = `<div class="no-foto">📦</div>`;
                 }
 
-                const promocionHtml = prod.promocionAplicada ? `<span class="promocion-badge">${prod.promocionAplicada}</span>` : '';
+                const promocionHtml = prod.promocionAplicada
+                    ? `<span class="promocion-badge">${prod.promocionAplicada}</span>`
+                    : (prod.esTemporal ? `<span class="promocion-badge">⚡ Rápida</span>` : '');
 
                 const stock = prod.stockActual;
                 const stockClass = stock != null && stock <= 5 ? 'stock-bajo' : 'stock-normal';
@@ -1285,15 +1415,25 @@ async function aplicarPromociones() {
             }
         }
 
+        function eliminarProductoTemporal(idProducto) {
+            fetch(`/api/venta/producto-rapido/${idProducto}`, { method: 'DELETE' }).catch(() => {});
+        }
+
         function eliminarItem(carritoId) {
              const index = listaCarrito.findIndex(p => p.carritoId === carritoId);
              if (index !== -1) {
+                 const item = listaCarrito[index];
                  listaCarrito.splice(index, 1);
+                 if (item.esTemporal) eliminarProductoTemporal(item.idProducto);
                  aplicarPromociones().then(() => dibujarCarrito());
              }
          }
 
-        function confirmarCancelacion() { if (confirm("¿Limpiar venta?")) limpiarPantallaVenta(); }
+        function confirmarCancelacion() {
+            if (!confirm("¿Limpiar venta?")) return;
+            listaCarrito.filter(p => p.esTemporal).forEach(p => eliminarProductoTemporal(p.idProducto));
+            limpiarPantallaVenta();
+        }
         document.getElementById('user-info').textContent = `Atiende: ${localStorage.getItem('nombreUsuario') || 'Cajero'}`;
 
         async function ponerEnEspera() {
