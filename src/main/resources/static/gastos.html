@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gastos - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
+    <style>
+        .resumen-linea {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 4px 0;
+        }
+
+        .resumen-linea strong { color: var(--primary); font-size: 18px; }
+
+        .totales-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .totales-row .card { flex: 1; min-width: 260px; }
+        .totales-row .card-body { padding: 16px 20px; }
+
+        .hoja-gastos {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .hoja-gastos th, .hoja-gastos td {
+            border: 1px solid var(--border);
+            padding: 0;
+        }
+
+        .hoja-gastos th {
+            background: rgba(255,255,255,0.04);
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 10px 8px;
+            white-space: nowrap;
+        }
+
+        .hoja-gastos td input {
+            width: 100%;
+            height: 100%;
+            min-height: 40px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13px;
+            padding: 8px 10px;
+            box-sizing: border-box;
+        }
+
+        .hoja-gastos td input:focus {
+            background: rgba(25,163,55,0.10);
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        .hoja-gastos td.col-monto input,
+        .hoja-gastos td.col-monto-deudor input { text-align: right; font-weight: 600; }
+
+        .hoja-gastos td.col-acciones { width: 38px; text-align: center; }
+
+        .btn-quitar-fila {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .btn-quitar-fila:hover { background: rgba(220,38,38,0.15); color: #f87171; }
+
+        .col-th-acciones { width: 38px; }
+
+        #estadoGuardado { font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .estado-ok      { color: #4ade80; }
+        .estado-pend    { color: #fbbf24; }
+        .estado-error   { color: #f87171; }
+
+        [data-theme="light"] .hoja-gastos th { background: rgba(0,0,0,0.025); }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>💸</span> Gastos</h1>
+            <div class="header-actions">
+                <span id="user-info" class="text-muted text-sm"></span>
+            </div>
+        </header>
+        <div class="content-scroll">
+
+            <div class="filters-bar">
+                <div class="form-group">
+                    <label class="form-label">Fecha</label>
+                    <input type="date" class="form-control" id="inputFecha">
+                </div>
+                <div style="margin-left:auto; display:flex; align-items:center; gap:14px;">
+                    <span id="estadoGuardado"></span>
+                    <button class="btn btn-primary" onclick="guardarHoja()">💾 Guardar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-wrap">
+                    <table class="hoja-gastos">
+                        <colgroup>
+                            <col style="width:16%">
+                            <col style="width:9%">
+                            <col style="width:11%">
+                            <col style="width:11%">
+                            <col style="width:11%">
+                            <col style="width:11%">
+                            <col style="width:11%">
+                            <col style="width:auto">
+                            <col class="col-th-acciones">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Monto</th>
+                                <th>Debemos</th>
+                                <th>Para Mañana</th>
+                                <th>Para el Lunes</th>
+                                <th>Deudores</th>
+                                <th>Monto Deudor</th>
+                                <th>Notas</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoHoja"></tbody>
+                    </table>
+                </div>
+                <div style="padding:12px 16px; border-top:1px solid var(--border);">
+                    <button class="btn btn-secondary btn-sm" onclick="agregarFila()">+ Agregar fila</button>
+                </div>
+            </div>
+
+            <div class="totales-row">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="resumen-linea">
+                            <span>Total de Gastos</span>
+                            <strong id="totalGastoProveedor">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Monedas</label>
+                                <input type="number" step="0.01" class="form-control" id="inputMonedas" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Billetes</label>
+                                <input type="number" step="0.01" class="form-control" id="inputBilletes" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="resumen-linea">
+                            <span>Total Monedas/Billetes</span>
+                            <strong id="totalMonedasBilletes">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Terminal 1</label>
+                                <input type="number" step="0.01" class="form-control" id="inputTerminal1" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Terminal 2</label>
+                                <input type="number" step="0.01" class="form-control" id="inputTerminal2" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="resumen-linea">
+                            <span>Total Terminales</span>
+                            <strong id="totalTerminales">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="/sidebar.js"></script>
+<script>
+    const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
+    if (!idSucursal || !localStorage.getItem('userId')) {
+        window.location.href = '/sucursal.html';
+    }
+    document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
+    const FILAS_INICIALES = 12;
+    let filas = [];
+    let hojaCargando = false;
+    let guardarTimeout = null;
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+        toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function escapeAttr(v) {
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function filaVacia() {
+        return { concepto: '', monto: '', debemos: '', paraManana: '', paraLunes: '', deudores: '', montoDeudor: '', notas: '' };
+    }
+
+    function parseMonto(v) {
+        const n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+    }
+
+    async function cargarHoja() {
+        hojaCargando = true;
+        const fecha = document.getElementById('inputFecha').value;
+        const suc = parseInt(localStorage.getItem('idSucursal') || '1');
+        try {
+            const resp = await fetch(`/api/gastos/hoja?fecha=${fecha}&sucursal=${suc}`);
+            const data = await resp.json();
+
+            filas = (data.filas && data.filas.length > 0)
+                ? data.filas.map(f => ({
+                    concepto: f.concepto || f.proveedor || '',
+                    monto: f.monto || '',
+                    debemos: f.debemos || '',
+                    paraManana: f.paraManana || '',
+                    paraLunes: f.paraLunes || '',
+                    deudores: f.deudores || '',
+                    montoDeudor: f.montoDeudor || '',
+                    notas: f.notas || ''
+                }))
+                : Array.from({ length: FILAS_INICIALES }, filaVacia);
+
+            document.getElementById('inputMonedas').value = data.monedas ? data.monedas : '';
+            document.getElementById('inputBilletes').value = data.billetes ? data.billetes : '';
+            document.getElementById('inputTerminal1').value = data.terminal1 ? data.terminal1 : '';
+            document.getElementById('inputTerminal2').value = data.terminal2 ? data.terminal2 : '';
+
+            dibujarHoja();
+            actualizarTotales();
+            marcarEstado(data.existe ? 'ok' : '');
+        } catch (e) {
+            showToast("Error al cargar la hoja de gastos", "error");
+        } finally { hojaCargando = false; }
+    }
+
+    function dibujarHoja() {
+        const tbody = document.getElementById('cuerpoHoja');
+        tbody.innerHTML = '';
+        filas.forEach((fila, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" value="${escapeAttr(fila.concepto)}" oninput="actualizarCelda(${idx},'concepto',this.value)"></td>
+                <td class="col-monto"><input type="number" step="0.01" value="${escapeAttr(fila.monto)}" oninput="actualizarCelda(${idx},'monto',this.value)"></td>
+                <td><input type="text" value="${escapeAttr(fila.debemos)}" oninput="actualizarCelda(${idx},'debemos',this.value)"></td>
+                <td><input type="text" value="${escapeAttr(fila.paraManana)}" oninput="actualizarCelda(${idx},'paraManana',this.value)"></td>
+                <td><input type="text" value="${escapeAttr(fila.paraLunes)}" oninput="actualizarCelda(${idx},'paraLunes',this.value)"></td>
+                <td><input type="text" value="${escapeAttr(fila.deudores)}" oninput="actualizarCelda(${idx},'deudores',this.value)"></td>
+                <td class="col-monto-deudor"><input type="text" value="${escapeAttr(fila.montoDeudor)}" oninput="actualizarCelda(${idx},'montoDeudor',this.value)"></td>
+                <td><input type="text" value="${escapeAttr(fila.notas)}" oninput="actualizarCelda(${idx},'notas',this.value)"></td>
+                <td class="col-acciones"><button class="btn-quitar-fila" onclick="quitarFila(${idx})" title="Quitar fila">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function actualizarCelda(idx, campo, valor) {
+        if (!filas[idx]) return;
+        filas[idx][campo] = valor;
+        if (campo === 'monto') actualizarTotales();
+        programarGuardado();
+    }
+
+    function agregarFila() {
+        filas.push(filaVacia());
+        dibujarHoja();
+        programarGuardado();
+    }
+
+    function quitarFila(idx) {
+        filas.splice(idx, 1);
+        dibujarHoja();
+        actualizarTotales();
+        programarGuardado();
+    }
+
+    function actualizarTotales() {
+        const totalProveedor = filas.reduce((acc, f) => acc + parseMonto(f.monto), 0);
+        document.getElementById('totalGastoProveedor').textContent = '$' + totalProveedor.toFixed(2);
+
+        const monedas = parseMonto(document.getElementById('inputMonedas').value);
+        const billetes = parseMonto(document.getElementById('inputBilletes').value);
+        document.getElementById('totalMonedasBilletes').textContent = '$' + (monedas + billetes).toFixed(2);
+
+        const terminal1 = parseMonto(document.getElementById('inputTerminal1').value);
+        const terminal2 = parseMonto(document.getElementById('inputTerminal2').value);
+        document.getElementById('totalTerminales').textContent = '$' + (terminal1 + terminal2).toFixed(2);
+    }
+
+    function marcarEstado(estado) {
+        const el = document.getElementById('estadoGuardado');
+        el.className = '';
+        if (estado === 'ok') { el.textContent = 'Guardado ✓'; el.classList.add('estado-ok'); }
+        else if (estado === 'pend') { el.textContent = 'Sin guardar...'; el.classList.add('estado-pend'); }
+        else if (estado === 'guardando') { el.textContent = 'Guardando...'; el.classList.add('estado-pend'); }
+        else if (estado === 'error') { el.textContent = 'Error al guardar'; el.classList.add('estado-error'); }
+        else { el.textContent = ''; }
+    }
+
+    function programarGuardado() {
+        if (hojaCargando) return;
+        marcarEstado('pend');
+        clearTimeout(guardarTimeout);
+        guardarTimeout = setTimeout(guardarHoja, 1200);
+    }
+
+    async function guardarHoja() {
+        clearTimeout(guardarTimeout);
+        const fecha = document.getElementById('inputFecha').value;
+        const suc = parseInt(localStorage.getItem('idSucursal') || '1');
+        const monedas = parseMonto(document.getElementById('inputMonedas').value);
+        const billetes = parseMonto(document.getElementById('inputBilletes').value);
+        const terminal1 = parseMonto(document.getElementById('inputTerminal1').value);
+        const terminal2 = parseMonto(document.getElementById('inputTerminal2').value);
+
+        marcarEstado('guardando');
+        try {
+            const resp = await fetch('/api/gastos/hoja', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fecha,
+                    idSucursal: suc,
+                    filas,
+                    monedas,
+                    billetes,
+                    terminal1,
+                    terminal2,
+                    userId: parseInt(localStorage.getItem('userId') || '0')
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                marcarEstado('ok');
+            } else {
+                marcarEstado('error');
+                showToast(data.message || "Error al guardar", "error");
+            }
+        } catch (e) {
+            marcarEstado('error');
+            showToast("Error de conexión al guardar", "error");
+        }
+    }
+
+    document.getElementById('inputMonedas').addEventListener('input', () => { actualizarTotales(); programarGuardado(); });
+    document.getElementById('inputBilletes').addEventListener('input', () => { actualizarTotales(); programarGuardado(); });
+    document.getElementById('inputTerminal1').addEventListener('input', () => { actualizarTotales(); programarGuardado(); });
+    document.getElementById('inputTerminal2').addEventListener('input', () => { actualizarTotales(); programarGuardado(); });
+    document.getElementById('inputFecha').addEventListener('change', cargarHoja);
+
+    document.getElementById('inputFecha').value = new Date().toISOString().split('T')[0];
+    cargarHoja();
+    document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Usuario');
+</script>
+
+</body>
+</html>
