@@ -153,6 +153,40 @@
 
         .btn-rapida:hover { background: rgba(217,119,6,0.25); }
 
+        /* ── GUÍA DE ATAJOS ── */
+        .shortcuts-hint {
+            background: #12161c;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 7px 20px;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 11.5px;
+            color: rgba(255,255,255,0.45);
+            flex-shrink: 0;
+        }
+
+        .shortcuts-hint span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+
+        .shortcuts-hint kbd {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 18px;
+            padding: 0 5px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-bottom-width: 2px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 10.5px;
+            font-weight: 700;
+            font-style: normal;
+            color: rgba(255,255,255,0.75);
+        }
+
         /* ── CART TABLE ── */
         .cart-area {
             flex: 1;
@@ -191,6 +225,9 @@
 
         .cart-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
         .cart-table tbody tr:hover td { background: rgba(25,163,55,0.07); border-bottom-color: rgba(25,163,55,0.2); }
+        .cart-table tbody tr.fila-carrito { cursor: pointer; }
+        .cart-table tbody tr.fila-seleccionada td { background: rgba(37,99,235,0.18) !important; border-bottom-color: rgba(37,99,235,0.35) !important; }
+        .cart-table tbody tr.fila-seleccionada:hover td { background: rgba(37,99,235,0.24) !important; }
 
         .product-foto {
             width: 46px;
@@ -557,10 +594,14 @@
         [data-theme="light"] .scan-bar { background: #ffffff; border-bottom-color: rgba(0,0,0,0.06); }
         [data-theme="light"] #txtClave { background: #f9fafb; border-color: rgba(0,0,0,0.12); color: #111827; }
         [data-theme="light"] #txtClave::placeholder { color: rgba(0,0,0,0.30); }
+        [data-theme="light"] .shortcuts-hint { background: #f3f5f7; border-bottom-color: rgba(0,0,0,0.06); color: rgba(0,0,0,0.5); }
+        [data-theme="light"] .shortcuts-hint kbd { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #374151; }
         [data-theme="light"] .cart-area { background: #f0f2f5; }
         [data-theme="light"] .cart-table thead th { background: #e8ecf0; color: rgba(0,0,0,0.45); border-bottom-color: rgba(0,0,0,0.07); }
         [data-theme="light"] .cart-table tbody td { background: #ffffff; color: #111827; border-bottom-color: rgba(0,0,0,0.06); }
         [data-theme="light"] .cart-table tbody tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+        [data-theme="light"] .cart-table tbody tr.fila-seleccionada td { background: rgba(37,99,235,0.14) !important; border-bottom-color: rgba(37,99,235,0.3) !important; }
+        [data-theme="light"] .cart-table tbody tr.fila-seleccionada:hover td { background: rgba(37,99,235,0.20) !important; }
         [data-theme="light"] .cart-table tbody tr:hover td { background: rgba(25,163,55,0.06); }
         [data-theme="light"] .product-foto { border-color: rgba(0,0,0,0.08); }
         [data-theme="light"] .no-foto { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); }
@@ -606,6 +647,9 @@
             #txtClave { padding: 10px 12px; font-size: 14px; }
             .scan-bar .btn-add { padding: 10px 16px; font-size: 13px; }
             .scan-bar .btn-rapida { padding: 10px 12px; font-size: 12px; }
+
+            /* Atajos de teclado no aplican en pantalla táctil */
+            .shortcuts-hint { display: none; }
 
             /* Ocultar columnas no esenciales en móvil */
             .cart-table thead th:nth-child(1),
@@ -704,6 +748,19 @@
         <input type="text" id="txtClave" placeholder="Escanear código de barras o escribir nombre del producto..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
         <button class="btn-add" onclick="agregarProducto()">+ Agregar</button>
         <button class="btn-rapida" onclick="abrirModalVentaRapida()">⚡ Rápida</button>
+    </div>
+
+    <!-- GUÍA DE ATAJOS -->
+    <div class="shortcuts-hint">
+        <span><kbd>⌫</kbd> Enfocar código</span>
+        <span><kbd>clic</kbd> Seleccionar producto</span>
+        <span><kbd>F5</kbd> Cambiar cantidad</span>
+        <span><kbd>F6</kbd> Quitar producto</span>
+        <span><kbd>+</kbd><kbd>−</kbd> Sumar / restar 1</span>
+        <span><kbd>F2</kbd> En espera</span>
+        <span><kbd>F3</kbd> Ver esperas</span>
+        <span><kbd>F4</kbd> Venta rápida</span>
+        <span><kbd>Esc</kbd> Cobrar</span>
     </div>
 
     <!-- CART TABLE -->
@@ -878,6 +935,7 @@
          const txtClave = document.getElementById('txtClave');
          const cuerpoTabla = document.getElementById('cuerpoTabla');
          let carritoIdCounter = 0;
+         let productoSeleccionadoId = null;
 
          // Atajo: si oprimes "Borrar" (Backspace) fuera de un campo de texto y sin modales abiertos,
          // selecciona automáticamente la barra de código sin necesidad de darle click.
@@ -890,6 +948,83 @@
              e.preventDefault();
              txtClave.focus();
          });
+
+         function cerrarModalActivo() {
+             const modales = {
+                 modalPago:         cerrarModalPago,
+                 modalBusqueda:     cerrarModalBusqueda,
+                 modalVentasEspera: cerrarModalVentasEspera,
+                 modalVentaRapida:  cerrarModalVentaRapida
+             };
+             for (const id in modales) {
+                 const el = document.getElementById(id);
+                 if (el && el.classList.contains('active')) { modales[id](); return true; }
+             }
+             return false;
+         }
+
+         // Atajo: ESC cierra el modal abierto; si no hay modal y hay algo en el carrito, cobra directo.
+         // F2 pone la venta en espera; F3 abre la lista de ventas en espera; F4 abre Venta Rápida.
+         // F5 con un producto seleccionado abre la edición de cantidad; F6 lo elimina del carrito;
+         // +/- suman o restan 1 a la cantidad del producto seleccionado.
+         document.addEventListener('keydown', function(e) {
+             if (e.key === 'Escape') {
+                 if (cerrarModalActivo()) return;
+                 if (listaCarrito.length > 0) abrirModalPago();
+                 return;
+             }
+
+             if (e.key === 'F2' || e.key === 'F3' || e.key === 'F4') {
+                 if (document.querySelector('.modal-overlay.active')) return;
+                 const activo = document.activeElement;
+                 const yaEscribiendo = activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA' || activo.isContentEditable);
+                 if (yaEscribiendo) return;
+
+                 e.preventDefault();
+                 if (e.key === 'F2') ponerEnEspera();
+                 else if (e.key === 'F3') abrirVentasEnEspera();
+                 else if (e.key === 'F4') abrirModalVentaRapida();
+                 return;
+             }
+
+             if (e.key === 'F5' || e.key === 'F6' || e.key === '+' || e.key === '-') {
+                 if (document.querySelector('.modal-overlay.active')) return;
+                 const activo = document.activeElement;
+                 const yaEscribiendo = activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA' || activo.isContentEditable);
+                 if (yaEscribiendo) return;
+                 if (productoSeleccionadoId == null) return;
+
+                 if (e.key === 'F5') {
+                     e.preventDefault();
+                     editarCantidad(productoSeleccionadoId);
+                 } else if (e.key === 'F6') {
+                     e.preventDefault();
+                     eliminarItem(productoSeleccionadoId);
+                 } else if (e.key === '+') {
+                     e.preventDefault();
+                     cambiarCantidadSeleccionado(1);
+                 } else if (e.key === '-') {
+                     e.preventDefault();
+                     cambiarCantidadSeleccionado(-1);
+                 }
+             }
+         });
+
+         function seleccionarFila(carritoId) {
+             productoSeleccionadoId = (productoSeleccionadoId === carritoId) ? null : carritoId;
+             dibujarCarrito();
+         }
+
+         async function cambiarCantidadSeleccionado(delta) {
+             const item = listaCarrito.find(p => p.carritoId === productoSeleccionadoId);
+             if (!item) return;
+             const idProductoRef = item.idProducto;
+             item.cantidad = Math.max(1, item.cantidad + delta);
+             await aplicarPromociones();
+             const nuevo = listaCarrito.find(p => p.idProducto === idProductoRef);
+             productoSeleccionadoId = nuevo ? nuevo.carritoId : null;
+             dibujarCarrito();
+         }
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
@@ -1278,17 +1413,18 @@ async function aplicarPromociones() {
                 const stock = prod.stockActual;
                 const stockClass = stock != null && stock <= 5 ? 'stock-bajo' : 'stock-normal';
                 const stockText = stock != null ? stock : '—';
+                const claseSel = prod.carritoId === productoSeleccionadoId ? ' fila-seleccionada' : '';
                 cuerpoTabla.innerHTML += `
-                    <tr>
+                    <tr class="fila-carrito${claseSel}" onclick="seleccionarFila(${prod.carritoId})">
                         <td>${fotoHtml}</td>
                         <td class="cart-col-code">${prod.codigo}</td>
                         <td class="cart-col-name">${prod.nombre}</td>
                         <td class="${stockClass}">${stockText}</td>
-                        <td><span class="badge-cantidad" ondblclick="editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
+                        <td><span class="badge-cantidad" ondblclick="event.stopPropagation(); editarCantidad(${prod.carritoId})">${prod.cantidad}</span></td>
                         <td>$${prod.precio.toFixed(2)}</td>
                         <td>${promocionHtml}</td>
                         <td class="cart-col-subtotal">$${subtotal.toFixed(2)}</td>
-                        <td><button class="btn-eliminar-item" onclick="eliminarItem(${prod.carritoId})">✕ Quitar</button></td>
+                        <td><button class="btn-eliminar-item" onclick="event.stopPropagation(); eliminarItem(${prod.carritoId})">✕ Quitar</button></td>
                     </tr>`;
             });
             totalVenta = sumaTotal;
@@ -1397,6 +1533,7 @@ async function aplicarPromociones() {
             listaCarrito = [];
             carritoIdCounter = 0;
             currentVentaId = -1;
+            productoSeleccionadoId = null;
             cuerpoTabla.innerHTML = "";
             document.getElementById('lblTotal').textContent = "Total: $0.00";
             document.getElementById('lblVentaId').textContent = "Venta ID: -1";
@@ -1409,8 +1546,11 @@ async function aplicarPromociones() {
             if (index === -1) return;
             const n = prompt("Nueva cantidad:", listaCarrito[index].cantidad);
             if (n && !isNaN(n) && n > 0) {
+                const idProductoRef = listaCarrito[index].idProducto;
                 listaCarrito[index].cantidad = parseFloat(n);
                 await aplicarPromociones();
+                const nuevo = listaCarrito.find(p => p.idProducto === idProductoRef);
+                productoSeleccionadoId = nuevo ? nuevo.carritoId : productoSeleccionadoId;
                 dibujarCarrito();
             }
         }
@@ -1425,6 +1565,7 @@ async function aplicarPromociones() {
                  const item = listaCarrito[index];
                  listaCarrito.splice(index, 1);
                  if (item.esTemporal) eliminarProductoTemporal(item.idProducto);
+                 if (productoSeleccionadoId === carritoId) productoSeleccionadoId = null;
                  aplicarPromociones().then(() => dibujarCarrito());
              }
          }
@@ -1474,6 +1615,7 @@ async function aplicarPromociones() {
                     listaCarrito = [];
                     carritoIdCounter = 0;
                     currentVentaId = -1;
+                    productoSeleccionadoId = null;
                     dibujarCarrito();
                     document.getElementById('lblTotal').textContent = "Total: $0.00";
                     document.getElementById('lblVentaId').textContent = "Venta ID: -1";
@@ -1561,6 +1703,7 @@ async function aplicarPromociones() {
                      }));
 
                     currentVentaId = -1;
+                    productoSeleccionadoId = null;
                     dibujarCarrito();
                     cerrarModalVentasEspera();
 
