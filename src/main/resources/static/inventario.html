@@ -248,7 +248,10 @@
         <div class="form-grid">
             <div class="full form-group">
                 <label class="form-label">Código de Barras</label>
-                <input type="text" class="form-control" id="p_codigo" placeholder="Escanear o escribir...">
+                <div style="display:flex; gap:8px;">
+                    <input type="text" class="form-control" id="p_codigo" placeholder="Escanear o escribir..." style="flex:1;">
+                    <button type="button" class="btn btn-secondary" onclick="escanearCodigoProducto()" title="Escanear con cámara">📷</button>
+                </div>
             </div>
             <div class="full form-group">
                 <label class="form-label">Nombre del Producto</label>
@@ -293,7 +296,15 @@
 </div>
 
 <script src="/sidebar.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/scanner.js"></script>
 <script>
+    function escanearCodigoProducto() {
+        mrkAbrirScanner(function (decodedText) {
+            document.getElementById('p_codigo').value = decodedText;
+        });
+    }
+
     let productosPaginados = [];
     let paginaActual = 1;
     const limitePorPagina = 30;

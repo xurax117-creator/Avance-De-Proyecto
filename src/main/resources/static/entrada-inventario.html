@@ -167,7 +167,10 @@
                     <div class="filters-bar">
                         <div class="form-group">
                             <label class="form-label">Buscar Producto</label>
-                            <input type="text" class="form-control" id="txtBusqueda" oninput="filtrarProductos()" placeholder="Nombre o código...">
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" class="form-control" id="txtBusqueda" oninput="filtrarProductos()" placeholder="Nombre o código..." style="flex:1;">
+                                <button type="button" class="btn btn-secondary" onclick="escanearCodigoEntrada()" title="Escanear con cámara">📷</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Proveedor</label>
@@ -274,6 +277,8 @@
 </div>
 
 <script src="/sidebar.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/scanner.js"></script>
 <script>
     const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
     if (!idSucursal || !localStorage.getItem('userId')) {
@@ -349,6 +354,7 @@
         datos.forEach(p => {
             const tr = document.createElement('tr');
             tr.style.cursor = 'pointer';
+            tr.dataset.idProducto = p.id_producto;
             tr.onclick = () => seleccionarProducto(p);
 
             let fotoHtml;
@@ -388,6 +394,19 @@
                     <td>${e.nombre_usuario || 'Sistema'}</td>
                 </tr>
             `;
+        });
+    }
+
+    function escanearCodigoEntrada() {
+        mrkAbrirScanner(function (decodedText) {
+            document.getElementById('txtBusqueda').value = decodedText;
+            filtrarProductos();
+
+            const match = todosLosProductos.find(p => p.codigo_barras === decodedText);
+            if (match) {
+                const tr = document.querySelector(`#listaProductos tr[data-id-producto="${match.id_producto}"]`);
+                if (tr) tr.click();
+            }
         });
     }
 

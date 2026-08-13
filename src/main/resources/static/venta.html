@@ -170,38 +170,6 @@
 
         .btn-scanner:hover { background: rgba(37,99,235,0.25); }
 
-        /* Scanner modal */
-        #modalScanner .modal-content { max-width: 480px; padding: 20px; }
-
-        #scannerContainer {
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-            min-height: 260px;
-        }
-
-        #scannerContainer video { border-radius: 12px; }
-
-        .scanner-hint {
-            text-align: center;
-            font-size: 12.5px;
-            color: rgba(255,255,255,0.5);
-            margin-top: 12px;
-        }
-
-        .scanner-error {
-            display: none;
-            text-align: center;
-            font-size: 13px;
-            color: #f87171;
-            background: rgba(220,38,38,0.1);
-            border: 1px solid rgba(220,38,38,0.2);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
-        }
-
         /* ── GUÍA DE ATAJOS ── */
         .shortcuts-hint {
             background: #12161c;
@@ -643,7 +611,6 @@
         [data-theme="light"] .scan-bar { background: #ffffff; border-bottom-color: rgba(0,0,0,0.06); }
         [data-theme="light"] #txtClave { background: #f9fafb; border-color: rgba(0,0,0,0.12); color: #111827; }
         [data-theme="light"] #txtClave::placeholder { color: rgba(0,0,0,0.30); }
-        [data-theme="light"] .scanner-hint { color: rgba(0,0,0,0.45); }
         [data-theme="light"] .shortcuts-hint { background: #f3f5f7; border-bottom-color: rgba(0,0,0,0.06); color: rgba(0,0,0,0.5); }
         [data-theme="light"] .shortcuts-hint kbd { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #374151; }
         [data-theme="light"] .cart-area { background: #f0f2f5; }
@@ -798,7 +765,7 @@
     <div class="scan-bar" id="panel-arriba">
         <input type="text" id="txtClave" placeholder="Escanear código de barras o escribir nombre del producto..." onkeypress="if(event.key === 'Enter') agregarProducto()" autofocus>
         <button class="btn-add" onclick="agregarProducto()">+ Agregar</button>
-        <button class="btn-scanner" onclick="abrirScanner()">📷 Cámara</button>
+        <button class="btn-scanner" onclick="escanearCodigoVenta()">📷 Cámara</button>
         <button class="btn-rapida" onclick="abrirModalVentaRapida()">⚡ Rápida</button>
     </div>
 
@@ -921,19 +888,6 @@
     </div>
 </div>
 
-<!-- Modal de Escáner de Cámara -->
-<div id="modalScanner" class="modal-overlay">
-    <div class="modal-content">
-        <h3>📷 Escanear Código de Barras</h3>
-        <div id="scannerContainer"></div>
-        <p class="scanner-hint">Apunta la cámara al código de barras del producto.</p>
-        <p class="scanner-error" id="scannerError"></p>
-        <div class="modal-buttons" style="margin-top:16px;">
-            <button class="btn btn-secondary btn-cancelar" onclick="cerrarScanner()">Cerrar</button>
-        </div>
-    </div>
-</div>
-
 <!-- Modal de Venta Rápida -->
 <div id="modalVentaRapida" class="modal-overlay">
     <div class="modal-content">
@@ -969,6 +923,7 @@
 </div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/scanner.js"></script>
 <script>
          // Apply theme before render to prevent flash
          (function(){ const t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
@@ -1021,7 +976,7 @@
                  modalBusqueda:     cerrarModalBusqueda,
                  modalVentasEspera: cerrarModalVentasEspera,
                  modalVentaRapida:  cerrarModalVentaRapida,
-                 modalScanner:      cerrarScanner
+                 mrkModalScanner:   mrkCerrarScanner
              };
              for (const id in modales) {
                  const el = document.getElementById(id);
@@ -1144,58 +1099,8 @@
             txtClave.focus();
         }
 
-        let html5QrCode = null;
-        let scannerActivo = false;
-
-        async function abrirScanner() {
-            if (typeof Html5Qrcode === 'undefined') {
-                showToast("No se pudo cargar el módulo de cámara. Revisa tu conexión a internet.", "error");
-                return;
-            }
-
-            document.getElementById('scannerError').style.display = 'none';
-            document.getElementById('modalScanner').classList.add('active');
-
-            try {
-                if (!html5QrCode) html5QrCode = new Html5Qrcode("scannerContainer");
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 260, height: 140 },
-                    formatsToSupport: [
-                        Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.CODABAR,
-                        Html5QrcodeSupportedFormats.ITF
-                    ]
-                };
-                await html5QrCode.start({ facingMode: "environment" }, config, onCodigoEscaneado, () => {});
-                scannerActivo = true;
-            } catch (e) {
-                console.error(e);
-                const errorEl = document.getElementById('scannerError');
-                errorEl.textContent = "No se pudo acceder a la cámara. Revisa los permisos del navegador.";
-                errorEl.style.display = 'block';
-            }
-        }
-
-        async function cerrarScanner() {
-            document.getElementById('modalScanner').classList.remove('active');
-            if (html5QrCode && scannerActivo) {
-                scannerActivo = false;
-                try { await html5QrCode.stop(); } catch (e) {}
-            }
-            txtClave.focus();
-        }
-
-        function onCodigoEscaneado(decodedText) {
-            if (!scannerActivo) return;
-            scannerActivo = false;
-            html5QrCode.stop().catch(() => {}).finally(() => {
-                document.getElementById('modalScanner').classList.remove('active');
+        function escanearCodigoVenta() {
+            mrkAbrirScanner(function (decodedText) {
                 txtClave.value = decodedText;
                 agregarProducto();
             });
