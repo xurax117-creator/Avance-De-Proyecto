@@ -175,7 +175,10 @@
             <div class="filters-bar">
                 <div class="form-group">
                     <label class="form-label">Buscar Producto</label>
-                    <input type="text" class="form-control" id="txtBusqueda" onkeypress="if(event.key==='Enter') filtrar()" placeholder="Nombre, código...">
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" class="form-control" id="txtBusqueda" onkeypress="if(event.key==='Enter') filtrar()" placeholder="Nombre, código..." style="flex:1;">
+                        <button type="button" class="btn btn-secondary" onclick="escanearCodigoBusqueda()" title="Escanear con cámara">📷</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Proveedor</label>
@@ -302,6 +305,13 @@
     function escanearCodigoProducto() {
         mrkAbrirScanner(function (decodedText) {
             document.getElementById('p_codigo').value = decodedText;
+        });
+    }
+
+    function escanearCodigoBusqueda() {
+        mrkAbrirScanner(function (decodedText) {
+            document.getElementById('txtBusqueda').value = decodedText;
+            filtrar();
         });
     }
 
