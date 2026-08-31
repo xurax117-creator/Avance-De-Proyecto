@@ -82,6 +82,30 @@
 
         .btn-detalles:hover { filter: brightness(1.1); }
 
+        .btn-devolver {
+            background: rgba(220,38,38,0.15);
+            color: #f87171;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: filter 0.15s;
+            margin-left: 6px;
+        }
+
+        .btn-devolver:hover { filter: brightness(1.1); }
+
+        .badge-devuelto {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #f87171;
+            margin-top: 2px;
+        }
+
         /* Ticket modal */
         .modal {
             display: none;
@@ -222,6 +246,7 @@
         [data-theme="light"] .filter-field select option { background-color: #ffffff; color: #111827; }
         [data-theme="light"] .btn-limpiar { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.09); color: #6b7280; }
         [data-theme="light"] .btn-limpiar:hover { background: rgba(0,0,0,0.09); color: #374151; }
+        [data-theme="light"] .modal-content { color: #111827; }
         [data-theme="light"] .ticket-header { border-bottom-color: rgba(0,0,0,0.15); }
         [data-theme="light"] .ticket-header h2 { color: #111827; }
         [data-theme="light"] .ticket-total { border-top-color: rgba(0,0,0,0.15); color: #111827; }
@@ -331,6 +356,7 @@
             <tbody id="t-cuerpo"></tbody>
         </table>
         <div class="ticket-total">TOTAL: $<span id="t-total"></span></div>
+        <div class="ticket-total" id="t-devuelto-wrap" style="display:none;font-size:13px;color:#f87171;border-top:none;padding-top:4px;margin-top:0">Devuelto: -$<span id="t-devuelto"></span></div>
         <button class="btn-cerrar" onclick="cerrarModal()">CERRAR</button>
     </div>
 </div>
@@ -572,14 +598,19 @@
                 } else {
                     pagoBadge = `<span style="font-size:11px;font-weight:600;color:#4ade80">💵 Efectivo</span>`;
                 }
+                const totalDevuelto = Number(v.totalDevuelto) || 0;
+                const devueltoHtml = totalDevuelto > 0 ? `<span class="badge-devuelto">↩ -$${totalDevuelto.toFixed(2)} devuelto</span>` : '';
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>#${v.numeroVenta}</strong></td>
                         <td>${fechaFormateada}</td>
                         <td>${v.nombre}</td>
-                        <td style="font-weight:700">$${v.total.toFixed(2)}</td>
+                        <td style="font-weight:700">$${v.total.toFixed(2)}${devueltoHtml}</td>
                         <td>${pagoBadge}</td>
-                        <td><button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta})">Ver detalle</button></td>
+                        <td>
+                            <button class="btn-detalles" onclick="abrirDetalles(${v.idVenta}, '${v.fecha}', ${v.total}, ${v.numeroVenta}, ${totalDevuelto})">Ver detalle</button>
+                            <button class="btn-devolver" onclick="window.location.href='/devolucion.html?idVenta=${v.idVenta}'">↩ Devolver</button>
+                        </td>
                     </tr>`;
             });
             dibujarPaginacion();
@@ -803,7 +834,7 @@
 
     let ultimoNumeroVenta = 0;
 
-    async function abrirDetalles(id, fecha, total, numeroVenta) {
+    async function abrirDetalles(id, fecha, total, numeroVenta, totalDevuelto) {
         ultimoNumeroVenta = numeroVenta || id;
         try {
             const resp = await fetch(`/api/reportes/detalle/${id}`);
@@ -820,6 +851,13 @@
                 tdCant.textContent = Number(p.cantidad).toFixed(3);
                 const tdProd = document.createElement('td');
                 tdProd.textContent = p.producto;
+                const cantidadDevuelta = Number(p.cantidadDevuelta) || 0;
+                if (cantidadDevuelta > 0) {
+                    const notaDevuelto = document.createElement('div');
+                    notaDevuelto.style.cssText = 'font-size:10px;color:#f87171;';
+                    notaDevuelto.textContent = `↩ se regresaron ${cantidadDevuelta.toFixed(3)}`;
+                    tdProd.appendChild(notaDevuelto);
+                }
                 const tdSub = document.createElement('td');
                 tdSub.textContent = '$' + Number(p.subtotal).toFixed(2);
                 tdSub.style.textAlign = 'right';
@@ -832,6 +870,15 @@
             document.getElementById('t-folio').textContent = ultimoNumeroVenta;
             document.getElementById('t-fecha').textContent = fecha;
             document.getElementById('t-total').textContent = total.toFixed(2);
+
+            const devueltoWrap = document.getElementById('t-devuelto-wrap');
+            if (totalDevuelto > 0) {
+                document.getElementById('t-devuelto').textContent = Number(totalDevuelto).toFixed(2);
+                devueltoWrap.style.display = 'block';
+            } else {
+                devueltoWrap.style.display = 'none';
+            }
+
             document.getElementById('modalTicket').style.display = 'block';
         } catch (e) { showToast("Error al cargar el detalle", "error"); }
     }

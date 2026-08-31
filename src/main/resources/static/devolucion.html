@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Devolución de Venta - MRKdito</title>
+    <link rel="stylesheet" href="/estilos.css">
+    <style>
+        .venta-info-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            font-size: 13.5px;
+        }
+
+        .venta-info-card strong { color: var(--text-muted); font-weight: 600; margin-right: 5px; }
+
+        .venta-info-card .devuelto-previo { color: #f87171; font-weight: 700; }
+
+        .devolucion-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .total-devolver {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .total-devolver span { color: #f87171; font-size: 20px; margin-left: 6px; }
+
+        #cuerpoDevolucion input[type="number"] {
+            width: 100px;
+        }
+
+        .col-devolver { color: #f87171; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div id="layout" class="app-layout">
+    <!-- sidebar injected by sidebar.js -->
+    <div class="page-content">
+        <header class="content-header">
+            <h1 class="page-title"><span>↩️</span> Devolución de Venta</h1>
+            <div class="header-actions">
+                <a href="/reportes.html" class="btn btn-secondary">← Volver a Reportes</a>
+            </div>
+        </header>
+        <div class="content-scroll" id="contenedorDevolucion">
+
+            <div class="venta-info-card" id="infoVenta">Cargando venta...</div>
+
+            <div id="sinItems" class="empty-state" style="display:none">
+                <div class="empty-icon">✅</div>
+                <div class="empty-text">Esta venta ya fue devuelta por completo. No queda nada disponible para devolver.</div>
+            </div>
+
+            <div class="card" id="contenedorTablaDevolucion" style="display:none">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th>Precio Unit.</th>
+                                <th>Cant. Vendida</th>
+                                <th>Nueva Cantidad</th>
+                                <th>A Devolver</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoDevolucion"></tbody>
+                    </table>
+                </div>
+                <div class="devolucion-actions">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-warning" onclick="devolverTodo()">↩ Devolver Todo</button>
+                        <button class="btn btn-secondary" onclick="window.location.href='/reportes.html'">Cancelar</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                        <div class="total-devolver">Total a Devolver: <span id="totalADevolver">$0.00</span></div>
+                        <button class="btn btn-primary btn-lg" onclick="confirmarDevolucion()">✓ Confirmar Devolución</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="/sidebar.js"></script>
+<script>
+    let itemsVenta = [];
+    let idVentaActual = null;
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+        toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function formatCantidad(n) {
+        n = Number(n);
+        return (n % 1 === 0) ? n : n.toFixed(3);
+    }
+
+    async function cargarVenta() {
+        const params = new URLSearchParams(window.location.search);
+        idVentaActual = parseInt(params.get('idVenta'));
+
+        if (!idVentaActual) {
+            document.getElementById('infoVenta').innerHTML = '⚠️ No se especificó una venta válida.';
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/devolucion/venta/${idVentaActual}`);
+            const data = await resp.json();
+
+            if (!data.success) {
+                document.getElementById('infoVenta').innerHTML = `⚠️ ${data.message || 'Venta no encontrada.'}`;
+                return;
+            }
+
+            const venta = data.venta;
+            itemsVenta = venta.items || [];
+
+            const fechaFormateada = new Date(venta.fecha).toLocaleString('es-MX', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+                timeZone: 'America/Mexico_City'
+            });
+
+            document.getElementById('infoVenta').innerHTML = `
+                <div><strong>Venta:</strong> #${venta.idVenta}</div>
+                <div><strong>Fecha:</strong> ${fechaFormateada}</div>
+                <div><strong>Cajero:</strong> ${venta.nombreCajero || '—'}</div>
+                <div><strong>Total original:</strong> $${Number(venta.total).toFixed(2)}</div>
+                ${venta.totalDevuelto > 0 ? `<div class="devuelto-previo">Ya devuelto antes: -$${Number(venta.totalDevuelto).toFixed(2)}</div>` : ''}
+            `;
+
+            if (itemsVenta.length === 0) {
+                document.getElementById('sinItems').style.display = 'block';
+                document.getElementById('contenedorTablaDevolucion').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('contenedorTablaDevolucion').style.display = 'block';
+            dibujarTabla();
+        } catch (e) {
+            document.getElementById('infoVenta').innerHTML = '⚠️ Error de conexión al cargar la venta.';
+        }
+    }
+
+    function dibujarTabla() {
+        const tbody = document.getElementById('cuerpoDevolucion');
+        tbody.innerHTML = '';
+
+        itemsVenta.forEach((item, idx) => {
+            const fotoHtml = item.fotoProducto
+                ? `<img src="data:image/jpeg;base64,${item.fotoProducto}" class="photo-product" alt="Foto">`
+                : `<div class="photo-placeholder">📦</div>`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fotoHtml}</td>
+                <td style="color:var(--text-muted);font-size:12px">${item.codigo || '—'}</td>
+                <td style="font-weight:600">${item.nombre}</td>
+                <td>$${Number(item.precioUnitario).toFixed(2)}</td>
+                <td>${formatCantidad(item.cantidadDisponible)}</td>
+                <td><input type="number" step="0.001" min="0" max="${item.cantidadDisponible}" value="${item.cantidadDisponible}" class="form-control" id="nueva_${idx}" oninput="actualizarFila(${idx})" onblur="normalizarFila(${idx})"></td>
+                <td class="col-devolver" id="devolver_${idx}">0</td>
+                <td style="font-weight:700" id="subtotal_${idx}">$0.00</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        actualizarTotal();
+    }
+
+    function actualizarFila(idx) {
+        // Solo calcula y refleja en pantalla; NO reescribe el input mientras el usuario
+        // está escribiendo, para no cortarle a la mitad un decimal como "0.5".
+        const item = itemsVenta[idx];
+        const inputEl = document.getElementById('nueva_' + idx);
+        let nueva = parseFloat(inputEl.value);
+        if (isNaN(nueva) || nueva < 0) nueva = 0;
+
+        const aDevolver = Math.max(0, item.cantidadDisponible - nueva);
+        const subtotal = aDevolver * item.precioUnitario;
+
+        document.getElementById('devolver_' + idx).textContent = formatCantidad(aDevolver);
+        document.getElementById('subtotal_' + idx).textContent = '$' + subtotal.toFixed(2);
+
+        actualizarTotal();
+    }
+
+    function normalizarFila(idx) {
+        // Al salir del campo sí se ajusta el valor visible (límites y formato).
+        const item = itemsVenta[idx];
+        const inputEl = document.getElementById('nueva_' + idx);
+        let nueva = parseFloat(inputEl.value);
+        if (isNaN(nueva) || nueva < 0) nueva = 0;
+        if (nueva > item.cantidadDisponible) nueva = item.cantidadDisponible;
+        inputEl.value = nueva;
+        actualizarFila(idx);
+    }
+
+    function actualizarTotal() {
+        let total = 0;
+        itemsVenta.forEach((item, idx) => {
+            const inputEl = document.getElementById('nueva_' + idx);
+            const nueva = inputEl ? (parseFloat(inputEl.value) || 0) : item.cantidadDisponible;
+            const aDevolver = Math.max(0, item.cantidadDisponible - nueva);
+            total += aDevolver * item.precioUnitario;
+        });
+        document.getElementById('totalADevolver').textContent = '$' + total.toFixed(2);
+    }
+
+    function devolverTodo() {
+        if (!confirm("¿Devolver TODA la venta? Se marcará la cantidad máxima disponible de cada producto para devolución.")) return;
+        itemsVenta.forEach((item, idx) => {
+            document.getElementById('nueva_' + idx).value = 0;
+            actualizarFila(idx);
+        });
+    }
+
+    async function confirmarDevolucion() {
+        const items = [];
+        itemsVenta.forEach((item, idx) => {
+            const nueva = parseFloat(document.getElementById('nueva_' + idx).value) || 0;
+            const aDevolver = Math.max(0, item.cantidadDisponible - nueva);
+            if (aDevolver > 0) {
+                items.push({ idDetalleVenta: item.idDetalleVenta, cantidad: aDevolver });
+            }
+        });
+
+        if (items.length === 0) {
+            showToast("No hay ninguna cantidad marcada para devolver", "warning");
+            return;
+        }
+
+        const totalTexto = document.getElementById('totalADevolver').textContent;
+        if (!confirm(`¿Confirmar la devolución por ${totalTexto}? Esta acción no se puede deshacer.`)) return;
+
+        try {
+            const resp = await fetch('/api/devolucion/procesar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idVenta: idVentaActual,
+                    userId: parseInt(localStorage.getItem('userId') || '0'),
+                    idSucursal: parseInt(localStorage.getItem('idSucursal') || '1'),
+                    items
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast("Devolución procesada correctamente", "success");
+                setTimeout(() => { window.location.href = '/reportes.html'; }, 1200);
+            } else {
+                showToast(data.message || "Error al procesar la devolución", "error");
+            }
+        } catch (e) {
+            showToast("Error de conexión al procesar la devolución", "error");
+        }
+    }
+
+    cargarVenta();
+</script>
+
+</body>
+</html>

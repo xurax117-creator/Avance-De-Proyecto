@@ -26,7 +26,7 @@ public class ReporteDAO {
 
             double totalGeneral = 0, totalEfectivo = 0, totalTarjeta = 0;
             try (PreparedStatement ps = c.prepareStatement(
-                    "SELECT COALESCE(SUM(total),0) as tg, COALESCE(SUM(monto_efectivo),0) as ef, COALESCE(SUM(monto_tarjeta),0) as tj FROM ventas v WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
+                    "SELECT COALESCE(SUM(total - total_devuelto),0) as tg, COALESCE(SUM(monto_efectivo),0) as ef, COALESCE(SUM(monto_tarjeta),0) as tj FROM ventas v WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, sucursal);
                 if (filtrarCat) ps.setString(4, categoria);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -38,8 +38,8 @@ public class ReporteDAO {
                 }
             }
 
-            String sql = "SELECT id_venta, fecha, nombre, total, monto_efectivo, monto_tarjeta, numero_venta FROM (" +
-                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, v.monto_efectivo, v.monto_tarjeta, " +
+            String sql = "SELECT id_venta, fecha, nombre, total, total_devuelto, monto_efectivo, monto_tarjeta, numero_venta FROM (" +
+                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, v.total_devuelto, v.monto_efectivo, v.monto_tarjeta, " +
                          "ROW_NUMBER() OVER (ORDER BY v.id_venta DESC) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
                          "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery + ") sub " +
@@ -54,12 +54,14 @@ public class ReporteDAO {
                 ps.setInt(idx,   (pagina - 1) * tamanoPagina);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
+                        double totalDevuelto = rs.getDouble("total_devuelto");
                         Map<String, Object> map = new HashMap<>();
                         map.put("idVenta",       rs.getInt("id_venta"));
                         map.put("numeroVenta",   rs.getInt("numero_venta"));
                         map.put("fecha",         rs.getString("fecha"));
                         map.put("nombre",        rs.getString("nombre"));
-                        map.put("total",         rs.getDouble("total"));
+                        map.put("total",         rs.getDouble("total") - totalDevuelto);
+                        map.put("totalDevuelto", totalDevuelto);
                         map.put("montoEfectivo", rs.getDouble("monto_efectivo"));
                         map.put("montoTarjeta",  rs.getDouble("monto_tarjeta"));
                         lista.add(map);
@@ -104,19 +106,32 @@ public class ReporteDAO {
 
     public List<Map<String, Object>> obtenerDetalleVenta(int idVenta) {
         List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT p.nombre, dv.cantidad, dv.precio_unitario, dv.subtotal " +
-                     "FROM detalle_venta dv JOIN productos p ON dv.id_producto = p.id_producto " +
-                     "WHERE dv.id_venta = ?";
+        // La cantidad y el subtotal se muestran netos (ya descontando lo devuelto),
+        // para que el ticket refleje lo que realmente se quedó vendido.
+        String sql = "SELECT dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario, " +
+                     "COALESCE(SUM(dd.cantidad), 0) AS cantidad_devuelta " +
+                     "FROM detalle_venta dv " +
+                     "JOIN productos p ON dv.id_producto = p.id_producto " +
+                     "LEFT JOIN detalle_devolucion dd ON dd.id_detalle_venta = dv.id_detalle " +
+                     "WHERE dv.id_venta = ? " +
+                     "GROUP BY dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario " +
+                     "ORDER BY dv.id_detalle";
         try (Connection c = new Conexion().conectar();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, idVenta);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
+                    double cantidadOriginal = rs.getDouble("cantidad");
+                    double cantidadDevuelta = rs.getDouble("cantidad_devuelta");
+                    double cantidadNeta = cantidadOriginal - cantidadDevuelta;
+                    double precioUnitario = rs.getDouble("precio_unitario");
+
                     Map<String, Object> map = new HashMap<>();
-                    map.put("producto", rs.getString("nombre"));
-                    map.put("cantidad", rs.getDouble("cantidad"));
-                    map.put("precio",   rs.getDouble("precio_unitario"));
-                    map.put("subtotal", rs.getDouble("subtotal"));
+                    map.put("producto",         rs.getString("nombre"));
+                    map.put("cantidad",         cantidadNeta);
+                    map.put("cantidadDevuelta", cantidadDevuelta);
+                    map.put("precio",           precioUnitario);
+                    map.put("subtotal",         cantidadNeta * precioUnitario);
                     lista.add(map);
                 }
             }

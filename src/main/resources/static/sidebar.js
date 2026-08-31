@@ -32,6 +32,7 @@
         'inventario':         ['Administrador', 'Gerente'],
         'entrada-inventario': ['Administrador', 'Gerente', 'Cajero'],
         'reportes':           ['Administrador', 'Gerente'],
+        'devolucion':         ['Administrador', 'Gerente'],
         'promociones':        ['Administrador', 'Gerente'],
         'proveedores':        ['Administrador', 'Gerente'],
         'usuarios':           ['Administrador'],
@@ -58,7 +59,7 @@
 
     const navHtml = links.map(l => `
         <li>
-            <a href="${l.href}" class="nav-link${page === l.key ? ' active' : ''}">
+            <a href="${l.href}" class="nav-link${page === l.key ? ' active' : ''}" title="${l.label}">
                 <span class="nav-icon">${l.icon}</span>
                 <span>${l.label}</span>
             </a>
@@ -66,8 +67,14 @@
 
     const initials = nombre.trim().split(/\s+/).slice(0, 2).map(n => n[0] || '').join('').toUpperCase() || '?';
 
+    // Barra lateral desplegable: en pantallas angostas (celular) arranca colapsada
+    // (solo iconos) la primera vez; después se respeta lo último que el usuario haya elegido.
+    let colapsado = localStorage.getItem('sidebarColapsado');
+    colapsado = colapsado === null ? window.innerWidth <= 640 : colapsado === 'true';
+
     const html = `
-        <nav class="sidebar">
+        <nav class="sidebar${colapsado ? ' collapsed' : ''}">
+            <button class="sidebar-toggle-btn" onclick="mrk_toggleSidebar()" title="Contraer/expandir menú">‹</button>
             <div class="sidebar-brand">
                 <img src="/mrkdito logo sin fondo real.png" alt="MRKdito" class="sidebar-logo">
                 <div class="sidebar-branch">
@@ -84,11 +91,11 @@
             </div>
             <ul class="sidebar-nav">${navHtml}</ul>
             <div class="sidebar-footer">
-                <button class="nav-link" id="mrk-theme-btn" style="width:100%;text-align:left" onclick="mrk_toggleTheme()">
+                <button class="nav-link" id="mrk-theme-btn" style="width:100%;text-align:left" onclick="mrk_toggleTheme()" title="Cambiar tema">
                     <span class="nav-icon" id="mrk-theme-icon">🌙</span>
                     <span id="mrk-theme-label">Modo Claro</span>
                 </button>
-                <button class="nav-link" style="width:100%;text-align:left" onclick="mrk_logout()">
+                <button class="nav-link" style="width:100%;text-align:left" onclick="mrk_logout()" title="Cerrar sesión">
                     <span class="nav-icon">🚪</span>
                     <span>Cerrar Sesión</span>
                 </button>
@@ -121,6 +128,13 @@
             if (tema) localStorage.setItem('theme', tema);
             location.href = '/sucursal.html';
         }
+    };
+
+    window.mrk_toggleSidebar = function () {
+        const sidebarEl = document.querySelector('.sidebar');
+        if (!sidebarEl) return;
+        const estaColapsado = sidebarEl.classList.toggle('collapsed');
+        localStorage.setItem('sidebarColapsado', estaColapsado ? 'true' : 'false');
     };
 
     window.mrk_toggleTheme = function () {

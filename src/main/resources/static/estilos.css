@@ -59,6 +59,7 @@ body {
 
 /* ===== SIDEBAR ===== */
 .sidebar {
+    position: relative;
     width: var(--sidebar-w);
     background: var(--sidebar-bg);
     display: flex;
@@ -67,7 +68,49 @@ body {
     flex-shrink: 0;
     overflow: hidden;
     border-right: 1px solid rgba(255,255,255,0.05);
+    transition: width 0.2s ease;
 }
+
+/* ── Modo colapsado (solo iconos) ── */
+.sidebar-toggle-btn {
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: 2px solid var(--sidebar-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    z-index: 20;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, filter 0.15s;
+}
+
+.sidebar-toggle-btn:hover { filter: brightness(1.1); }
+.sidebar.collapsed .sidebar-toggle-btn {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) rotate(180deg);
+}
+
+.sidebar.collapsed { width: 64px; }
+.sidebar.collapsed .sidebar-logo,
+.sidebar.collapsed .sidebar-branch,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .nav-link span:not(.nav-icon) {
+    display: none;
+}
+.sidebar.collapsed .sidebar-brand { padding: 16px 8px; }
+.sidebar.collapsed .sidebar-user { justify-content: center; padding: 14px 8px; }
+.sidebar.collapsed .sidebar-nav { padding: 10px 6px; }
+.sidebar.collapsed .nav-link { justify-content: center; padding: 10px; gap: 0; }
 
 .sidebar-brand {
     padding: 18px 16px 14px;
