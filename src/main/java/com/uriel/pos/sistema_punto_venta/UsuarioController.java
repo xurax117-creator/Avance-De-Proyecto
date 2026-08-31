@@ -119,10 +119,10 @@ public class UsuarioController {
         Usuario oper = new Usuario();
         Map<String, Object> response = new HashMap<>();
         try {
+            // La contraseña es opcional al actualizar: si se deja en blanco, se conserva la actual.
             if (request.id <= 0 ||
                 request.nombreCompleto == null || request.nombreCompleto.trim().isEmpty() ||
                 request.alias == null || request.alias.trim().isEmpty() ||
-                request.contraseña == null || request.contraseña.trim().isEmpty() ||
                 request.rol == null || request.rol.trim().isEmpty() ||
                 request.activo == null) {
                 response.put("success", false);
@@ -152,7 +152,7 @@ public class UsuarioController {
                 request.id,
                 request.nombreCompleto.trim(),
                 request.alias.trim(),
-                request.contraseña.trim(),
+                request.contraseña != null ? request.contraseña.trim() : null,
                 rol,
                 request.activo,
                 fotoBytes

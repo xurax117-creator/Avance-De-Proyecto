@@ -80,6 +80,31 @@
         .form-group input, .form-group select { width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.09); color: #e6edf3; border-radius: 8px; box-sizing: border-box; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
         .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(25,163,55,0.10); }
 
+        .password-field-wrap { position: relative; }
+        .password-field-wrap input { padding-right: 42px; }
+        .btn-ojo-password {
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .btn-ojo-password:hover { background: rgba(255,255,255,0.08); }
+        .password-hint { display: block; margin-top: 5px; font-size: 11.5px; color: #8b949e; }
+
         .foto-upload-container { text-align: center; margin: 16px 0; }
         .foto-preview { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); display: block; margin: 0 auto 10px; }
         .foto-upload-label { display: inline-block; cursor: pointer; padding: 7px 16px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 2px dashed var(--primary); font-size: 12.5px; font-weight: 500; color: #e6edf3; transition: background 0.15s; }
@@ -97,6 +122,8 @@
         [data-theme="light"] .btn-cancelar { background: rgba(0,0,0,0.06); color: #374151; }
         [data-theme="light"] .btn-cancelar:hover { background: rgba(0,0,0,0.10); }
         [data-theme="light"] .foto-upload-label { color: #374151; }
+        [data-theme="light"] .btn-ojo-password:hover { background: rgba(0,0,0,0.06); }
+        [data-theme="light"] .password-hint { color: #6b7280; }
     </style>
 </head>
 <body>
@@ -160,7 +187,14 @@
             </div>
             <div class="form-group">
                 <label for="txtPassword">Contraseña</label>
-                <input type="password" id="txtPassword" required placeholder="••••••••">
+                <div class="password-field-wrap">
+                    <input type="password" id="txtPassword" placeholder="••••••••">
+                    <button type="button" class="btn-ojo-password" id="btnOjoPassword"
+                        onmousedown="mostrarPassword()" onmouseup="ocultarPassword()" onmouseleave="ocultarPassword()"
+                        ontouchstart="mostrarPassword()" ontouchend="ocultarPassword()" ontouchcancel="ocultarPassword()"
+                        title="Mantén presionado para ver">👁️</button>
+                </div>
+                <small id="hintPassword" class="password-hint" style="display:none">Deja este campo en blanco para conservar la contraseña actual.</small>
             </div>
             <div class="form-group">
                 <label for="txtRol">Rol</label>
@@ -276,6 +310,14 @@
         reader.readAsDataURL(file);
     }
 
+    function mostrarPassword() {
+        document.getElementById('txtPassword').type = 'text';
+    }
+
+    function ocultarPassword() {
+        document.getElementById('txtPassword').type = 'password';
+    }
+
     function abrirModalNuevo() {
         modoEdicion.esEdicion = false;
         modoEdicion.idActual = null;
@@ -285,6 +327,9 @@
         document.getElementById('txtActivo').checked = true;
         document.getElementById('imgFotoPreview').src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23ccc'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
         document.getElementById('fileFoto').value = '';
+        document.getElementById('txtPassword').placeholder = '••••••••';
+        document.getElementById('hintPassword').style.display = 'none';
+        ocultarPassword();
         document.getElementById('modalUsuario').classList.add('active');
     }
 
@@ -300,6 +345,9 @@
         document.getElementById('txtNombreCompleto').value = u.nombreCompleto;
         document.getElementById('txtAlias').value = u.alias;
         document.getElementById('txtPassword').value = '';
+        document.getElementById('txtPassword').placeholder = 'Sin cambios';
+        document.getElementById('hintPassword').style.display = 'block';
+        ocultarPassword();
         document.getElementById('txtRol').value = u.rol;
         document.getElementById('txtActivo').checked = u.activo;
         document.getElementById('fileFoto').value = '';
@@ -330,7 +378,9 @@
             idSucursal: parseInt(localStorage.getItem('idSucursal') || '1')
         };
 
-        if (!datos.nombreCompleto || !datos.alias || !datos.contraseña || !datos.rol) {
+        // Al crear, la contraseña es obligatoria; al editar, dejarla en blanco conserva la actual.
+        const passwordRequerida = !modoEdicion.esEdicion;
+        if (!datos.nombreCompleto || !datos.alias || !datos.rol || (passwordRequerida && !datos.contraseña)) {
             showToast("Todos los campos son requeridos.", "warning");
             return;
         }
