@@ -28,7 +28,7 @@ public class Conexion {
             String database = System.getenv("MYSQL_DATABASE");
             user = System.getenv("MYSQLUSER");
             url  = "jdbc:mysql://" + host + ":" + port + "/" + database
-                   + "?useSSL=false&serverTimezone=America/Mexico_City";
+                   + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Mexico_City";
         }
 
         config.setJdbcUrl(url);
