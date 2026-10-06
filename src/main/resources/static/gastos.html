@@ -461,7 +461,8 @@
     document.getElementById('inputTerminal2').addEventListener('input', () => { actualizarTotales(); programarGuardado(); });
     document.getElementById('inputFecha').addEventListener('change', cargarHoja);
 
-    document.getElementById('inputFecha').value = new Date().toISOString().split('T')[0];
+    const _fechaUrl = new URLSearchParams(location.search).get('fecha');
+    document.getElementById('inputFecha').value = _fechaUrl || new Date().toISOString().split('T')[0];
     cargarHoja();
     aplicarZoom();
     document.getElementById('user-info').textContent = "Usuario: " + (localStorage.getItem('nombreUsuario') || 'Usuario');

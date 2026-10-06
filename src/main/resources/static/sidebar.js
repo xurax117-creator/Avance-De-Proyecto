@@ -37,6 +37,7 @@
         'proveedores':        ['Administrador', 'Gerente'],
         'usuarios':           ['Administrador'],
         'gastos':             ['Administrador', 'Gerente', 'Cajero'],
+        'conciliacion':       ['Administrador'],
     };
 
     // Guard: si el rol no tiene permiso en esta página, redirigir
@@ -52,6 +53,7 @@
         { href: '/entrada-inventario.html', icon: '📥', label: 'Entradas',        key: 'entrada-inventario'},
         { href: '/reportes.html',           icon: '📊', label: 'Reportes',        key: 'reportes'          },
         { href: '/gastos.html',             icon: '💸', label: 'Gastos',          key: 'gastos'            },
+        { href: '/conciliacion.html',       icon: '⚖️', label: 'Conciliación',    key: 'conciliacion'      },
         { href: '/promociones.html',        icon: '🏷️', label: 'Promociones',     key: 'promociones'       },
         { href: '/proveedores.html',        icon: '🚚', label: 'Proveedores',     key: 'proveedores'       },
         { href: '/usuarios.html',           icon: '👥', label: 'Usuarios',        key: 'usuarios'          },

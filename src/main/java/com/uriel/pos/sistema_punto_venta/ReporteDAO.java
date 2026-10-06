@@ -15,6 +15,13 @@ public class ReporteDAO {
             ? " AND v.id_venta IN (SELECT DISTINCT dv2.id_venta FROM detalle_venta dv2 JOIN productos p2 ON dv2.id_producto = p2.id_producto WHERE p2.categoria = ?)"
             : "";
 
+        // Devoluciones agregadas por venta (sin importar el día en que se hicieron), para
+        // mostrar el neto real de cada venta. ventas.total/monto_efectivo/monto_tarjeta ya
+        // no se modifican al devolver — ver Devolucion.java.
+        String devSubquery = "(SELECT id_venta, SUM(total_devuelto) AS total_devuelto, " +
+                              "SUM(monto_efectivo_devuelto) AS efectivo_devuelto, SUM(monto_tarjeta_devuelto) AS tarjeta_devuelto " +
+                              "FROM devoluciones GROUP BY id_venta) dev";
+
         try (Connection c = new Conexion().conectar()) {
             int totalRegistros = 0;
             try (PreparedStatement ps = c.prepareStatement(
@@ -26,7 +33,11 @@ public class ReporteDAO {
 
             double totalGeneral = 0, totalEfectivo = 0, totalTarjeta = 0;
             try (PreparedStatement ps = c.prepareStatement(
-                    "SELECT COALESCE(SUM(total - total_devuelto),0) as tg, COALESCE(SUM(monto_efectivo),0) as ef, COALESCE(SUM(monto_tarjeta),0) as tj FROM ventas v WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
+                    "SELECT COALESCE(SUM(v.total - COALESCE(dev.total_devuelto,0)),0) as tg, " +
+                    "COALESCE(SUM(v.monto_efectivo - COALESCE(dev.efectivo_devuelto,0)),0) as ef, " +
+                    "COALESCE(SUM(v.monto_tarjeta - COALESCE(dev.tarjeta_devuelto,0)),0) as tj " +
+                    "FROM ventas v LEFT JOIN " + devSubquery + " ON dev.id_venta = v.id_venta " +
+                    "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery)) {
                 ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, sucursal);
                 if (filtrarCat) ps.setString(4, categoria);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -39,9 +50,13 @@ public class ReporteDAO {
             }
 
             String sql = "SELECT id_venta, fecha, nombre, total, total_devuelto, monto_efectivo, monto_tarjeta, numero_venta FROM (" +
-                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, v.total_devuelto, v.monto_efectivo, v.monto_tarjeta, " +
+                         "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, " +
+                         "COALESCE(dev.total_devuelto,0) as total_devuelto, " +
+                         "v.monto_efectivo - COALESCE(dev.efectivo_devuelto,0) as monto_efectivo, " +
+                         "v.monto_tarjeta - COALESCE(dev.tarjeta_devuelto,0) as monto_tarjeta, " +
                          "ROW_NUMBER() OVER (ORDER BY v.id_venta DESC) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
+                         "LEFT JOIN " + devSubquery + " ON dev.id_venta = v.id_venta " +
                          "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery + ") sub " +
                          "ORDER BY id_venta DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = c.prepareStatement(sql)) {

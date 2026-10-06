@@ -15,7 +15,8 @@ public class Devolucion {
         Map<String, Object> resultado = new HashMap<>();
         try (Connection c = new Conexion().conectar()) {
 
-            String sqlVenta = "SELECT v.id_venta, v.fecha, v.total, v.total_devuelto, u.nombre_completo AS nombre_cajero " +
+            String sqlVenta = "SELECT v.id_venta, v.fecha, v.total, u.nombre_completo AS nombre_cajero, " +
+                               "COALESCE((SELECT SUM(d.total_devuelto) FROM devoluciones d WHERE d.id_venta = v.id_venta), 0) AS total_devuelto " +
                                "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario WHERE v.id_venta = ?";
             try (PreparedStatement ps = c.prepareStatement(sqlVenta)) {
                 ps.setInt(1, idVenta);
@@ -138,41 +139,35 @@ public class Devolucion {
                 throw new Exception("No se especificó ninguna cantidad válida a devolver.");
             }
 
-            try (PreparedStatement ps = c.prepareStatement("UPDATE devoluciones SET total_devuelto = ? WHERE id_devolucion = ?")) {
-                ps.setDouble(1, totalDevuelto);
-                ps.setInt(2, idDevolucion);
-                ps.executeUpdate();
-            }
-
-            double montoEfectivo, montoTarjeta, totalDevueltoPrevio;
+            // El monto ORIGINAL de la venta (nunca se modifica) determina la proporción
+            // efectivo/tarjeta con la que se reparte este reembolso.
+            double montoEfectivoOriginal, montoTarjetaOriginal;
             try (PreparedStatement ps = c.prepareStatement(
-                    "SELECT monto_efectivo, monto_tarjeta, total_devuelto FROM ventas WHERE id_venta = ?")) {
+                    "SELECT monto_efectivo, monto_tarjeta FROM ventas WHERE id_venta = ?")) {
                 ps.setInt(1, idVenta);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) throw new Exception("Venta no encontrada.");
-                    montoEfectivo = rs.getDouble("monto_efectivo");
-                    montoTarjeta = rs.getDouble("monto_tarjeta");
-                    totalDevueltoPrevio = rs.getDouble("total_devuelto");
+                    montoEfectivoOriginal = rs.getDouble("monto_efectivo");
+                    montoTarjetaOriginal = rs.getDouble("monto_tarjeta");
                 }
             }
 
-            // El reembolso se reparte proporcionalmente entre efectivo y tarjeta según cómo se pagó
-            // originalmente, para que el corte de caja (efectivo/tarjeta) del día siga cuadrando.
-            double sumaPagos = montoEfectivo + montoTarjeta;
-            double propEfectivo = sumaPagos > 0 ? montoEfectivo / sumaPagos : 1.0;
-            double reduccionEfectivo = totalDevuelto * propEfectivo;
-            double reduccionTarjeta = totalDevuelto - reduccionEfectivo;
+            double sumaPagos = montoEfectivoOriginal + montoTarjetaOriginal;
+            double propEfectivo = sumaPagos > 0 ? montoEfectivoOriginal / sumaPagos : 1.0;
+            double efectivoDevuelto = totalDevuelto * propEfectivo;
+            double tarjetaDevuelto = totalDevuelto - efectivoDevuelto;
 
-            double nuevoEfectivo = Math.max(0, montoEfectivo - reduccionEfectivo);
-            double nuevoTarjeta = Math.max(0, montoTarjeta - reduccionTarjeta);
-            double nuevoTotalDevuelto = totalDevueltoPrevio + totalDevuelto;
-
+            // Importante: la venta original (ventas.total/monto_efectivo/monto_tarjeta) ya NO se
+            // modifica — queda como un registro histórico inmutable. El reembolso se guarda aquí,
+            // fechado en el momento en que se hace la devolución, para que afecte la caja del día
+            // en que realmente sale el dinero (no el día de la venta original). Reportes y
+            // Conciliación calculan el neto cruzando contra esta tabla en el momento de consultar.
             try (PreparedStatement ps = c.prepareStatement(
-                    "UPDATE ventas SET total_devuelto = ?, monto_efectivo = ?, monto_tarjeta = ? WHERE id_venta = ?")) {
-                ps.setDouble(1, nuevoTotalDevuelto);
-                ps.setDouble(2, nuevoEfectivo);
-                ps.setDouble(3, nuevoTarjeta);
-                ps.setInt(4, idVenta);
+                    "UPDATE devoluciones SET total_devuelto = ?, monto_efectivo_devuelto = ?, monto_tarjeta_devuelto = ? WHERE id_devolucion = ?")) {
+                ps.setDouble(1, totalDevuelto);
+                ps.setDouble(2, efectivoDevuelto);
+                ps.setDouble(3, tarjetaDevuelto);
+                ps.setInt(4, idDevolucion);
                 ps.executeUpdate();
             }
 
