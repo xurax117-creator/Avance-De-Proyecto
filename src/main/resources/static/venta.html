@@ -1294,8 +1294,9 @@ async function aplicarPromociones() {
                      cantidadDisponible: item.cantidad
                  }));
 
-                 const promosSimples = todasLasPromos.filter(p => (p.productos || []).length === 1);
-                 const promosMixtas = todasLasPromos.filter(p => (p.productos || []).length > 1);
+                 const promosCantidadMixta = todasLasPromos.filter(p => p.tipo === 'mix_and_match');
+                 const promosSimples = todasLasPromos.filter(p => p.tipo !== 'mix_and_match' && (p.productos || []).length === 1);
+                 const promosMixtas = todasLasPromos.filter(p => p.tipo !== 'mix_and_match' && (p.productos || []).length > 1);
 
                  for (const promo of promosSimples) {
                      if (promo.tipo !== 'buy_x_get_y' || !promo.precio_especial) continue;
@@ -1377,6 +1378,51 @@ async function aplicarPromociones() {
                                  }
                              }
                          }
+                     }
+                 }
+
+                 // Cantidad mixta: cuenta el total de piezas entre todos los productos participantes
+                 // (p. ej. 10 Corona + 14 Victoria = 24), sin importar cuántas sean de cada uno.
+                 for (const promo of promosCantidadMixta) {
+                     if (!promo.precio_especial) continue;
+
+                     const productosParticipantes = promo.productos || [];
+                     const cantidadRequerida = Math.floor(promo.cantidad_requerida);
+                     if (cantidadRequerida <= 0) continue;
+                     const precioUnitarioPromo = promo.precio_especial / cantidadRequerida;
+
+                     const itemsParticipantes = carritoCopia.filter(it => productosParticipantes.includes(it.idProducto) && it.cantidadDisponible > 0);
+                     const totalDisponible = itemsParticipantes.reduce((s, it) => s + Math.floor(it.cantidadDisponible), 0);
+                     const grupos = Math.floor(totalDisponible / cantidadRequerida);
+                     if (grupos <= 0) continue;
+
+                     let restantePorAsignar = grupos * cantidadRequerida;
+                     const asignadoPorProducto = new Map();
+                     for (const item of itemsParticipantes) {
+                         if (restantePorAsignar <= 0) break;
+                         const aTomar = Math.min(restantePorAsignar, Math.floor(item.cantidadDisponible));
+                         if (aTomar <= 0) continue;
+                         item.cantidadDisponible -= aTomar;
+                         restantePorAsignar -= aTomar;
+                         const previo = asignadoPorProducto.get(item.idProducto);
+                         if (previo) previo.cantidad += aTomar;
+                         else asignadoPorProducto.set(item.idProducto, { item, cantidad: aTomar });
+                     }
+
+                     for (const { item, cantidad } of asignadoPorProducto.values()) {
+                         nuevosItems.push({
+                             carritoId: ++carritoIdCounter,
+                             idProducto: item.idProducto,
+                             codigo: item.codigo,
+                             nombre: item.nombre,
+                             precioOriginal: item.precioOriginal,
+                             precio: precioUnitarioPromo,
+                             cantidad: cantidad,
+                             stockActual: item.stockActual,
+                             fotoProducto: item.fotoProducto,
+                             promocionAplicada: promo.nombre,
+                             esPromo: true
+                         });
                      }
                  }
 

@@ -81,7 +81,7 @@ public class PromocionDAO {
 
     private void cargarProductosDePromocion(PromocionData promo, Connection c) throws SQLException {
         String sql = """
-            SELECT prod.id_producto, prod.nombre
+            SELECT prod.id_producto, prod.nombre, prod.precio_venta
             FROM promocion_productos pp
             JOIN productos prod ON pp.id_producto = prod.id_producto
             WHERE pp.id_promocion = ? ORDER BY prod.nombre
@@ -97,6 +97,7 @@ public class PromocionDAO {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", idProd);
                     m.put("nombre", nombre);
+                    m.put("precio", rs.getDouble("precio_venta"));
                     promo.productosConNombre.add(m);
                 }
             }
@@ -136,6 +137,19 @@ public class PromocionDAO {
                 ins.setInt(1, idPromocion); ins.setInt(2, idProducto); ins.executeUpdate();
             }
         }
+    }
+
+    // Para promociones de cantidad mixta: todos los productos participantes deben tener el mismo precio de venta.
+    public boolean productosTienenMismoPrecio(Set<Integer> productos) {
+        if (productos == null || productos.isEmpty()) return true;
+        String ids = productos.stream().map(String::valueOf).collect(Collectors.joining(","));
+        String sql = "SELECT COUNT(DISTINCT precio_venta) AS precios FROM productos WHERE id_producto IN (" + ids + ")";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement stmt = c.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() && rs.getInt("precios") <= 1;
+        } catch (Exception e) { e.printStackTrace(); }
+        return false;
     }
 
     public boolean crear(PromocionRequest request) {

@@ -38,22 +38,25 @@ public class Conciliacion {
         String fechaHoraInicio = fecha + " 00:00:00";
         String fechaHoraFin    = fecha + " 23:59:59";
 
-        double ventaEfectivoBruta = 0;
+        // Mismo cálculo que el módulo de Reportes: Venta Efectivo = Total − Tarjeta (netos de devoluciones).
+        double totalReporte = 0, tarjetaReporte = 0;
         try (PreparedStatement ps = c.prepareStatement(
-                "SELECT COALESCE(SUM(monto_efectivo),0) AS v FROM ventas WHERE fecha BETWEEN ? AND ? AND id_sucursal = ?")) {
+                "SELECT COALESCE(SUM(v.total - COALESCE(dev.total_devuelto,0)),0) AS tg, " +
+                "COALESCE(SUM(v.monto_tarjeta - COALESCE(dev.tarjeta_devuelto,0)),0) AS tj " +
+                "FROM ventas v LEFT JOIN (SELECT id_venta, SUM(total_devuelto) AS total_devuelto, " +
+                "SUM(monto_tarjeta_devuelto) AS tarjeta_devuelto FROM devoluciones GROUP BY id_venta) dev " +
+                "ON dev.id_venta = v.id_venta " +
+                "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?")) {
             ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, idSucursal);
-            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) ventaEfectivoBruta = rs.getDouble("v"); }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    totalReporte   = rs.getDouble("tg");
+                    tarjetaReporte = rs.getDouble("tj");
+                }
+            }
         }
 
-        // Una devolución afecta la caja del día en que se hace, sin importar cuándo fue la venta original.
-        double efectivoDevuelto = 0;
-        try (PreparedStatement ps = c.prepareStatement(
-                "SELECT COALESCE(SUM(monto_efectivo_devuelto),0) AS v FROM devoluciones WHERE fecha BETWEEN ? AND ? AND id_sucursal = ?")) {
-            ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, idSucursal);
-            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) efectivoDevuelto = rs.getDouble("v"); }
-        }
-
-        double ventaEfectivo = ventaEfectivoBruta - efectivoDevuelto;
+        double ventaEfectivo = totalReporte - tarjetaReporte;
 
         double terminal1 = 0, terminal2 = 0, monedas = 0, billetes = 0;
         String filasJson = null;

@@ -22,6 +22,7 @@
         .tipo-buy_x_get_y     { background: rgba(37,99,235,0.15);  color: #60a5fa; }
         .tipo-percent_off     { background: rgba(194,65,12,0.15);  color: #fb923c; }
         .tipo-fixed_discount  { background: rgba(4,120,87,0.15);   color: #34d399; }
+        .tipo-mix_and_match   { background: rgba(147,51,234,0.15); color: #c084fc; }
 
         .btn-editar, .btn-eliminar {
             display: inline-flex;
@@ -208,6 +209,7 @@
         [data-theme="light"] .tipo-buy_x_get_y    { background: rgba(37,99,235,0.10);  color: #2563eb; }
         [data-theme="light"] .tipo-percent_off    { background: rgba(194,65,12,0.10);  color: #c2410c; }
         [data-theme="light"] .tipo-fixed_discount { background: rgba(4,120,87,0.10);   color: #047857; }
+        [data-theme="light"] .tipo-mix_and_match  { background: rgba(147,51,234,0.10); color: #7e22ce; }
     </style>
 </head>
 <body>
@@ -270,6 +272,7 @@
                     <option value="buy_x_get_y">Compra X paga Y</option>
                     <option value="percent_off">Descuento porcentual</option>
                     <option value="fixed_discount">Descuento fijo</option>
+                    <option value="mix_and_match">Cantidad mixta (ej. cartón revuelto)</option>
                 </select>
             </div>
 
@@ -291,6 +294,7 @@
                     <div id="lista_resultados"></div>
                 </div>
                 <p class="help-text">Presione Enter o el botón Buscar. Los productos seleccionados aparecen arriba.</p>
+                <p class="help-text" id="ayuda_mix_and_match" style="display:none">Cantidad mixta: la promoción se aplica cuando la suma de piezas de los productos participantes llega a la cantidad requerida, sin importar cuántas sean de cada uno (ej. 10 Corona + 14 Victoria = 24). Todos los productos deben tener el mismo precio de venta.</p>
             </div>
 
             <div id="campo_precio_especial" class="form-group">
@@ -392,7 +396,7 @@ function buscarProductos() {
                         <span>${p.nombre} — <span style="color:#9ca3af">$${p.precio_venta}</span></span>
                         ${yaSeleccionado
                             ? '<span style="color:#15803d;font-size:12px;font-weight:600">✓ Seleccionado</span>'
-                            : `<button class="btn btn-primary btn-sm" onclick="seleccionarProducto(${p.id_producto}, '${nombreEscapado}')">+ Agregar</button>`
+                            : `<button class="btn btn-primary btn-sm" onclick="seleccionarProducto(${p.id_producto}, '${nombreEscapado}', ${Number(p.precio_venta)})">+ Agregar</button>`
                         }
                     `;
                     listaDiv.appendChild(div);
@@ -403,10 +407,17 @@ function buscarProductos() {
         .catch(err => console.error('Error buscando productos:', err));
 }
 
-function seleccionarProducto(id, nombre) {
+function seleccionarProducto(id, nombre, precio) {
     const existe = productosSeleccionados.some(p => p.id === id);
     if (!existe) {
-        productosSeleccionados.push({ id, nombre });
+        if (document.getElementById('promo_tipo').value === 'mix_and_match' && productosSeleccionados.length > 0) {
+            const precioBase = productosSeleccionados[0].precio;
+            if (precioBase != null && Number(precio).toFixed(2) !== Number(precioBase).toFixed(2)) {
+                showToast(`En cantidad mixta todos los productos deben costar lo mismo ($${Number(precioBase).toFixed(2)})`, 'warning');
+                return;
+            }
+        }
+        productosSeleccionados.push({ id, nombre, precio });
         actualizarProductosSeleccionados();
         document.getElementById('buscador_productos').value = '';
         document.getElementById('resultados_busqueda').style.display = 'none';
@@ -428,7 +439,7 @@ function actualizarProductosSeleccionados() {
             const tag = document.createElement('div');
             tag.className = 'prod-tag';
             tag.innerHTML = `
-                <span>${p.nombre}</span>
+                <span>${p.nombre}${p.precio != null ? ` · $${Number(p.precio).toFixed(2)}` : ''}</span>
                 <button class="prod-tag-remove" onclick="eliminarProductoSeleccionado(${p.id})">×</button>
             `;
             container.appendChild(tag);
@@ -460,11 +471,11 @@ function mostrarPromociones() {
         if (!p.activo) tr.className = 'promocion-inactiva';
 
         let descuentoTexto = '';
-        if (p.tipo === 'buy_x_get_y')        descuentoTexto = `$${p.precio_especial || 0} × ${p.cantidad_requerida}`;
+        if (p.tipo === 'buy_x_get_y' || p.tipo === 'mix_and_match') descuentoTexto = `$${p.precio_especial || 0} × ${p.cantidad_requerida}`;
         else if (p.tipo === 'percent_off')    descuentoTexto = `${p.descuento_porcentaje || 0}%`;
         else if (p.tipo === 'fixed_discount') descuentoTexto = `$${p.descuento_fijo || 0}`;
 
-        const tipoLabel = { buy_x_get_y: 'X→Y', percent_off: '% Desc.', fixed_discount: '$ Fijo' };
+        const tipoLabel = { buy_x_get_y: 'X→Y', percent_off: '% Desc.', fixed_discount: '$ Fijo', mix_and_match: 'Mixta' };
 
         tr.innerHTML = `
             <td style="color:#9ca3af;font-size:12px">${p.id_promocion}</td>
@@ -510,7 +521,7 @@ function abrirModal(id = null) {
                 .then(promoDetalle => {
                     if (promoDetalle.productos_detalle && Array.isArray(promoDetalle.productos_detalle)) {
                         promoDetalle.productos_detalle.forEach(prod => {
-                            productosSeleccionados.push({ id: prod.id, nombre: prod.nombre });
+                            productosSeleccionados.push({ id: prod.id, nombre: prod.nombre, precio: prod.precio });
                         });
                         actualizarProductosSeleccionados();
                     }
@@ -542,7 +553,8 @@ function cerrarModal() {
 
 function cambiarCampos() {
     const tipo = document.getElementById('promo_tipo').value;
-    document.getElementById('campo_precio_especial').style.display      = tipo === 'buy_x_get_y'    ? 'block' : 'none';
+    document.getElementById('campo_precio_especial').style.display      = (tipo === 'buy_x_get_y' || tipo === 'mix_and_match') ? 'block' : 'none';
+    document.getElementById('ayuda_mix_and_match').style.display        = tipo === 'mix_and_match'  ? 'block' : 'none';
     document.getElementById('campo_descuento_porcentaje').style.display = tipo === 'percent_off'    ? 'block' : 'none';
     document.getElementById('campo_descuento_fijo').style.display       = tipo === 'fixed_discount' ? 'block' : 'none';
 }
@@ -567,6 +579,22 @@ function guardarPromocion() {
     if (!data.nombre || !data.productos || data.productos.length === 0 || !data.cantidad_requerida) {
         showToast('Complete todos los campos obligatorios y seleccione al menos un producto', 'warning');
         return;
+    }
+
+    if (data.tipo === 'mix_and_match') {
+        if (data.productos.length < 2) {
+            showToast('La cantidad mixta necesita al menos 2 productos participantes', 'warning');
+            return;
+        }
+        if (!data.precio_especial) {
+            showToast('Indica el precio especial de la promoción', 'warning');
+            return;
+        }
+        const precios = new Set(productosSeleccionados.filter(p => p.precio != null).map(p => Number(p.precio).toFixed(2)));
+        if (precios.size > 1) {
+            showToast('En cantidad mixta todos los productos deben tener el mismo precio de venta', 'warning');
+            return;
+        }
     }
 
     if (id) data.id_promocion = id;

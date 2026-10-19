@@ -103,6 +103,25 @@ public class PromocionController {
             System.out.println("Datos recibidos para promocion: " + request.nombre + ", tipo: " + request.tipo + ", productos: " + request.productos);
 
             PromocionDAO dao = new PromocionDAO();
+
+            if ("mix_and_match".equals(request.tipo)) {
+                if (request.productos == null || request.productos.size() < 2) {
+                    res.put("success", false);
+                    res.put("message", "La promoción de cantidad mixta necesita al menos 2 productos.");
+                    return res;
+                }
+                if (request.precioEspecial == null || request.precioEspecial <= 0) {
+                    res.put("success", false);
+                    res.put("message", "Indica el precio especial de la promoción.");
+                    return res;
+                }
+                if (!dao.productosTienenMismoPrecio(request.productos)) {
+                    res.put("success", false);
+                    res.put("message", "En una promoción de cantidad mixta todos los productos deben tener el mismo precio de venta.");
+                    return res;
+                }
+            }
+
             boolean success = false;
             String id = datos.get("id_promocion") != null ? datos.get("id_promocion").toString() : "";
             if (!id.isEmpty()) {
