@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gastos - MRKdito</title>
     <link rel="stylesheet" href="/estilos.css">
+    <script>
+        // ?soloLectura=1 → vista sin edición (se usa dentro de la ventana "Ver gastos" de Conciliación).
+        if (new URLSearchParams(location.search).get('soloLectura') === '1') {
+            document.documentElement.classList.add('solo-lectura');
+        }
+    </script>
     <style>
         .resumen-linea {
             display: flex;
@@ -129,6 +135,18 @@
         .estado-error   { color: #f87171; }
 
         [data-theme="light"] .hoja-gastos th { background: rgba(0,0,0,0.025); }
+
+        /* Modo solo lectura */
+        .solo-lectura .sidebar,
+        .solo-lectura .content-header,
+        .solo-lectura .filters-bar,
+        .solo-lectura #pieAgregarFila,
+        .solo-lectura .col-acciones,
+        .solo-lectura .th-acciones { display: none; }
+        .solo-lectura .content-scroll { padding: 16px; }
+        .solo-lectura input { cursor: default; }
+        .solo-lectura .hoja-gastos td input:focus { background: transparent; box-shadow: none; }
+        .solo-lectura .form-control:focus { box-shadow: none; border-color: var(--border); }
     </style>
 </head>
 <body>
@@ -188,13 +206,13 @@
                                 <th>Deudores</th>
                                 <th>Monto Deudor</th>
                                 <th>Notas</th>
-                                <th></th>
+                                <th class="th-acciones"></th>
                             </tr>
                         </thead>
                         <tbody id="cuerpoHoja"></tbody>
                     </table>
                 </div>
-                <div style="padding:12px 16px; border-top:1px solid var(--border);">
+                <div id="pieAgregarFila" style="padding:12px 16px; border-top:1px solid var(--border);">
                     <button class="btn btn-secondary btn-sm" onclick="agregarFila()">+ Agregar fila</button>
                 </div>
             </div>
@@ -259,6 +277,12 @@
         window.location.href = '/sucursal.html';
     }
     document.documentElement.style.setProperty('--primary', localStorage.getItem('colorSucursal') || '#19A337');
+
+    const SOLO_LECTURA = document.documentElement.classList.contains('solo-lectura');
+    if (SOLO_LECTURA) {
+        const colAcciones = document.querySelector('.hoja-gastos col.col-th-acciones');
+        if (colAcciones) colAcciones.remove();
+    }
 
     const FILAS_INICIALES = 12;
     let filas = [];
@@ -342,6 +366,7 @@
             dibujarHoja();
             actualizarTotales();
             marcarEstado(data.existe ? 'ok' : '');
+            if (SOLO_LECTURA) bloquearEdicion();
         } catch (e) {
             showToast("Error al cargar la hoja de gastos", "error");
         } finally { hojaCargando = false; }
@@ -410,8 +435,15 @@
         else { el.textContent = ''; }
     }
 
+    function bloquearEdicion() {
+        document.querySelectorAll('.content-scroll input').forEach(i => {
+            i.readOnly = true;
+            i.tabIndex = -1;
+        });
+    }
+
     function programarGuardado() {
-        if (hojaCargando) return;
+        if (hojaCargando || SOLO_LECTURA) return;
         marcarEstado('pend');
         clearTimeout(guardarTimeout);
         guardarTimeout = setTimeout(guardarHoja, 1200);
@@ -419,6 +451,7 @@
 
     async function guardarHoja() {
         clearTimeout(guardarTimeout);
+        if (SOLO_LECTURA) return;
         const fecha = document.getElementById('inputFecha').value;
         const suc = parseInt(localStorage.getItem('idSucursal') || '1');
         const monedas = parseMonto(document.getElementById('inputMonedas').value);

@@ -136,8 +136,54 @@
         }
         .btn-cerrar-conciliacion:hover { filter: brightness(0.92); }
 
-        .link-gastos { font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600; }
+        .gastos-casa-wrap { padding: 10px 20px 14px; border-top: 1px solid var(--border); }
+        .gastos-casa-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .gastos-casa-header span { font-size: 13.5px; color: var(--text-muted); }
+        .gastos-casa-fila { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .gastos-casa-fila .num { width: 22px; font-size: 12px; color: var(--text-muted); text-align: right; flex-shrink: 0; }
+        .gastos-casa-fila input {
+            flex: 1;
+            padding: 7px 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            text-align: right;
+            outline: none;
+        }
+        .gastos-casa-fila input:focus { border-color: var(--primary); }
+        .btn-quitar-gasto {
+            background: rgba(220,38,38,0.12); color: #f87171; border: none; border-radius: 6px;
+            width: 30px; height: 30px; cursor: pointer; font-size: 14px; flex-shrink: 0;
+        }
+        .btn-agregar-gasto {
+            background: transparent; border: 1.5px dashed var(--border); color: var(--primary);
+            border-radius: 7px; padding: 6px 10px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+            cursor: pointer; width: 100%; margin-top: 2px;
+        }
+        .gastos-casa-total { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13.5px; font-weight: 700; color: var(--text); }
+        .gastos-casa-total .valor::before { content: "− "; color: #f87171; }
+
+        .link-gastos { font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
         .link-gastos:hover { text-decoration: underline; }
+
+        /* Ventana "Ver gastos" (solo lectura) */
+        #modalVerGastos { padding: 24px 16px; }
+        #modalVerGastos .modal-content {
+            max-width: 1200px;
+            height: calc(100vh - 48px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #modalVerGastos .modal-body { flex: 1; padding: 0; min-height: 0; }
+        #iframeGastos { width: 100%; height: 100%; border: none; display: block; }
+        .badge-solo-lectura {
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+            padding: 3px 8px; border-radius: 5px; background: rgba(255,255,255,0.08); color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -189,13 +235,15 @@
                     <div class="card">
                         <div class="seccion-titulo">
                             Deducciones del día
-                            <a class="link-gastos" id="linkGastos" href="#" target="_blank" style="float:right; text-transform:none; letter-spacing:0;">Editar en Gastos →</a>
+                            <button type="button" class="link-gastos" onclick="abrirVerGastos()" style="float:right; text-transform:none; letter-spacing:0;">👁 Ver gastos</button>
                         </div>
                         <div class="fila-dato"><span class="etiqueta">Gastos</span><span class="valor resta" id="gastosAuto">$0.00</span></div>
                         <div class="fila-dato"><span class="etiqueta">Personas Que Deben (fiado)</span><span class="valor resta" id="personasQueDeben">$0.00</span></div>
-                        <div class="fila-input">
-                            <label for="inputGastosCasa">Gastos Casa</label>
-                            <input type="number" step="0.01" id="inputGastosCasa" placeholder="0.00" oninput="recalcular()">
+                        <div class="gastos-casa-wrap">
+                            <div class="gastos-casa-header"><span>Gastos Casa</span></div>
+                            <div id="listaGastosCasa"></div>
+                            <button type="button" class="btn-agregar-gasto" onclick="agregarGastoCasa()">+ Agregar gasto casa</button>
+                            <div class="gastos-casa-total"><span>Total Gastos Casa</span><span class="valor" id="totalGastosCasa">$0.00</span></div>
                         </div>
                     </div>
                 </div>
@@ -250,6 +298,23 @@
     </div>
 </div>
 
+<!-- Modal: Ver gastos del día (solo lectura) -->
+<div id="modalVerGastos" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">💸 Gastos del <span id="fechaVerGastos"></span> <span class="badge-solo-lectura">Solo lectura</span></div>
+            <button type="button" class="modal-close" onclick="cerrarVerGastos()" title="Cerrar">✕</button>
+        </div>
+        <div class="modal-body">
+            <iframe id="iframeGastos" title="Gastos del día"></iframe>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cerrarVerGastos()">Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="irAEditarGastos()">✏️ Editar gastos</button>
+        </div>
+    </div>
+</div>
+
 <script src="/sidebar.js"></script>
 <script>
     const idSucursal = parseInt(localStorage.getItem('idSucursal') || '0');
@@ -278,10 +343,96 @@
         return '$' + n.toFixed(2);
     }
 
+    // ---- Gastos Casa (lista de cantidades que se suman) ----
+    function claveBorradorGastosCasa() {
+        return `conciliacion_gastosCasa_${localStorage.getItem('idSucursal') || '1'}_${document.getElementById('inputFecha').value}`;
+    }
+
+    function renderGastosCasa(valores) {
+        const cont = document.getElementById('listaGastosCasa');
+        cont.innerHTML = '';
+        const lista = (valores && valores.length) ? valores : [''];
+        lista.forEach(v => agregarGastoCasa(v, false));
+        recalcular();
+    }
+
+    function agregarGastoCasa(valor = '', enfocar = true) {
+        const cont = document.getElementById('listaGastosCasa');
+        const fila = document.createElement('div');
+        fila.className = 'gastos-casa-fila';
+        fila.innerHTML = `
+            <span class="num"></span>
+            <input type="number" step="0.01" placeholder="0.00">
+            <button type="button" class="btn-quitar-gasto" title="Quitar">✕</button>`;
+        const input = fila.querySelector('input');
+        if (valor !== '' && valor != null) input.value = valor;
+        input.addEventListener('input', () => { recalcular(); guardarBorradorGastosCasa(); });
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); agregarGastoCasa(); } });
+        fila.querySelector('button').addEventListener('click', () => quitarGastoCasa(fila));
+        cont.appendChild(fila);
+        numerarGastosCasa();
+        if (enfocar) input.focus();
+    }
+
+    function quitarGastoCasa(fila) {
+        const cont = document.getElementById('listaGastosCasa');
+        if (cont.children.length <= 1) {
+            fila.querySelector('input').value = '';
+        } else {
+            fila.remove();
+        }
+        numerarGastosCasa();
+        recalcular();
+        guardarBorradorGastosCasa();
+    }
+
+    function numerarGastosCasa() {
+        document.querySelectorAll('#listaGastosCasa .gastos-casa-fila .num').forEach((el, i) => el.textContent = (i + 1) + '.');
+    }
+
+    function obtenerGastosCasa() {
+        return Array.from(document.querySelectorAll('#listaGastosCasa input'))
+            .map(i => parseFloat(i.value))
+            .filter(v => !isNaN(v) && v !== 0);
+    }
+
+    function guardarBorradorGastosCasa() {
+        if (datosActuales && datosActuales.existeCerrada) return;
+        try { localStorage.setItem(claveBorradorGastosCasa(), JSON.stringify(obtenerGastosCasa())); } catch (e) {}
+    }
+
+    function leerBorradorGastosCasa() {
+        try { return JSON.parse(localStorage.getItem(claveBorradorGastosCasa()) || '[]'); } catch (e) { return []; }
+    }
+
+    // ---- Ver gastos (ventana de solo lectura) ----
+    function abrirVerGastos() {
+        const fecha = document.getElementById('inputFecha').value;
+        const [a, m, d] = fecha.split('-');
+        document.getElementById('fechaVerGastos').textContent = `${d}/${m}/${a}`;
+        document.getElementById('iframeGastos').src = `/gastos.html?fecha=${fecha}&soloLectura=1`;
+        document.getElementById('modalVerGastos').style.display = 'block';
+    }
+
+    function cerrarVerGastos() {
+        document.getElementById('modalVerGastos').style.display = 'none';
+        document.getElementById('iframeGastos').src = 'about:blank';
+    }
+
+    function irAEditarGastos() {
+        window.location.href = `/gastos.html?fecha=${document.getElementById('inputFecha').value}`;
+    }
+
+    document.getElementById('modalVerGastos').addEventListener('click', e => {
+        if (e.target.id === 'modalVerGastos') cerrarVerGastos();
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.getElementById('modalVerGastos').style.display === 'block') cerrarVerGastos();
+    });
+
     async function cargarConciliacion() {
         const fecha = document.getElementById('inputFecha').value;
         const suc = parseInt(localStorage.getItem('idSucursal') || '1');
-        document.getElementById('linkGastos').href = `/gastos.html?fecha=${fecha}`;
 
         try {
             const resp = await fetch(`/api/conciliacion/datos?fecha=${fecha}&sucursal=${suc}`);
@@ -304,7 +455,9 @@
             if (data.existeCerrada) {
                 const cnc = data.conciliacion;
                 document.getElementById('inputMontoInicial').value = cnc.montoInicial;
-                document.getElementById('inputGastosCasa').value = cnc.gastosCasa;
+                const detalle = Array.isArray(cnc.gastosCasaDetalle) ? cnc.gastosCasaDetalle
+                              : (Number(cnc.gastosCasa) ? [cnc.gastosCasa] : []);
+                renderGastosCasa(detalle);
                 document.getElementById('inputComisionBancaria').value = cnc.comisionBancaria;
                 document.getElementById('inputDisposiciones').value = cnc.disposicionesEfectivo;
                 document.getElementById('inputBancosReal').value = cnc.totalBancosReal;
@@ -316,7 +469,7 @@
                 estadoCerrada.style.display = 'flex';
             } else {
                 document.getElementById('inputMontoInicial').value = (Number(data.montoInicialSugerido) || 0).toFixed(2);
-                document.getElementById('inputGastosCasa').value = '';
+                renderGastosCasa(leerBorradorGastosCasa());
                 document.getElementById('inputComisionBancaria').value = '';
                 document.getElementById('inputDisposiciones').value = '';
                 document.getElementById('inputBancosReal').value = '';
@@ -334,7 +487,8 @@
         const a = datosActuales.automaticos;
 
         const montoInicial = parseFloat(document.getElementById('inputMontoInicial').value) || 0;
-        const gastosCasa = parseFloat(document.getElementById('inputGastosCasa').value) || 0;
+        const gastosCasa = obtenerGastosCasa().reduce((s, v) => s + v, 0);
+        document.getElementById('totalGastosCasa').textContent = fmt(gastosCasa);
         const comisionBancaria = parseFloat(document.getElementById('inputComisionBancaria').value) || 0;
         const disposiciones = parseFloat(document.getElementById('inputDisposiciones').value) || 0;
         const bancosReal = parseFloat(document.getElementById('inputBancosReal').value) || 0;
@@ -378,7 +532,7 @@
             fecha,
             idSucursal: suc,
             montoInicial: parseFloat(document.getElementById('inputMontoInicial').value) || 0,
-            gastosCasa: parseFloat(document.getElementById('inputGastosCasa').value) || 0,
+            gastosCasaDetalle: obtenerGastosCasa(),
             comisionBancaria: parseFloat(document.getElementById('inputComisionBancaria').value) || 0,
             disposicionesEfectivo: parseFloat(document.getElementById('inputDisposiciones').value) || 0,
             totalBancosReal: parseFloat(document.getElementById('inputBancosReal').value) || 0,
@@ -394,6 +548,7 @@
             const data = await resp.json();
             if (data.success) {
                 showToast("Conciliación cerrada correctamente", "success");
+                try { localStorage.removeItem(claveBorradorGastosCasa()); } catch (e) {}
                 cargarConciliacion();
             } else {
                 showToast(data.message || "Error al cerrar la conciliación", "error");

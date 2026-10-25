@@ -38,25 +38,17 @@ public class Conciliacion {
         String fechaHoraInicio = fecha + " 00:00:00";
         String fechaHoraFin    = fecha + " 23:59:59";
 
-        // Mismo cálculo que el módulo de Reportes: Venta Efectivo = Total − Tarjeta (netos de devoluciones).
-        double totalReporte = 0, tarjetaReporte = 0;
+        // "Total" del módulo de Reportes (neto de devoluciones).
+        double totalReporte = 0;
         try (PreparedStatement ps = c.prepareStatement(
-                "SELECT COALESCE(SUM(v.total - COALESCE(dev.total_devuelto,0)),0) AS tg, " +
-                "COALESCE(SUM(v.monto_tarjeta - COALESCE(dev.tarjeta_devuelto,0)),0) AS tj " +
-                "FROM ventas v LEFT JOIN (SELECT id_venta, SUM(total_devuelto) AS total_devuelto, " +
-                "SUM(monto_tarjeta_devuelto) AS tarjeta_devuelto FROM devoluciones GROUP BY id_venta) dev " +
+                "SELECT COALESCE(SUM(v.total - COALESCE(dev.total_devuelto,0)),0) AS tg " +
+                "FROM ventas v LEFT JOIN (SELECT id_venta, SUM(total_devuelto) AS total_devuelto " +
+                "FROM devoluciones GROUP BY id_venta) dev " +
                 "ON dev.id_venta = v.id_venta " +
                 "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?")) {
             ps.setString(1, fechaHoraInicio); ps.setString(2, fechaHoraFin); ps.setInt(3, idSucursal);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    totalReporte   = rs.getDouble("tg");
-                    tarjetaReporte = rs.getDouble("tj");
-                }
-            }
+            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) totalReporte = rs.getDouble("tg"); }
         }
-
-        double ventaEfectivo = totalReporte - tarjetaReporte;
 
         double terminal1 = 0, terminal2 = 0, monedas = 0, billetes = 0;
         String filasJson = null;
@@ -85,6 +77,8 @@ public class Conciliacion {
 
         double ventaTarjetasConComision = terminal1 + terminal2;
         double ventaTarjetasSinComision = ventaTarjetasConComision * 0.99;
+        // Venta Efectivo = Total de Reportes − Total Terminales (de Gastos).
+        double ventaEfectivo = totalReporte - ventaTarjetasConComision;
         double ventaTotal = ventaEfectivo + ventaTarjetasConComision;
         double totalEfectivoReal = monedas + billetes;
 
@@ -121,6 +115,8 @@ public class Conciliacion {
                 m.put("ventaTotal", rs.getDouble("venta_total"));
                 m.put("gastos", rs.getDouble("gastos"));
                 m.put("gastosCasa", rs.getDouble("gastos_casa"));
+                String detalleJson = rs.getString("gastos_casa_detalle");
+                m.put("gastosCasaDetalle", detalleJson != null ? MAPPER.readValue(detalleJson, List.class) : null);
                 m.put("personasQueDeben", rs.getDouble("personas_que_deben"));
                 m.put("totalEfectivoTeorico", rs.getDouble("total_efectivo_teorico"));
                 m.put("comisionBancaria", rs.getDouble("comision_bancaria"));
@@ -136,9 +132,11 @@ public class Conciliacion {
         }
     }
 
-    public void cerrarConciliacion(String fecha, int idSucursal, double montoInicial, double gastosCasa,
+    public void cerrarConciliacion(String fecha, int idSucursal, double montoInicial, List<Double> gastosCasaDetalle,
                                     double comisionBancaria, double disposicionesEfectivo, double totalBancosReal,
                                     int idUsuario) throws Exception {
+        List<Double> detalle = gastosCasaDetalle != null ? gastosCasaDetalle : List.of();
+        double gastosCasa = detalle.stream().mapToDouble(d -> d != null ? d : 0).sum();
         try (Connection c = new Conexion().conectar()) {
             Map<String, Object> automaticos = calcularAutomaticos(c, fecha, idSucursal);
 
@@ -165,7 +163,7 @@ public class Conciliacion {
                          "venta_tarjetas_con_comision, venta_tarjetas_sin_comision, venta_total, gastos, gastos_casa, " +
                          "personas_que_deben, total_efectivo_teorico, comision_bancaria, disposiciones_efectivo, " +
                          "total_bancos_teorico, total_efectivo_real, total_bancos_real, diferencia_efectivo, " +
-                         "diferencia_bancos, id_usuario_cierre) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) " +
+                         "diferencia_bancos, id_usuario_cierre, gastos_casa_detalle) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) " +
                          "ON DUPLICATE KEY UPDATE monto_inicial=VALUES(monto_inicial), venta_efectivo=VALUES(venta_efectivo), " +
                          "venta_tarjetas_con_comision=VALUES(venta_tarjetas_con_comision), " +
                          "venta_tarjetas_sin_comision=VALUES(venta_tarjetas_sin_comision), venta_total=VALUES(venta_total), " +
@@ -174,7 +172,8 @@ public class Conciliacion {
                          "disposiciones_efectivo=VALUES(disposiciones_efectivo), total_bancos_teorico=VALUES(total_bancos_teorico), " +
                          "total_efectivo_real=VALUES(total_efectivo_real), total_bancos_real=VALUES(total_bancos_real), " +
                          "diferencia_efectivo=VALUES(diferencia_efectivo), diferencia_bancos=VALUES(diferencia_bancos), " +
-                         "id_usuario_cierre=VALUES(id_usuario_cierre), fecha_cierre=CURRENT_TIMESTAMP";
+                         "id_usuario_cierre=VALUES(id_usuario_cierre), gastos_casa_detalle=VALUES(gastos_casa_detalle), " +
+                         "fecha_cierre=CURRENT_TIMESTAMP";
 
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setString(1, fecha);
@@ -196,6 +195,7 @@ public class Conciliacion {
                 ps.setDouble(17, diferenciaEfectivo);
                 ps.setDouble(18, diferenciaBancos);
                 ps.setInt(19, idUsuario);
+                ps.setString(20, MAPPER.writeValueAsString(detalle));
                 ps.executeUpdate();
             }
         }

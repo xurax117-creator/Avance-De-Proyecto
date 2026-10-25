@@ -3,6 +3,7 @@ package com.uriel.pos.sistema_punto_venta;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -13,7 +14,7 @@ public class ConciliacionController {
         public String fecha;
         public int idSucursal;
         public double montoInicial;
-        public double gastosCasa;
+        public List<Double> gastosCasaDetalle;
         public double comisionBancaria;
         public double disposicionesEfectivo;
         public double totalBancosReal;
@@ -47,7 +48,7 @@ public class ConciliacionController {
                 return response;
             }
             int sucursal = request.idSucursal > 0 ? request.idSucursal : 1;
-            oper.cerrarConciliacion(request.fecha, sucursal, request.montoInicial, request.gastosCasa,
+            oper.cerrarConciliacion(request.fecha, sucursal, request.montoInicial, request.gastosCasaDetalle,
                     request.comisionBancaria, request.disposicionesEfectivo, request.totalBancosReal, request.userId);
             response.put("success", true);
         } catch (Exception e) {
