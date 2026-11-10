@@ -145,7 +145,7 @@ public class Venta {
                 stmtTotal.executeUpdate();
             }
 
-            String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)";
+            String sqlInsert = "INSERT INTO detalle_venta (id_venta, id_producto, cantidad, precio_unitario, promocion, tipo_promocion) VALUES (?, ?, ?, ?, ?, ?)";
             String sqlStock  = "UPDATE productos SET existencias_act = existencias_act - ? WHERE id_producto = ?";
             try (PreparedStatement stmtInsert = c.prepareStatement(sqlInsert);
                  PreparedStatement stmtStock  = c.prepareStatement(sqlStock)) {
@@ -154,6 +154,8 @@ public class Venta {
                     stmtInsert.setInt(2, detalle.idProducto);
                     stmtInsert.setDouble(3, detalle.cantidad);
                     stmtInsert.setDouble(4, detalle.precioUnitario);
+                    stmtInsert.setString(5, detalle.promocion);
+                    stmtInsert.setString(6, detalle.tipoPromocion);
                     stmtInsert.executeUpdate();
 
                     stmtStock.setDouble(1, detalle.cantidad);
@@ -343,6 +345,8 @@ class DetalleVentaRequest {
     public int idProducto;
     public double cantidad;
     public double precioUnitario;
+    public String promocion;
+    public String tipoPromocion;
 }
 
 class VentaEnEspera {

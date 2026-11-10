@@ -5,6 +5,10 @@ import java.util.*;
 
 public class ReporteDAO {
 
+    // Ej. "Cartón 24 (Mixta)". Es NULL en las líneas vendidas sin promoción.
+    private static final String ETIQUETA_PROMO =
+        "CONCAT(dv.promocion, ' (', CASE dv.tipo_promocion WHEN 'mix_and_match' THEN 'Mixta' ELSE 'X-Y' END, ')')";
+
     public List<Map<String, Object>> obtenerVentas(String inicio, String horaInicio, String fin, String horaFin, int pagina, int tamanoPagina, int sucursal, String categoria) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String fechaHoraInicio = inicio + " " + horaInicio + ":00";
@@ -21,6 +25,9 @@ public class ReporteDAO {
         String devSubquery = "(SELECT id_venta, SUM(total_devuelto) AS total_devuelto, " +
                               "SUM(monto_efectivo_devuelto) AS efectivo_devuelto, SUM(monto_tarjeta_devuelto) AS tarjeta_devuelto " +
                               "FROM devoluciones GROUP BY id_venta) dev";
+
+        String promoSubquery = "(SELECT dv.id_venta, GROUP_CONCAT(DISTINCT " + ETIQUETA_PROMO + " SEPARATOR ', ') AS promociones " +
+                               "FROM detalle_venta dv WHERE dv.promocion IS NOT NULL GROUP BY dv.id_venta) promo";
 
         try (Connection c = new Conexion().conectar()) {
             int totalRegistros = 0;
@@ -49,14 +56,16 @@ public class ReporteDAO {
                 }
             }
 
-            String sql = "SELECT id_venta, fecha, nombre, total, total_devuelto, monto_efectivo, monto_tarjeta, numero_venta FROM (" +
+            String sql = "SELECT id_venta, fecha, nombre, total, total_devuelto, monto_efectivo, monto_tarjeta, numero_venta, promociones FROM (" +
                          "SELECT v.id_venta, v.fecha, u.nombre_completo as nombre, v.total, " +
                          "COALESCE(dev.total_devuelto,0) as total_devuelto, " +
                          "v.monto_efectivo - COALESCE(dev.efectivo_devuelto,0) as monto_efectivo, " +
                          "v.monto_tarjeta - COALESCE(dev.tarjeta_devuelto,0) as monto_tarjeta, " +
+                         "promo.promociones, " +
                          "ROW_NUMBER() OVER (ORDER BY v.id_venta DESC) as numero_venta " +
                          "FROM ventas v JOIN usuarios u ON v.id_usuario = u.id_usuario " +
                          "LEFT JOIN " + devSubquery + " ON dev.id_venta = v.id_venta " +
+                         "LEFT JOIN " + promoSubquery + " ON promo.id_venta = v.id_venta " +
                          "WHERE v.fecha BETWEEN ? AND ? AND v.id_sucursal = ?" + catSubquery + ") sub " +
                          "ORDER BY id_venta DESC LIMIT ? OFFSET ?";
             try (PreparedStatement ps = c.prepareStatement(sql)) {
@@ -79,6 +88,7 @@ public class ReporteDAO {
                         map.put("totalDevuelto", totalDevuelto);
                         map.put("montoEfectivo", rs.getDouble("monto_efectivo"));
                         map.put("montoTarjeta",  rs.getDouble("monto_tarjeta"));
+                        map.put("promociones",   rs.getString("promociones"));
                         lista.add(map);
                     }
                 }
@@ -123,13 +133,13 @@ public class ReporteDAO {
         List<Map<String, Object>> lista = new ArrayList<>();
         // La cantidad y el subtotal se muestran netos (ya descontando lo devuelto),
         // para que el ticket refleje lo que realmente se quedó vendido.
-        String sql = "SELECT dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario, " +
+        String sql = "SELECT dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario, " + ETIQUETA_PROMO + " AS promocion_etiqueta, " +
                      "COALESCE(SUM(dd.cantidad), 0) AS cantidad_devuelta " +
                      "FROM detalle_venta dv " +
                      "JOIN productos p ON dv.id_producto = p.id_producto " +
                      "LEFT JOIN detalle_devolucion dd ON dd.id_detalle_venta = dv.id_detalle " +
                      "WHERE dv.id_venta = ? " +
-                     "GROUP BY dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario " +
+                     "GROUP BY dv.id_detalle, p.nombre, dv.cantidad, dv.precio_unitario, dv.promocion, dv.tipo_promocion " +
                      "ORDER BY dv.id_detalle";
         try (Connection c = new Conexion().conectar();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -147,6 +157,7 @@ public class ReporteDAO {
                     map.put("cantidadDevuelta", cantidadDevuelta);
                     map.put("precio",           precioUnitario);
                     map.put("subtotal",         cantidadNeta * precioUnitario);
+                    map.put("promocion",        rs.getString("promocion_etiqueta"));
                     lista.add(map);
                 }
             }

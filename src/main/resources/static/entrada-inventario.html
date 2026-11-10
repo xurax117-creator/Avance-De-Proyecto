@@ -231,12 +231,15 @@
 
                         <div class="form-group">
                             <label class="form-label">Precio de Venta (opcional)</label>
-                            <input type="number" step="0.01" class="form-control" id="txtPrecioVenta" placeholder="Precio unitario...">
+                            <input type="number" step="0.01" class="form-control" id="txtPrecioVenta" placeholder="Precio unitario..." oninput="calcularMargen()">
                         </div>
 
                         <div class="form-group" id="campoPrecioCompra" style="display:none">
                             <label class="form-label">Precio de Compra (opcional)</label>
-                            <input type="number" step="0.01" class="form-control" id="txtPrecioCompra" placeholder="Costo unitario...">
+                            <input type="number" step="0.01" class="form-control" id="txtPrecioCompra" placeholder="Costo unitario..." oninput="calcularMargen()">
+                            <div id="margenContainer" class="margen-box margen-cero" style="display:none;">
+                                Margen de Utilidad: <span id="margenPorcentaje">0%</span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -449,9 +452,28 @@
         document.getElementById('txtPrecioVenta').value = p.precio_venta || '';
         if (puedeVerPrecioCompra) {
             document.getElementById('txtPrecioCompra').value = p.precio_compra || '';
+            calcularMargen();
         }
         document.getElementById('txtNota').value = '';
         calcularStock();
+    }
+
+    // Solo Administrador y Gerente: el recuadro vive dentro de campoPrecioCompra.
+    function calcularMargen() {
+        if (!puedeVerPrecioCompra) return;
+        const compra = parseFloat(document.getElementById('txtPrecioCompra').value) || 0;
+        const venta = parseFloat(document.getElementById('txtPrecioVenta').value) || 0;
+        const container = document.getElementById('margenContainer');
+
+        if (compra > 0 && venta > 0) {
+            const margen = ((venta - compra) / compra) * 100;
+            document.getElementById('margenPorcentaje').textContent = margen.toFixed(1) + '%';
+            container.style.display = 'block';
+            container.className = 'margen-box ' +
+                (margen > 0 ? 'margen-positivo' : margen < 0 ? 'margen-negativo' : 'margen-cero');
+        } else {
+            container.style.display = 'none';
+        }
     }
 
     function calcularStock() {

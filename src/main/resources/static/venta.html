@@ -1326,6 +1326,7 @@ async function aplicarPromociones() {
                                  stockActual: itemsMismoProducto[0].stockActual,
                                  fotoProducto: itemsMismoProducto[0].fotoProducto,
                                  promocionAplicada: promo.nombre,
+                                 tipoPromocion: promo.tipo,
                                  esPromo: true
                              });
                          }
@@ -1371,6 +1372,7 @@ async function aplicarPromociones() {
                                          stockActual: item.stockActual,
                                          fotoProducto: item.fotoProducto,
                                          promocionAplicada: promo.nombre,
+                                         tipoPromocion: promo.tipo,
                                          esPromo: true
                                      });
                                      const idx = carritoCopia.indexOf(item);
@@ -1421,6 +1423,7 @@ async function aplicarPromociones() {
                              stockActual: item.stockActual,
                              fotoProducto: item.fotoProducto,
                              promocionAplicada: promo.nombre,
+                             tipoPromocion: promo.tipo,
                              esPromo: true
                          });
                      }
@@ -1585,7 +1588,7 @@ async function aplicarPromociones() {
                 idVenta: currentVentaId,
                 totalFinal: totalVenta,
                 idSucursal: parseInt(localStorage.getItem('idSucursal') || '1'),
-                listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio })),
+                listaCarrito: listaCarrito.map(p => ({ idProducto: p.idProducto, cantidad: p.cantidad, precioUnitario: p.precio, promocion: p.promocionAplicada || null, tipoPromocion: p.tipoPromocion || null })),
                 montoEfectivo: montoEfectivo,
                 montoTarjeta: montoTarjeta
             };
@@ -1779,6 +1782,7 @@ async function aplicarPromociones() {
 
                     currentVentaId = -1;
                     productoSeleccionadoId = null;
+                    await aplicarPromociones();
                     dibujarCarrito();
                     cerrarModalVentasEspera();
 
