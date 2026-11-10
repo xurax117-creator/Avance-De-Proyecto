@@ -1,9 +1,10 @@
 (function () {
-    // Prevent browser 404 on favicon
+    // Respaldo por si una página no declara su ícono
     if (!document.querySelector('link[rel~="icon"]')) {
         const fav = document.createElement('link');
         fav.rel = 'icon';
-        fav.href = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>";
+        fav.type = 'image/png';
+        fav.href = '/icono-192.png';
         document.head.appendChild(fav);
     }
 
