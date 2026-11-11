@@ -37,6 +37,25 @@ public class ConciliacionController {
         return response;
     }
 
+    @GetMapping("/reporte")
+    public Map<String, Object> reporte(@RequestParam String inicio, @RequestParam String fin,
+                                       @RequestParam(defaultValue = "1") int sucursal) {
+        Conciliacion oper = new Conciliacion();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            // Si el rango viene al revés, se acomoda en lugar de regresar vacío.
+            String desde = inicio.compareTo(fin) <= 0 ? inicio : fin;
+            String hasta = inicio.compareTo(fin) <= 0 ? fin : inicio;
+            response.put("success", true);
+            response.put("conciliaciones", oper.listarCerradas(desde, hasta, sucursal));
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error en servidor.");
+        }
+        return response;
+    }
+
     @PostMapping("/cerrar")
     public Map<String, Object> cerrar(@RequestBody CerrarConciliacionRequest request) {
         Conciliacion oper = new Conciliacion();

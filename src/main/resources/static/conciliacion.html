@@ -189,6 +189,43 @@
             font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
             padding: 3px 8px; border-radius: 5px; background: rgba(255,255,255,0.08); color: var(--text-muted);
         }
+
+        /* Ventana "Reporte de conciliaciones" (solo lectura, tipo Excel) */
+        #modalReporteConc { padding: 24px 16px; }
+        #modalReporteConc .modal-content {
+            max-width: 1600px;
+            height: calc(100vh - 48px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #modalReporteConc .modal-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; }
+        .reporte-filtros { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+        .reporte-filtros .form-group { margin-bottom: 0; }
+        .reporte-resumen { font-size: 12.5px; color: var(--text-muted); margin-left: auto; }
+        .reporte-wrap { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+        .tabla-conc { border-collapse: separate; border-spacing: 0; font-size: 12.5px; white-space: nowrap; }
+        .tabla-conc th, .tabla-conc td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px 10px; }
+        .tabla-conc th {
+            position: sticky; top: 0; z-index: 2;
+            background: var(--white);
+            box-shadow: inset 0 -2px 0 var(--primary);
+            color: var(--text-muted);
+            font-size: 11px; font-weight: 700; text-align: center;
+            white-space: normal; min-width: 96px; vertical-align: bottom;
+        }
+        .tabla-conc td { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+        .tabla-conc .col-dia, .tabla-conc .col-fecha { position: sticky; z-index: 1; background: var(--white); text-align: left; }
+        .tabla-conc th.col-dia, .tabla-conc th.col-fecha { z-index: 3; }
+        .tabla-conc .col-dia { left: 0; min-width: 92px; width: 92px; font-weight: 600; }
+        .tabla-conc .col-fecha { left: 92px; min-width: 84px; width: 84px; }
+        .tabla-conc tbody tr:hover td { background: rgba(25,163,55,0.08); }
+        .tabla-conc tfoot td { position: sticky; bottom: 0; background: var(--white); font-weight: 700; box-shadow: inset 0 2px 0 var(--border); }
+        .tabla-conc .neg { color: #f87171; }
+        .tabla-conc .pos { color: #fbbf24; }
+        [data-theme="light"] .tabla-conc .neg { color: #dc2626; }
+        [data-theme="light"] .tabla-conc .pos { color: #b45309; }
+        .reporte-vacio { padding: 40px; text-align: center; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -210,6 +247,9 @@
                 <div class="form-group">
                     <label class="form-label">Fecha</label>
                     <input type="date" class="form-control" id="inputFecha">
+                </div>
+                <div style="margin-left:auto; align-self:center;">
+                    <button type="button" class="link-gastos" onclick="abrirReporteConciliaciones()">📊 Ver Reporte de conciliaciones</button>
                 </div>
             </div>
 
@@ -316,6 +356,33 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="cerrarVerGastos()">Cerrar</button>
             <button type="button" class="btn btn-primary" onclick="irAEditarGastos()">✏️ Editar gastos</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reporte de conciliaciones (solo lectura) -->
+<div id="modalReporteConc" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">📊 Reporte de conciliaciones <span class="badge-solo-lectura">Solo lectura</span></div>
+            <button type="button" class="modal-close" onclick="cerrarReporteConciliaciones()" title="Cerrar">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="reporte-filtros">
+                <div class="form-group">
+                    <label class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="reporteDesde">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" class="form-control" id="reporteHasta">
+                </div>
+                <span class="reporte-resumen" id="reporteResumen"></span>
+            </div>
+            <div class="reporte-wrap" id="reporteWrap"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cerrarReporteConciliaciones()">Cerrar</button>
         </div>
     </div>
 </div>
@@ -433,6 +500,128 @@
     });
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && document.getElementById('modalVerGastos').style.display === 'block') cerrarVerGastos();
+    });
+
+    // ---- Reporte de conciliaciones (solo lectura, mismas columnas que el Excel) ----
+    const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+    const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+    // tipo: 'dinero' siempre muestra cantidad; 'opcional' deja la celda vacía si es 0 (como en el Excel);
+    // 'diferencia' además colorea faltante/sobrante. suma: se totaliza en la última fila.
+    const COLUMNAS_REPORTE = [
+        { campo: 'montoInicial',             titulo: '(+) Monto Inicial',                          tipo: 'dinero' },
+        { campo: 'ventaEfectivo',            titulo: '(+) Venta Efectivo',                         tipo: 'dinero',     suma: true },
+        { campo: 'ventaTarjetasConComision', titulo: '(+) Venta Tarjetas con comisión',            tipo: 'dinero',     suma: true },
+        { campo: 'ventaTarjetasSinComision', titulo: '(+) Venta Tarjetas Sin comisión',            tipo: 'dinero',     suma: true },
+        { campo: 'ventaTotal',               titulo: '(+) Venta Total',                            tipo: 'dinero',     suma: true },
+        { campo: 'gastos',                   titulo: '(-) Gastos',                                 tipo: 'dinero',     suma: true },
+        { campo: 'gastosCasa',               titulo: '(-) Gastos Casa',                            tipo: 'opcional',   suma: true },
+        { campo: 'personasQueDeben',         titulo: '(-) Personas Que Deben',                     tipo: 'opcional',   suma: true },
+        { campo: 'totalEfectivoTeorico',     titulo: 'Total Efectivo Teórico',                     tipo: 'dinero' },
+        { campo: 'totalBancosTeorico',       titulo: 'Total Bancos Teórico',                       tipo: 'dinero' },
+        { campo: 'comisionBancaria',         titulo: 'Comisión Bancaria',                          tipo: 'opcional',   suma: true },
+        { campo: 'disposicionesEfectivo',    titulo: 'Disposiciones de Efectivo',                  tipo: 'opcional',   suma: true },
+        { campo: 'totalEfectivoReal',        titulo: 'Total Efectivo Real',                        tipo: 'dinero' },
+        { campo: 'totalBancosReal',          titulo: 'Total Bancos Real',                          tipo: 'dinero' },
+        { campo: 'diferenciaEfectivo',       titulo: 'Diferencia Efectivo Real - Efectivo Teórico', tipo: 'diferencia', suma: true },
+        { campo: 'diferenciaBancos',         titulo: 'Diferencia Bancos Real - Bancos Teórico',     tipo: 'diferencia', suma: true },
+    ];
+
+    function fmtMonedaExcel(v) {
+        const n = Number(v) || 0;
+        const txt = Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return (n < -0.004 ? '-$ ' : '$ ') + txt;
+    }
+
+    function celdaReporte(col, valor) {
+        const n = Number(valor) || 0;
+        if (col.tipo === 'opcional' && Math.abs(n) < 0.005) return '<td></td>';
+        let clase = '';
+        if (col.tipo === 'diferencia' && Math.abs(n) >= 0.01) clase = n < 0 ? ' class="neg"' : ' class="pos"';
+        return `<td${clase}>${fmtMonedaExcel(n)}</td>`;
+    }
+
+    function partesFecha(iso) {
+        const [a, m, d] = iso.substring(0, 10).split('-').map(Number);
+        const fecha = new Date(a, m - 1, d);
+        return {
+            dia: DIAS_SEMANA[fecha.getDay()],
+            texto: `${String(d).padStart(2, '0')}-${MESES_CORTOS[m - 1]}-${String(a).slice(-2)}`
+        };
+    }
+
+    function abrirReporteConciliaciones() {
+        const fecha = document.getElementById('inputFecha').value;
+        const desde = document.getElementById('reporteDesde');
+        const hasta = document.getElementById('reporteHasta');
+        // Por defecto: del día 1 del mes de la fecha que estás viendo hasta esa fecha.
+        if (!desde.value) desde.value = fecha.substring(0, 8) + '01';
+        if (!hasta.value) hasta.value = fecha;
+        document.getElementById('modalReporteConc').style.display = 'block';
+        cargarReporteConciliaciones();
+    }
+
+    function cerrarReporteConciliaciones() {
+        document.getElementById('modalReporteConc').style.display = 'none';
+    }
+
+    async function cargarReporteConciliaciones() {
+        const desde = document.getElementById('reporteDesde').value;
+        const hasta = document.getElementById('reporteHasta').value;
+        const wrap = document.getElementById('reporteWrap');
+        const resumen = document.getElementById('reporteResumen');
+        if (!desde || !hasta) return;
+
+        wrap.innerHTML = '<div class="reporte-vacio">Cargando...</div>';
+        resumen.textContent = '';
+        try {
+            const suc = parseInt(localStorage.getItem('idSucursal') || '1');
+            const resp = await fetch(`/api/conciliacion/reporte?inicio=${desde}&fin=${hasta}&sucursal=${suc}`);
+            const data = await resp.json();
+            if (!data.success) {
+                wrap.innerHTML = `<div class="reporte-vacio">${data.message || 'Error al cargar el reporte'}</div>`;
+                return;
+            }
+            dibujarReporteConciliaciones(data.conciliaciones || []);
+        } catch (e) {
+            wrap.innerHTML = '<div class="reporte-vacio">Error de conexión al cargar el reporte</div>';
+        }
+    }
+
+    function dibujarReporteConciliaciones(lista) {
+        const wrap = document.getElementById('reporteWrap');
+        const resumen = document.getElementById('reporteResumen');
+        if (lista.length === 0) {
+            wrap.innerHTML = '<div class="reporte-vacio">No hay conciliaciones cerradas en ese rango de fechas.</div>';
+            resumen.textContent = '';
+            return;
+        }
+        resumen.textContent = lista.length === 1 ? '1 conciliación cerrada' : `${lista.length} conciliaciones cerradas`;
+
+        const thead = '<tr><th class="col-dia"></th><th class="col-fecha">Fecha</th>' +
+            COLUMNAS_REPORTE.map(c => `<th>${c.titulo}</th>`).join('') + '</tr>';
+
+        const totales = {};
+        const filas = lista.map(cnc => {
+            const f = partesFecha(cnc.fecha);
+            COLUMNAS_REPORTE.forEach(c => { if (c.suma) totales[c.campo] = (totales[c.campo] || 0) + (Number(cnc[c.campo]) || 0); });
+            return `<tr><td class="col-dia">${f.dia}</td><td class="col-fecha">${f.texto}</td>` +
+                COLUMNAS_REPORTE.map(c => celdaReporte(c, cnc[c.campo])).join('') + '</tr>';
+        }).join('');
+
+        const pie = '<tr><td class="col-dia">TOTALES</td><td class="col-fecha"></td>' +
+            COLUMNAS_REPORTE.map(c => c.suma ? celdaReporte(c, totales[c.campo]) : '<td></td>').join('') + '</tr>';
+
+        wrap.innerHTML = `<table class="tabla-conc"><thead>${thead}</thead><tbody>${filas}</tbody><tfoot>${pie}</tfoot></table>`;
+    }
+
+    document.getElementById('reporteDesde').addEventListener('change', cargarReporteConciliaciones);
+    document.getElementById('reporteHasta').addEventListener('change', cargarReporteConciliaciones);
+    document.getElementById('modalReporteConc').addEventListener('click', e => {
+        if (e.target.id === 'modalReporteConc') cerrarReporteConciliaciones();
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && document.getElementById('modalReporteConc').style.display === 'block') cerrarReporteConciliaciones();
     });
 
     async function cargarConciliacion() {

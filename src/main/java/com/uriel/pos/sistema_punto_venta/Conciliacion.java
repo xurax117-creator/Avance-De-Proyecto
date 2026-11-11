@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,30 +107,51 @@ public class Conciliacion {
             ps.setInt(2, idSucursal);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return null;
-                Map<String, Object> m = new HashMap<>();
-                m.put("idConciliacion", rs.getInt("id_conciliacion"));
-                m.put("montoInicial", rs.getDouble("monto_inicial"));
-                m.put("ventaEfectivo", rs.getDouble("venta_efectivo"));
-                m.put("ventaTarjetasConComision", rs.getDouble("venta_tarjetas_con_comision"));
-                m.put("ventaTarjetasSinComision", rs.getDouble("venta_tarjetas_sin_comision"));
-                m.put("ventaTotal", rs.getDouble("venta_total"));
-                m.put("gastos", rs.getDouble("gastos"));
-                m.put("gastosCasa", rs.getDouble("gastos_casa"));
-                String detalleJson = rs.getString("gastos_casa_detalle");
-                m.put("gastosCasaDetalle", detalleJson != null ? MAPPER.readValue(detalleJson, List.class) : null);
-                m.put("personasQueDeben", rs.getDouble("personas_que_deben"));
-                m.put("totalEfectivoTeorico", rs.getDouble("total_efectivo_teorico"));
-                m.put("comisionBancaria", rs.getDouble("comision_bancaria"));
-                m.put("disposicionesEfectivo", rs.getDouble("disposiciones_efectivo"));
-                m.put("totalBancosTeorico", rs.getDouble("total_bancos_teorico"));
-                m.put("totalEfectivoReal", rs.getDouble("total_efectivo_real"));
-                m.put("totalBancosReal", rs.getDouble("total_bancos_real"));
-                m.put("diferenciaEfectivo", rs.getDouble("diferencia_efectivo"));
-                m.put("diferenciaBancos", rs.getDouble("diferencia_bancos"));
-                m.put("fechaCierre", rs.getString("fecha_cierre"));
-                return m;
+                return mapearConciliacion(rs);
             }
         }
+    }
+
+    // Conciliaciones cerradas entre dos fechas (inclusive), para el reporte tipo Excel.
+    public List<Map<String, Object>> listarCerradas(String inicio, String fin, int idSucursal) throws Exception {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT * FROM conciliaciones WHERE fecha BETWEEN ? AND ? AND id_sucursal = ? ORDER BY fecha";
+        try (Connection c = new Conexion().conectar();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, inicio);
+            ps.setString(2, fin);
+            ps.setInt(3, idSucursal);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) lista.add(mapearConciliacion(rs));
+            }
+        }
+        return lista;
+    }
+
+    private Map<String, Object> mapearConciliacion(ResultSet rs) throws Exception {
+        Map<String, Object> m = new HashMap<>();
+        m.put("idConciliacion", rs.getInt("id_conciliacion"));
+        m.put("fecha", rs.getString("fecha"));
+        m.put("montoInicial", rs.getDouble("monto_inicial"));
+        m.put("ventaEfectivo", rs.getDouble("venta_efectivo"));
+        m.put("ventaTarjetasConComision", rs.getDouble("venta_tarjetas_con_comision"));
+        m.put("ventaTarjetasSinComision", rs.getDouble("venta_tarjetas_sin_comision"));
+        m.put("ventaTotal", rs.getDouble("venta_total"));
+        m.put("gastos", rs.getDouble("gastos"));
+        m.put("gastosCasa", rs.getDouble("gastos_casa"));
+        String detalleJson = rs.getString("gastos_casa_detalle");
+        m.put("gastosCasaDetalle", detalleJson != null ? MAPPER.readValue(detalleJson, List.class) : null);
+        m.put("personasQueDeben", rs.getDouble("personas_que_deben"));
+        m.put("totalEfectivoTeorico", rs.getDouble("total_efectivo_teorico"));
+        m.put("comisionBancaria", rs.getDouble("comision_bancaria"));
+        m.put("disposicionesEfectivo", rs.getDouble("disposiciones_efectivo"));
+        m.put("totalBancosTeorico", rs.getDouble("total_bancos_teorico"));
+        m.put("totalEfectivoReal", rs.getDouble("total_efectivo_real"));
+        m.put("totalBancosReal", rs.getDouble("total_bancos_real"));
+        m.put("diferenciaEfectivo", rs.getDouble("diferencia_efectivo"));
+        m.put("diferenciaBancos", rs.getDouble("diferencia_bancos"));
+        m.put("fechaCierre", rs.getString("fecha_cierre"));
+        return m;
     }
 
     public void cerrarConciliacion(String fecha, int idSucursal, double montoInicial, List<Double> gastosCasaDetalle,
